@@ -3,9 +3,22 @@
     "description": "This bundle helps to communicate your PHP application with Keycloak",
     "type": "library",
     "license": "MIT",
+    "require": {
+        "php": "^8.4"
+    },
     "autoload": {
         "psr-4": {
             "Apacheborys\\KeycloakPhpClient\\": "src/"
+        }
+    },
+    "suggest": {
+        "symfony/http-kernel": "Needed to use the Symfony bundle.",
+        "symfony/dependency-injection": "Needed to use the Symfony bundle.",
+        "symfony/config": "Needed if you add bundle configuration."
+    },
+    "extra": {
+        "symfony": {
+            "bundle-class": "Apacheborys\\KeycloakPhpClient\\Symfony\\KeycloakPhpClientBundle"
         }
     },
     "authors": [
@@ -14,6 +27,5 @@
             "email": "borys_ermokhin@yahoo.com"
         }
     ],
-    "minimum-stability": "dev",
-    "require": {}
+    "minimum-stability": "dev"
 }
