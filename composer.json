@@ -1,0 +1,19 @@
+{
+    "name": "apacheborys/keycloak-php-client",
+    "description": "This bundle helps to communicate your PHP application with Keycloak",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Apacheborys\\KeycloakPhpClient\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Borys Yermokhin",
+            "email": "borys_ermokhin@yahoo.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
