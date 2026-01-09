@@ -11,15 +11,9 @@
             "Apacheborys\\KeycloakPhpClient\\": "src/"
         }
     },
-    "suggest": {
-        "symfony/http-kernel": "Needed to use the Symfony bundle.",
-        "symfony/dependency-injection": "Needed to use the Symfony bundle.",
-        "symfony/config": "Needed if you add bundle configuration."
-    },
     "extra": {
-        "symfony": {
-            "bundle-class": "Apacheborys\\KeycloakPhpClient\\Symfony\\KeycloakPhpClientBundle"
-        }
+        "psr/http-client": "PSR-18 client interfaces for HTTP adapters.",
+        "psr/http-message": "PSR-7 message interfaces for HTTP adapters."
     },
     "authors": [
         {
