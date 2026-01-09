@@ -4,38 +4,38 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http;
 
+use Http\Discovery\HttpClientDiscovery;
 use LogicException;
+use Psr\Http\Client\ClientInterface;
 
-final class KeycloakHttpClient implements KeycloakHttpClientInterface
+final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 {
     public function __construct(
-        private readonly string $baseUrl,
-        private readonly string $clientId,
-        private readonly string $clientSecret,
-        private readonly string $username,
-        private readonly string $password,
-        private readonly object|null $httpClient = null
+        private string $baseUrl,
+        private string $clientId,
+        private string $clientSecret,
+        private ClientInterface $httpClient,
     ) {
     }
 
     public function createUser(array $payload): array
     {
-        throw new LogicException('HTTP createUser is not implemented yet.');
+        throw new LogicException(message: 'HTTP createUser is not implemented yet.');
     }
 
     public function updateUser(string $userId, array $payload): array
     {
-        throw new LogicException('HTTP updateUser is not implemented yet.');
+        throw new LogicException(message: 'HTTP updateUser is not implemented yet.');
     }
 
     public function deleteUser(string $userId): void
     {
-        throw new LogicException('HTTP deleteUser is not implemented yet.');
+        throw new LogicException(message: 'HTTP deleteUser is not implemented yet.');
     }
 
     public function createRealm(array $payload): array
     {
-        throw new LogicException('HTTP createRealm is not implemented yet.');
+        throw new LogicException(message: 'HTTP createRealm is not implemented yet.');
     }
 
     public function getRealms(): array
@@ -50,6 +50,6 @@ final class KeycloakHttpClient implements KeycloakHttpClientInterface
 
     public function getJwks(string $realm): array
     {
-        throw new LogicException('HTTP getJwks is not implemented yet.');
+        throw new LogicException(message: 'HTTP getJwks is not implemented yet.');
     }
 }

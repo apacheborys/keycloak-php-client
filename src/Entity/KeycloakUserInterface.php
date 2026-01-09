@@ -13,7 +13,7 @@ interface KeycloakUserInterface
     /**
      * @return string[]
      */
-    public function getRealms(): array;
+    public function getRoles(): array;
 
     public function getCreatedAt(): DateTimeInterface;
 
