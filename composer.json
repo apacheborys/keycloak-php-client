@@ -6,16 +6,26 @@
     "require": {
         "php": "^8.4",
         "php-http/discovery": "^1.0",
-        "psr/http-client": "^1.0"
+        "psr/cache": "^3.0@dev",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.0 || ^2.0",
+        "ramsey/uuid": "5.x-dev",
+        "beberlei/assert": "dev-master"
     },
     "autoload": {
         "psr-4": {
             "Apacheborys\\KeycloakPhpClient\\": "src/"
         }
     },
+    "suggest": {
+        "symfony/http-kernel": "Needed to use the Symfony bundle.",
+        "symfony/dependency-injection": "Needed to use the Symfony bundle."
+    },
     "extra": {
-        "psr/http-client": "PSR-18 client interfaces for HTTP adapters.",
-        "psr/http-message": "PSR-7 message interfaces for HTTP adapters."
+        "symfony": {
+            "bundle-class": "Apacheborys\\KeycloakPhpClient\\Symfony\\KeycloakPhpClientBundle"
+        }
     },
     "authors": [
         {

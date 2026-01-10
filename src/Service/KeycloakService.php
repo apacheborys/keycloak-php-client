@@ -9,8 +9,10 @@ use LogicException;
 
 final class KeycloakService implements KeycloakServiceInterface
 {
-    public function __construct(private readonly KeycloakHttpClientInterface $httpClient)
-    {
+    public function __construct(
+        private readonly string $realm,
+        private readonly KeycloakHttpClientInterface $httpClient
+    ) {
     }
 
     public function createUser(array $payload): array
@@ -30,7 +32,7 @@ final class KeycloakService implements KeycloakServiceInterface
 
     public function authenticateJwt(string $jwt, string $realm): bool
     {
-        $this->httpClient->getJwks($realm);
+        $this->httpClient->getJwks(realm: $realm);
 
         throw new LogicException('JWT authentication is not implemented yet.');
     }

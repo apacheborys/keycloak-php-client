@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 
 final class KeycloakHttpClientFactory
 {
@@ -12,13 +15,19 @@ final class KeycloakHttpClientFactory
         string $baseUrl,
         string $clientId,
         string $clientSecret,
-        ClientInterface|null $httpClient = null
+        ClientInterface $httpClient,
+        RequestFactoryInterface $requestFactory,
+        StreamFactoryInterface $streamFactory,
+        CacheItemPoolInterface|null $cache = null
     ): KeycloakHttpClientInterface {
         return new KeycloakHttpClient(
             baseUrl: $baseUrl,
             clientId: $clientId,
             clientSecret: $clientSecret,
-            httpClient: $httpClient
+            httpClient: $httpClient,
+            requestFactory: $requestFactory,
+            streamFactory: $streamFactory,
+            cache: $cache
         );
     }
 }

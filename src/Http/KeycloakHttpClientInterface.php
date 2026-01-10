@@ -14,9 +14,9 @@ interface KeycloakHttpClientInterface
 
     public function createRealm(array $payload): array;
 
-    public function getRealms(): array;
+    public function getRoles(): array;
 
-    public function deleteRealm(string $realmId): void;
+    public function deleteRole(string $role): void;
 
     public function getJwks(string $realm): array;
 }
