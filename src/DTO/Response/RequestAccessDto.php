@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\DTO;
+namespace Apacheborys\KeycloakPhpClient\DTO\Response;
 
 use Assert\Assert;
 
-final readonly class RequestAccessResponseDTO
+final readonly class RequestAccessDto
 {
     private string $accessToken;
 

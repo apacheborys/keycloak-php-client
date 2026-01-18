@@ -10,6 +10,16 @@ interface KeycloakUserInterface
 {
     public function getId(): string;
 
+    public function getUsername(): string;
+
+    public function getEmail(): string;
+
+    public function isEmailVerified(): bool;
+
+    public function getFirstName(): string;
+
+    public function getLastName(): string;
+
     /**
      * @return string[]
      */
@@ -17,5 +27,5 @@ interface KeycloakUserInterface
 
     public function getCreatedAt(): DateTimeInterface;
 
-    public function isDeleted(): bool;
+    public function isEnabled(): bool;
 }

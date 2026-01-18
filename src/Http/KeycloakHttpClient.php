@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http;
 
-use Apacheborys\KeycloakPhpClient\DTO\RequestAccessResponseDTO;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
@@ -14,6 +17,8 @@ use RuntimeException;
 
 final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 {
+    private const string CLIENT_NAME = 'Keycloak PHP Client';
+
     public function __construct(
         private string $baseUrl,
         private string $clientId,
@@ -25,9 +30,33 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     ) {
     }
 
-    public function createUser(array $payload): array
+    public function getUser(array $payload): array
     {
-        throw new LogicException(message: 'HTTP createUser is not implemented yet.');
+        throw new LogicException(message: 'Not implemented');
+    }
+
+    public function createUser(CreateUserDto $dto): void
+    {
+        $token = $this->getAccessToken(realm: $dto->getRealm());
+
+        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
+
+        $payload = json_encode(value: $dto->toArray());
+
+        $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
+            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
+            ->withHeader(name: 'Content-Type', value: 'application/json')
+            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
+            ->withBody(body: $this->streamFactory->createStream(content: $payload));
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode === 201) {
+            return;
+        }
+
+        throw new CreateUserException(message: (string) $response->getBody());
     }
 
     public function updateUser(string $userId, array $payload): array
@@ -60,9 +89,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         throw new LogicException(message: 'HTTP getJwks is not implemented yet.');
     }
 
-    private function getAccessToken(string $realm): string
+    private function getAccessToken(string $realm): JsonWebToken
     {
-        $cacheKey = 'keycloak.access_token.' . sha1(string: $this->baseUrl . '|' . $realm . '|' . $this->clientId . '|' . $this->clientSecret);
+        $cacheKey = 'keycloak.access_token.' . sha1(string: $this->baseUrl . '|' . $realm . '|' . $this->clientId);
 
         if ($this->cache !== null) {
             $cacheItem = $this->cache->getItem(key: $cacheKey);
@@ -71,7 +100,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
                 $cachedToken = $cacheItem->get();
 
                 if (is_string(value: $cachedToken) && $cachedToken !== '') {
-                    return $cachedToken;
+                    return JsonWebToken::fromRawToken(rawToken: $cachedToken);
                 }
             }
         }
@@ -90,6 +119,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
             ->withHeader(name: 'Content-Type', value: 'application/x-www-form-urlencoded')
+            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
             ->withBody(body: $this->streamFactory->createStream(content: $payload));
 
         $response = $this->httpClient->sendRequest(request: $request);
@@ -102,24 +132,19 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             );
         }
 
-        $data = json_decode(json: $body, associative: true);
+        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
 
         if (!is_array(value: $data)) {
             throw new RuntimeException(message: 'Keycloak token response is not valid JSON.');
         }
 
-        $dto = RequestAccessResponseDTO::fromArray(data: $data);
-        $accessToken = $dto->getAccessToken();
+        $dto = RequestAccessDto::fromArray(data: $data);
+        $accessToken = JsonWebToken::fromRawToken(rawToken: $dto->getAccessToken());
 
         if ($this->cache !== null) {
             $cacheItem = $this->cache->getItem(key: $cacheKey);
-            $cacheItem->set(value: $accessToken);
-
-            $expiresIn = $dto->getExpiresIn();
-            if ($expiresIn > 0) {
-                $ttl = max(value: 1, values: $expiresIn - 5);
-                $cacheItem->expiresAfter(time: $ttl);
-            }
+            $cacheItem->set(value: $accessToken->getRawToken());
+            $cacheItem->expiresAfter(time: $dto->getExpiresIn() - 1);
 
             $this->cache->save(item: $cacheItem);
         }

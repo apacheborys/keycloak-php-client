@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Entity;
 
 use Assert\Assert;
-use DateTimeImmutable;
 use JsonSerializable;
-use Ramsey\Uuid\UuidInterface;
 
 final readonly class JsonWebToken implements JsonSerializable
 {
@@ -39,7 +37,7 @@ final readonly class JsonWebToken implements JsonSerializable
         return $this->signature;
     }
 
-    public static function fromArray(string $rawToken): self
+    public static function fromRawToken(string $rawToken): self
     {
         $jwt = new self();
 
@@ -66,7 +64,7 @@ final readonly class JsonWebToken implements JsonSerializable
 
         $payloadJson = self::decodePart(part: $parts[1]);
 
-        $decodedPayload = json_decode(json: $payloadJson, associative: true);
+        $decodedPayload = json_decode(json: $payloadJson, associative: true, flags: JSON_THROW_ON_ERROR);
         Assert::that(value: $decodedPayload)->isArray();
 
         $jwt->payload = JwtPayload::fromArray(data: $decodedPayload);
@@ -78,12 +76,12 @@ final readonly class JsonWebToken implements JsonSerializable
 
     private static function decodePart(string $part): string
     {
-        $remainder = strlen($part) % 4;
+        $remainder = strlen(string: $part) % 4;
         if ($remainder !== 0) {
-            $part .= str_repeat('=', 4 - $remainder);
+            $part .= str_repeat(string: '=', times: 4 - $remainder);
         }
 
-        $decoded = base64_decode(string: strtr($part, '-_', '+/'), strict: true);
+        $decoded = base64_decode(string: strtr(string: $part, from: '-_', to: '+/'), strict: true);
         Assert::that(value: $decoded)->string();
 
         return $decoded;
