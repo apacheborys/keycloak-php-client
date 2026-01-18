@@ -30,12 +30,12 @@ final readonly class JwtHeader
 
     public function getTyp(): string
     {
-        return $this->typ;    
+        return $this->typ;
     }
 
     public function getKid(): string
     {
-        return $this->kid;    
+        return $this->kid;
     }
 
     public static function fromArray(array $data): self

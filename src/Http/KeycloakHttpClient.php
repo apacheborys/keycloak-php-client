@@ -105,7 +105,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             }
         }
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $realm . '/protocol/openid-connect/token';
+        $endpoint = rtrim(string: $this->baseUrl, characters: '/') .
+                        '/realms/' . $realm . '/protocol/openid-connect/token';
+
         $payload = http_build_query(
             data: [
                 'grant_type' => 'client_credentials',

@@ -60,7 +60,7 @@ readonly final class CreateUserDto
 
     public function getRealm(): string
     {
-        return $this->realm;    
+        return $this->realm;
     }
 
     public function toArray(): array
@@ -76,7 +76,9 @@ readonly final class CreateUserDto
 
         if (!empty($this->credentials)) {
             $result['credentials'] = array_map(
-                callback: static function (CredentialsDto $credentials): array { return $credentials->toArray(); },
+                callback: static function (CredentialsDto $credentials): array {
+                    return $credentials->toArray();
+                },
                 array: $this->credentials
             );
         }

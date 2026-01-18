@@ -30,7 +30,7 @@ final readonly class KeycloakUserAccess implements JsonSerializable
 
     public function isMapRoles(): bool
     {
-        return $this->mapRoles;    
+        return $this->mapRoles;
     }
 
     public function isImpersonate(): bool

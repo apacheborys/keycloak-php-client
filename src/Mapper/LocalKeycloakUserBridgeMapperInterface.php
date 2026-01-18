@@ -9,7 +9,7 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 
 interface LocalKeycloakUserBridgeMapperInterface
 {
-    public function prepareLocalUserForKeycloakUserCreation(KeycloakUserInterface $localUser):CreateUserDto;
+    public function prepareLocalUserForKeycloakUserCreation(KeycloakUserInterface $localUser): CreateUserDto;
 
     public function support(KeycloakUserInterface $localUser): bool;
 }

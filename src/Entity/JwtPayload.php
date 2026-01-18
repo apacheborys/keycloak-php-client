@@ -227,7 +227,7 @@ final readonly class JwtPayload
         Assert::that(value: $data)->keyExists(key: 'scope');
         Assert::that(value: $data['scope'])->string();
         $payload->scope = $data['scope'];
-    
+
         Assert::that(value: $data)->keyExists(key: 'email_verified');
         Assert::that(value: $data['email_verified'])->boolean();
         $payload->emailVerified = $data['email_verified'];

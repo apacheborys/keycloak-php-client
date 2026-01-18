@@ -24,7 +24,7 @@ final readonly class JsonWebToken implements JsonSerializable
 
     public function getHeader(): JwtHeader
     {
-        return $this->header;    
+        return $this->header;
     }
 
     public function getPayload(): JwtPayload

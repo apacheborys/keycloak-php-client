@@ -42,7 +42,7 @@ final readonly class RequestAccessDto
 
     public function getNonBeforePolicy(): int
     {
-        return $this->nonBeforePolicy;    
+        return $this->nonBeforePolicy;
     }
 
     public function getScope(): string
