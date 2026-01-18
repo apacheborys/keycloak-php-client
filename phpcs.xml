@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="KeycloakPhpClient">
+    <description>Project coding standard.</description>
+
+    <file>src</file>
+
+    <arg name="basepath" value="."/>
+    <arg name="extensions" value="php"/>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+
+    <rule ref="PSR12"/>
+</ruleset>

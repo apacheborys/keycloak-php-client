@@ -13,10 +13,25 @@
         "ramsey/uuid": "5.x-dev",
         "beberlei/assert": "dev-master"
     },
+    "require-dev": {
+        "phpstan/phpstan": "^1.11",
+        "rector/rector": "^1.2",
+        "squizlabs/php_codesniffer": "^3.10"
+    },
     "autoload": {
         "psr-4": {
             "Apacheborys\\KeycloakPhpClient\\": "src/"
         }
+    },
+    "scripts": {
+        "phpcs": "phpcs --standard=phpcs.xml",
+        "phpstan": "phpstan analyse -c phpstan.neon",
+        "rector": "rector process --dry-run --no-progress",
+        "check": [
+            "@phpcs",
+            "@phpstan",
+            "@rector"
+        ]
     },
     "suggest": {
         "symfony/http-kernel": "Needed to use the Symfony bundle.",
