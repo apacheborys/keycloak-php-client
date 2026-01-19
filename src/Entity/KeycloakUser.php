@@ -163,15 +163,23 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     public static function fromArray(array $data): self
     {
         Assert::that(value: $data)->keyExists(key: 'id');
-        Assert::that(value: $data['id'])->string()->notBlank();
-        Assert::that(value: Uuid::isValid(uuid: $data['id']))->true();
-
         Assert::that(value: $data)->keyExists(key: 'username');
-        Assert::that(value: $data['username'])->string()->notBlank();
-
         Assert::that(value: $data)->keyExists(key: 'createdTimestamp');
+
+        Assert::that(value: $data['id'])->string()->notBlank();
+        Assert::that(value: $data['username'])->string()->notBlank();
         Assert::that(value: $data['createdTimestamp'])->integer()->greaterOrEqualThan(limit: 0);
 
+        /**
+         * @var array{
+         *  id: non-empty-string,
+         *  username: non-empty-string,
+         *  createdTimestamp: int
+         * } $data
+         */
+
+        Assert::that(value: Uuid::isValid(uuid: $data['id']))->true();
+        
         $createdAt = self::fromTimestampMs(timestampMs: $data['createdTimestamp']);
 
         $access = self::buildAccess(data: $data['access'] ?? null);
@@ -199,7 +207,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
 
     private static function fromTimestampMs(int $timestampMs): DateTimeImmutable
     {
-        $createdAt = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6f', $timestampMs / 1000));
+        $createdAt = DateTimeImmutable::createFromFormat(format: 'U.u', datetime: sprintf(format: '%.6f', values: $timestampMs / 1000));
         Assert::that(value: $createdAt)->isInstanceOf(className: DateTimeImmutable::class);
 
         /** @var DateTimeImmutable $createdAt */
@@ -212,12 +220,13 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
      */
     private static function stringOrDefault(array $data, string $key, string $default = ''): string
     {
-        if (!array_key_exists($key, $data) || $data[$key] === null) {
+        if (!array_key_exists(key: $key, array: $data) || $data[$key] === null) {
             return $default;
         }
 
         Assert::that(value: $data[$key])->string();
 
+        /** @phpstan-ignore-next-line */
         return $data[$key];
     }
 
@@ -232,6 +241,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
 
         Assert::that(value: $data[$key])->boolean();
 
+        /** @phpstan-ignore-next-line */
         return $data[$key];
     }
 
@@ -246,6 +256,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
 
         Assert::that(value: $data[$key])->integer();
 
+        /** @phpstan-ignore-next-line */
         return $data[$key];
     }
 
@@ -316,12 +327,15 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
 
         Assert::that(value: $data)->isArray();
 
+        /** @var array $data */
+
         $values = [];
         foreach ($data as $value) {
             Assert::that(value: $value)->string()->notBlank();
+            /** @var non-empty-string $value */
             $values[] = $value;
         }
 
-        return array_values($values);
+        return array_values(array: $values);
     }
 }
