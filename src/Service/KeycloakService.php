@@ -11,11 +11,11 @@ use LogicException;
 
 final class KeycloakService implements KeycloakServiceInterface
 {
-    /**
-     * @var array<LocalKeycloakUserBridgeMapperInterface> $mappers
-     */
     public function __construct(
         private readonly KeycloakHttpClientInterface $httpClient,
+        /**
+         * @var LocalKeycloakUserBridgeMapperInterface[] $mappers
+         */
         private array $mappers,
     ) {
     }
@@ -24,9 +24,11 @@ final class KeycloakService implements KeycloakServiceInterface
     {
         $mapper = $this->getMapperForLocalUser(localUser: $localUser);
 
-        return $this->httpClient->createUser(
+        $this->httpClient->createUser(
             dto: $mapper->prepareLocalUserForKeycloakUserCreation(localUser: $localUser)
         );
+
+        return [];
     }
 
     public function updateUser(string $userId, array $payload): array

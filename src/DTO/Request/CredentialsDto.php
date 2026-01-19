@@ -6,11 +6,12 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 readonly final class CredentialsDto
 {
-    private string $type;
-
-    private string $credentialsData;
-
-    private string $secretData;
+    public function __construct(
+        private string $type,
+        private string $credentialsData,
+        private string $secretData,
+    ) {
+    }
 
     public function toArray(): array
     {

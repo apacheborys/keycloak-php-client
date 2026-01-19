@@ -9,13 +9,13 @@ use JsonSerializable;
 
 final readonly class JsonWebToken implements JsonSerializable
 {
-    private string $rawToken;
-
-    private JwtHeader $header;
-
-    private JwtPayload $payload;
-
-    private string $signature;
+    public function __construct(
+        private string $rawToken,
+        private JwtHeader $header,
+        private JwtPayload $payload,
+        private string $signature,
+    ) {
+    }
 
     public function getRawToken(): string
     {
@@ -39,17 +39,15 @@ final readonly class JsonWebToken implements JsonSerializable
 
     public static function fromRawToken(string $rawToken): self
     {
-        $jwt = new self();
-
         Assert::that(value: $rawToken)->notBlank();
-        $jwt->rawToken = $rawToken;
 
         /**
-         * @var $parts string[]
+         * @var string[] $parts
          */
         $parts = explode(separator: '.', string: $rawToken);
 
         Assert::that(value: $parts)->isArray()->count(count: 3);
+
         foreach ($parts as $key => $part) {
             Assert::that(value: $key)->integer()->between(lowerLimit: 0, upperLimit: 2);
             Assert::that(value: $part)->string();
@@ -60,18 +58,17 @@ final readonly class JsonWebToken implements JsonSerializable
         $decodedHeader = json_decode(json: $headerJson, associative: true);
         Assert::that(value: $decodedHeader)->isArray();
 
-        $jwt->header = JwtHeader::fromArray(data: $decodedHeader);
-
         $payloadJson = self::decodePart(part: $parts[1]);
 
         $decodedPayload = json_decode(json: $payloadJson, associative: true, flags: JSON_THROW_ON_ERROR);
         Assert::that(value: $decodedPayload)->isArray();
 
-        $jwt->payload = JwtPayload::fromArray(data: $decodedPayload);
-
-        $jwt->signature = $parts[2];
-
-        return $jwt;
+        return new self(
+            rawToken: $rawToken,
+            header: JwtHeader::fromArray(data: $decodedHeader),
+            payload: JwtPayload::fromArray(data: $decodedPayload),
+            signature: $parts[2],
+        );
     }
 
     private static function decodePart(string $part): string

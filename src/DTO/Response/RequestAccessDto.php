@@ -8,17 +8,15 @@ use Assert\Assert;
 
 final readonly class RequestAccessDto
 {
-    private string $accessToken;
-
-    private int $expiresIn;
-
-    private int $refreshExpiresIn;
-
-    private string $tokenType;
-
-    private int $nonBeforePolicy;
-
-    private string $scope;
+    public function __construct(
+        private string $accessToken,
+        private int $expiresIn,
+        private int $refreshExpiresIn,
+        private string $tokenType,
+        private int $nonBeforePolicy,
+        private string $scope,
+    ) {
+    }
 
     public function getAccessToken(): string
     {
@@ -52,32 +50,31 @@ final readonly class RequestAccessDto
 
     public static function fromArray(array $data): self
     {
-        $dto = new self();
-
         Assert::that(value: $data)->keyExists(key: 'access_token');
         Assert::that(value: $data['access_token'])->string()->notBlank();
-        $dto->accessToken = $data['access_token'];
 
         Assert::that(value: $data)->keyExists(key: 'expires_in');
         Assert::that(value: $data['expires_in'])->integer()->greaterOrEqualThan(limit: 0);
-        $dto->expiresIn = $data['expires_in'];
 
         Assert::that(value: $data)->keyExists(key: 'refresh_expires_in');
         Assert::that(value: $data['refresh_expires_in'])->integer()->greaterOrEqualThan(limit: 0);
-        $dto->refreshExpiresIn = $data['refresh_expires_in'];
 
         Assert::that(value: $data)->keyExists(key: 'token_type');
         Assert::that(value: $data['token_type'])->string()->eq(value2: 'Bearer');
-        $dto->tokenType = $data['token_type'];
 
         Assert::that(value: $data)->keyExists(key: 'not-before-policy');
         Assert::that(value: $data['not-before-policy'])->integer()->greaterOrEqualThan(limit: 0);
-        $dto->nonBeforePolicy = $data['not-before-policy'];
 
         Assert::that(value: $data)->keyExists(key: 'scope');
         Assert::that(value: $data['scope'])->string();
-        $dto->scope = $data['scope'];
 
-        return $dto;
+        return new self(
+            accessToken: $data['access_token'],
+            expiresIn: $data['expires_in'],
+            refreshExpiresIn: $data['refresh_expires_in'],
+            tokenType: $data['token_type'],
+            nonBeforePolicy: $data['not-before-policy'],
+            scope: $data['scope'],
+        );
     }
 }

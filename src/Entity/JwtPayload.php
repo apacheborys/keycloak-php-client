@@ -11,6 +11,44 @@ use Ramsey\Uuid\UuidInterface;
 
 final readonly class JwtPayload
 {
+    public function __construct(
+        DateTimeImmutable $exp,
+        DateTimeImmutable $iat,
+        UuidInterface $jti,
+        string $iss,
+        string $aud,
+        UuidInterface $sub,
+        string $typ,
+        string $azp,
+        int $acr,
+        array $realmAccess,
+        array $resourceAccess,
+        string $scope,
+        bool $emailVerified,
+        string $clientHost,
+        string $preferredUsername,
+        string $clientAddress,
+        string $clientId,
+    ) {
+        $this->exp = $exp;
+        $this->iat = $iat;
+        $this->jti = $jti;
+        $this->iss = $iss;
+        $this->aud = $aud;
+        $this->sub = $sub;
+        $this->typ = $typ;
+        $this->azp = $azp;
+        $this->acr = $acr;
+        $this->realmAccess = $realmAccess;
+        $this->resourceAccess = $resourceAccess;
+        $this->scope = $scope;
+        $this->emailVerified = $emailVerified;
+        $this->clientHost = $clientHost;
+        $this->preferredUsername = $preferredUsername;
+        $this->clientAddress = $clientAddress;
+        $this->clientId = $clientId;
+    }
+
     /**
      * Expiration time (seconds since Unix epoch)
      */
@@ -171,48 +209,46 @@ final readonly class JwtPayload
 
     public static function fromArray(array $data): self
     {
-        $payload = new self();
-
         Assert::that(value: $data)->keyExists(key: 'exp');
         Assert::that(value: $data['exp'])->notEmpty()->integer();
-        $payload->exp = new DateTimeImmutable(datetime: '@' . $data['exp']);
+        $exp = new DateTimeImmutable(datetime: '@' . $data['exp']);
 
         Assert::that(value: $data)->keyExists(key: 'iat');
         Assert::that(value: $data['iat'])->notEmpty()->integer();
-        $payload->iat = new DateTimeImmutable(datetime: '@' . $data['iat']);
+        $iat = new DateTimeImmutable(datetime: '@' . $data['iat']);
 
         Assert::that(value: $data)->keyExists(key: 'jti');
         Assert::that(value: Uuid::isValid(uuid: $data['jti']))->true();
-        $payload->jti = Uuid::fromString(uuid: $data['jti']);
+        $jti = Uuid::fromString(uuid: $data['jti']);
 
         Assert::that(value: $data)->keyExists(key: 'iss');
         Assert::that(value: $data['iss'])->string()->notEmpty()->url();
-        $payload->iss = $data['iss'];
+        $iss = $data['iss'];
 
         Assert::that(value: $data)->keyExists(key: 'aud');
         Assert::that(value: $data['aud'])->string()->notEmpty();
-        $payload->aud = $data['aud'];
+        $aud = $data['aud'];
 
         Assert::that(value: $data)->keyExists(key: 'sub');
         Assert::that(value: Uuid::isValid(uuid: $data['sub']))->true();
-        $payload->sub = Uuid::fromString(uuid: $data['sub']);
+        $sub = Uuid::fromString(uuid: $data['sub']);
 
         Assert::that(value: $data)->keyExists(key: 'typ');
         Assert::that(value: $data['typ'])->string()->notEmpty();
-        $payload->typ = $data['typ'];
+        $typ = $data['typ'];
 
         Assert::that(value: $data)->keyExists(key: 'azp');
         Assert::that(value: $data['azp'])->string()->notEmpty();
-        $payload->azp = $data['azp'];
+        $azp = $data['azp'];
 
         Assert::that(value: $data)->keyExists(key: 'acr');
         Assert::that(value: $data['acr'])->numeric()->notEmpty();
-        $payload->acr = (int) $data['acr'];
+        $acr = (int) $data['acr'];
 
         Assert::that(value: $data)->keyExists(key: 'realm_access');
         Assert::that(value: $data['realm_access'])->isArray()->keyExists(key: 'roles');
         Assert::that(value: $data['realm_access']['roles'])->isArray();
-        $payload->realmAccess = $data['realm_access'];
+        $realmAccess = $data['realm_access'];
 
         Assert::that(value: $data)->keyExists(key: 'resource_access');
         Assert::that(value: $data['resource_access'])->isArray()->keyExists(key: 'backend');
@@ -222,32 +258,50 @@ final readonly class JwtPayload
         Assert::that(value: $data['resource_access'])->isArray()->keyExists(key: 'account');
         Assert::that(value: $data['resource_access']['account'])->isArray()->keyExists(key: 'roles');
         Assert::that(value: $data['resource_access']['account']['roles'])->isArray();
-        $payload->resourceAccess = $data['resource_access'];
+        $resourceAccess = $data['resource_access'];
 
         Assert::that(value: $data)->keyExists(key: 'scope');
         Assert::that(value: $data['scope'])->string();
-        $payload->scope = $data['scope'];
+        $scope = $data['scope'];
 
         Assert::that(value: $data)->keyExists(key: 'email_verified');
         Assert::that(value: $data['email_verified'])->boolean();
-        $payload->emailVerified = $data['email_verified'];
+        $emailVerified = $data['email_verified'];
 
         Assert::that(value: $data)->keyExists(key: 'clientHost');
         Assert::that(value: $data['clientHost'])->string()->ip();
-        $payload->clientHost = $data['clientHost'];
+        $clientHost = $data['clientHost'];
 
         Assert::that(value: $data)->keyExists(key: 'preferred_username');
         Assert::that(value: $data['preferred_username'])->string()->notBlank();
-        $payload->preferredUsername = $data['preferred_username'];
+        $preferredUsername = $data['preferred_username'];
 
         Assert::that(value: $data)->keyExists(key: 'clientAddress');
         Assert::that(value: $data['clientAddress'])->string()->ip();
-        $payload->clientAddress = $data['clientAddress'];
+        $clientAddress = $data['clientAddress'];
 
         Assert::that(value: $data)->keyExists(key: 'client_id');
         Assert::that(value: $data['client_id'])->string()->notBlank();
-        $payload->clientId = $data['client_id'];
+        $clientId = $data['client_id'];
 
-        return $payload;
+        return new self(
+            exp: $exp,
+            iat: $iat,
+            jti: $jti,
+            iss: $iss,
+            aud: $aud,
+            sub: $sub,
+            typ: $typ,
+            azp: $azp,
+            acr: $acr,
+            realmAccess: $realmAccess,
+            resourceAccess: $resourceAccess,
+            scope: $scope,
+            emailVerified: $emailVerified,
+            clientHost: $clientHost,
+            preferredUsername: $preferredUsername,
+            clientAddress: $clientAddress,
+            clientId: $clientId,
+        );
     }
 }
