@@ -43,6 +43,7 @@ final readonly class KeycloakUserAccess implements JsonSerializable
         return $this->manage;
     }
 
+    #[\Override]
     public function jsonSerialize(): array
     {
         return [

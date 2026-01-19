@@ -12,29 +12,23 @@ readonly final class CreateUserDto
 
     private string $email;
 
-    private bool $emailVerified;
-
-    private bool $enabled;
-
     private string $firstName;
 
     private string $lastName;
-
-    /**
-     * @var CredentialsDto[]
-     */
-    private array $credentials;
 
     private string $realm;
 
     public function __construct(
         string $username,
         string $email,
-        bool $emailVerified,
-        bool $enabled,
+        private bool $emailVerified,
+        private bool $enabled,
         string $firstName,
         string $lastName,
-        array $credentials,
+        /**
+         * @var CredentialsDto[]
+         */
+        private array $credentials,
         string $realm,
     ) {
         Assert::that(value: $username)->notEmpty();
@@ -43,16 +37,11 @@ readonly final class CreateUserDto
         Assert::that(value: $email)->notEmpty()->email();
         $this->email = $email;
 
-        $this->emailVerified = $emailVerified;
-        $this->enabled = $enabled;
-
         Assert::that(value: $firstName)->notEmpty();
         $this->firstName = $firstName;
 
         Assert::that(value: $lastName)->notEmpty();
         $this->lastName = $lastName;
-
-        $this->credentials = $credentials;
 
         Assert::that(value: $realm)->notEmpty();
         $this->realm = $realm;
@@ -76,9 +65,7 @@ readonly final class CreateUserDto
 
         if (!empty($this->credentials)) {
             $result['credentials'] = array_map(
-                callback: static function (CredentialsDto $credentials): array {
-                    return $credentials->toArray();
-                },
+                callback: static fn(CredentialsDto $credentials): array => $credentials->toArray(),
                 array: $this->credentials
             );
         }

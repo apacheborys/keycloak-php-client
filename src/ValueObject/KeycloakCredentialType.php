@@ -6,14 +6,15 @@ namespace Apacheborys\KeycloakPhpClient\ValueObject;
 
 use Assert\Assert;
 use JsonSerializable;
+use Override;
 use Stringable;
 
 final readonly class KeycloakCredentialType implements JsonSerializable, Stringable
 {
-    public const PASSWORD = 'password';
-    public const OTP = 'otp';
-    public const WEBAUTHN = 'webauthn';
-    public const WEBAUTHN_PASSWORDLESS = 'webauthn-passwordless';
+    public const string PASSWORD = 'password';
+    public const string OTP = 'otp';
+    public const string WEBAUTHN = 'webauthn';
+    public const string WEBAUTHN_PASSWORDLESS = 'webauthn-passwordless';
 
     private function __construct(private string $value)
     {
@@ -56,11 +57,13 @@ final readonly class KeycloakCredentialType implements JsonSerializable, Stringa
         return $this->value === $other->value;
     }
 
+    #[\Override]
     public function jsonSerialize(): string
     {
         return $this->value;
     }
 
+    #[Override]
     public function __toString(): string
     {
         return $this->value;

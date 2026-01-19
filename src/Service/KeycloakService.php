@@ -9,10 +9,10 @@ use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
 use LogicException;
 
-final class KeycloakService implements KeycloakServiceInterface
+final readonly class KeycloakService implements KeycloakServiceInterface
 {
     public function __construct(
-        private readonly KeycloakHttpClientInterface $httpClient,
+        private KeycloakHttpClientInterface $httpClient,
         /**
          * @var LocalKeycloakUserBridgeMapperInterface[] $mappers
          */
@@ -20,6 +20,7 @@ final class KeycloakService implements KeycloakServiceInterface
     ) {
     }
 
+    #[\Override]
     public function createUser(KeycloakUserInterface $localUser): array
     {
         $mapper = $this->getMapperForLocalUser(localUser: $localUser);
@@ -31,16 +32,19 @@ final class KeycloakService implements KeycloakServiceInterface
         return [];
     }
 
+    #[\Override]
     public function updateUser(string $userId, array $payload): array
     {
         return $this->httpClient->updateUser($userId, $payload);
     }
 
+    #[\Override]
     public function deleteUser(string $userId): void
     {
         $this->httpClient->deleteUser($userId);
     }
 
+    #[\Override]
     public function authenticateJwt(string $jwt, string $realm): bool
     {
         $this->httpClient->getJwks(realm: $realm);
@@ -56,6 +60,6 @@ final class KeycloakService implements KeycloakServiceInterface
             }
         }
 
-        throw new LogicException(message: "Can't find proper mapper for " . get_class(object: $localUser));
+        throw new LogicException(message: "Can't find proper mapper for " . $localUser::class);
     }
 }

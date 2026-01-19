@@ -30,11 +30,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     ) {
     }
 
+    #[\Override]
     public function getUser(array $payload): array
     {
         throw new LogicException(message: 'Not implemented');
     }
 
+    #[\Override]
     public function createUser(CreateUserDto $dto): void
     {
         $token = $this->getAccessToken(realm: $dto->getRealm());
@@ -59,31 +61,37 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         throw new CreateUserException(message: (string) $response->getBody());
     }
 
+    #[\Override]
     public function updateUser(string $userId, array $payload): array
     {
         throw new LogicException(message: 'HTTP updateUser is not implemented yet.');
     }
 
+    #[\Override]
     public function deleteUser(string $userId): void
     {
         throw new LogicException(message: 'HTTP deleteUser is not implemented yet.');
     }
 
+    #[\Override]
     public function createRealm(array $payload): array
     {
         throw new LogicException(message: 'HTTP createRealm is not implemented yet.');
     }
 
+    #[\Override]
     public function getRoles(): array
     {
         throw new LogicException('HTTP getRole is not implemented yet.');
     }
 
+    #[\Override]
     public function deleteRole(string $role): void
     {
         throw new LogicException(message: 'HTTP deleteRole is not implemented yet.');
     }
 
+    #[\Override]
     public function getJwks(string $realm): array
     {
         throw new LogicException(message: 'HTTP getJwks is not implemented yet.');

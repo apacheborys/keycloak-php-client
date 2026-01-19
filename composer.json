@@ -26,7 +26,7 @@
     "scripts": {
         "phpcs": "phpcs --standard=phpcs.xml",
         "phpstan": "phpstan analyse -c phpstan.neon",
-        "rector": "rector process --dry-run --no-progress",
+        "rector": "rector process --dry-run",
         "check": [
             "@phpcs",
             "@phpstan",

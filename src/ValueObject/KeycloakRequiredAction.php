@@ -6,19 +6,20 @@ namespace Apacheborys\KeycloakPhpClient\ValueObject;
 
 use Assert\Assert;
 use JsonSerializable;
+use Override;
 use Stringable;
 
 final readonly class KeycloakRequiredAction implements JsonSerializable, Stringable
 {
-    public const VERIFY_EMAIL = 'VERIFY_EMAIL';
-    public const UPDATE_PROFILE = 'UPDATE_PROFILE';
-    public const UPDATE_PASSWORD = 'UPDATE_PASSWORD';
-    public const CONFIGURE_TOTP = 'CONFIGURE_TOTP';
-    public const UPDATE_EMAIL = 'UPDATE_EMAIL';
-    public const UPDATE_USER_LOCALE = 'UPDATE_USER_LOCALE';
-    public const TERMS_AND_CONDITIONS = 'TERMS_AND_CONDITIONS';
-    public const WEBAUTHN_REGISTER = 'WEBAUTHN_REGISTER';
-    public const WEBAUTHN_REGISTER_PASSWORDLESS = 'WEBAUTHN_REGISTER_PASSWORDLESS';
+    public const string VERIFY_EMAIL = 'VERIFY_EMAIL';
+    public const string UPDATE_PROFILE = 'UPDATE_PROFILE';
+    public const string UPDATE_PASSWORD = 'UPDATE_PASSWORD';
+    public const string CONFIGURE_TOTP = 'CONFIGURE_TOTP';
+    public const string UPDATE_EMAIL = 'UPDATE_EMAIL';
+    public const string UPDATE_USER_LOCALE = 'UPDATE_USER_LOCALE';
+    public const string TERMS_AND_CONDITIONS = 'TERMS_AND_CONDITIONS';
+    public const string WEBAUTHN_REGISTER = 'WEBAUTHN_REGISTER';
+    public const string WEBAUTHN_REGISTER_PASSWORDLESS = 'WEBAUTHN_REGISTER_PASSWORDLESS';
 
     private function __construct(private string $value)
     {
@@ -28,27 +29,27 @@ final readonly class KeycloakRequiredAction implements JsonSerializable, Stringa
     {
         Assert::that(value: $value)->string()->notBlank();
 
-        return new self($value);
+        return new self(value: $value);
     }
 
     public static function verifyEmail(): self
     {
-        return new self(self::VERIFY_EMAIL);
+        return new self(value: self::VERIFY_EMAIL);
     }
 
     public static function updateProfile(): self
     {
-        return new self(self::UPDATE_PROFILE);
+        return new self(value: self::UPDATE_PROFILE);
     }
 
     public static function updatePassword(): self
     {
-        return new self(self::UPDATE_PASSWORD);
+        return new self(value: self::UPDATE_PASSWORD);
     }
 
     public static function configureTotp(): self
     {
-        return new self(self::CONFIGURE_TOTP);
+        return new self(value: self::CONFIGURE_TOTP);
     }
 
     public static function updateEmail(): self
@@ -58,22 +59,22 @@ final readonly class KeycloakRequiredAction implements JsonSerializable, Stringa
 
     public static function updateUserLocale(): self
     {
-        return new self(self::UPDATE_USER_LOCALE);
+        return new self(value: self::UPDATE_USER_LOCALE);
     }
 
     public static function termsAndConditions(): self
     {
-        return new self(self::TERMS_AND_CONDITIONS);
+        return new self(value: self::TERMS_AND_CONDITIONS);
     }
 
     public static function webauthnRegister(): self
     {
-        return new self(self::WEBAUTHN_REGISTER);
+        return new self(value: self::WEBAUTHN_REGISTER);
     }
 
     public static function webauthnRegisterPasswordless(): self
     {
-        return new self(self::WEBAUTHN_REGISTER_PASSWORDLESS);
+        return new self(value: self::WEBAUTHN_REGISTER_PASSWORDLESS);
     }
 
     public function value(): string
@@ -86,11 +87,13 @@ final readonly class KeycloakRequiredAction implements JsonSerializable, Stringa
         return $this->value === $other->value;
     }
 
+    #[Override]
     public function jsonSerialize(): string
     {
         return $this->value;
     }
 
+    #[Override]
     public function __toString(): string
     {
         return $this->value;

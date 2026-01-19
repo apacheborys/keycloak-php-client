@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Entity;
 
 use Assert\Assert;
 use JsonSerializable;
+use Override;
 
 final readonly class JsonWebToken implements JsonSerializable
 {
@@ -84,6 +85,7 @@ final readonly class JsonWebToken implements JsonSerializable
         return $decoded;
     }
 
+    #[Override]
     public function jsonSerialize(): array
     {
         return [

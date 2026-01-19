@@ -12,109 +12,58 @@ use Ramsey\Uuid\UuidInterface;
 final readonly class JwtPayload
 {
     public function __construct(
-        DateTimeImmutable $exp,
-        DateTimeImmutable $iat,
-        UuidInterface $jti,
-        string $iss,
-        string $aud,
-        UuidInterface $sub,
-        string $typ,
-        string $azp,
-        int $acr,
-        array $realmAccess,
-        array $resourceAccess,
-        string $scope,
-        bool $emailVerified,
-        string $clientHost,
-        string $preferredUsername,
-        string $clientAddress,
-        string $clientId,
+        /**
+         * Expiration time (seconds since Unix epoch)
+         */
+        private DateTimeImmutable $exp,
+        /**
+         * Issued at (seconds since Unix epoch)
+         */
+        private DateTimeImmutable $iat,
+        /**
+         * JWT id (unique identifier for this token)
+         */
+        private UuidInterface $jti,
+        /**
+         * Issuer (who created and signed this token)
+         */
+        private string $iss,
+        /**
+         * Audience (who or what the token is intended for)
+         */
+        private string $aud,
+        /**
+         * Subject (whom the token refers to)
+         */
+        private UuidInterface $sub,
+        /**
+         * Type of token
+         */
+        private string $typ,
+        /**
+         * Authorized party (the party to which this token was issued)
+         */
+        private string $azp,
+        /**
+         * Authentication context class
+         */
+        private int $acr,
+        /**
+         * @var array{roles:string[]}
+         */
+        private array $realmAccess,
+        /**
+         * @var array{backend:array{roles:string[]}, account:array{roles:string[]}}
+         */
+        private array $resourceAccess,
+        private string $scope,
+        private bool $emailVerified,
+        private string $clientHost,
+        private string $preferredUsername,
+        private string $clientAddress,
+        private string $clientId
     ) {
-        $this->exp = $exp;
-        $this->iat = $iat;
-        $this->jti = $jti;
-        $this->iss = $iss;
-        $this->aud = $aud;
-        $this->sub = $sub;
-        $this->typ = $typ;
-        $this->azp = $azp;
-        $this->acr = $acr;
-        $this->realmAccess = $realmAccess;
-        $this->resourceAccess = $resourceAccess;
-        $this->scope = $scope;
-        $this->emailVerified = $emailVerified;
-        $this->clientHost = $clientHost;
-        $this->preferredUsername = $preferredUsername;
-        $this->clientAddress = $clientAddress;
-        $this->clientId = $clientId;
     }
-
-    /**
-     * Expiration time (seconds since Unix epoch)
-     */
-    private DateTimeImmutable $exp;
-
-    /**
-     * Issued at (seconds since Unix epoch)
-     */
-    private DateTimeImmutable $iat;
-
-    /**
-     * JWT id (unique identifier for this token)
-     */
-    private UuidInterface $jti;
-
-    /**
-     * Issuer (who created and signed this token)
-     */
-    private string $iss;
-
-    /**
-     * Audience (who or what the token is intended for)
-     */
-    private string $aud;
-
-    /**
-     * Subject (whom the token refers to)
-     */
-    private UuidInterface $sub;
-
-    /**
-     * Type of token
-     */
-    private string $typ;
-
-    /**
-     * Authorized party (the party to which this token was issued)
-     */
-    private string $azp;
-
-    /**
-     * Authentication context class
-     */
-    private int $acr;
-
-    /**
-     * @var array{roles:string[]}
-     */
-    private array $realmAccess;
-
-    /**
-     * @var array{backend:array{roles:string[]}, account:array{roles:string[]}}
-     */
-    private array $resourceAccess;
-
-    private string $scope;
-
-    private bool $emailVerified;
-
-    private string $clientHost;
-
-    private string $preferredUsername;
-
-    private string $clientAddress;
-
-    private string $clientId;
 
     public function getExp(): DateTimeImmutable
     {

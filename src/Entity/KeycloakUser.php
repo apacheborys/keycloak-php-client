@@ -39,31 +39,37 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     ) {
     }
 
+    #[\Override]
     public function getId(): string
     {
         return $this->id->toString();
     }
 
+    #[\Override]
     public function getUsername(): string
     {
         return $this->username;
     }
 
+    #[\Override]
     public function getEmail(): string
     {
         return $this->email;
     }
 
+    #[\Override]
     public function isEmailVerified(): bool
     {
         return $this->emailVerified;
     }
 
+    #[\Override]
     public function getFirstName(): string
     {
         return $this->firstName;
     }
 
+    #[\Override]
     public function getLastName(): string
     {
         return $this->lastName;
@@ -72,16 +78,19 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     /**
      * @return list<string>
      */
+    #[\Override]
     public function getRoles(): array
     {
         return $this->roles;
     }
 
+    #[\Override]
     public function getCreatedAt(): DateTimeInterface
     {
         return $this->createdTimestamp;
     }
 
+    #[\Override]
     public function isEnabled(): bool
     {
         return $this->enabled;
@@ -118,6 +127,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         return $this->requiredActions;
     }
 
+    #[\Override]
     public function jsonSerialize(): array
     {
         $createdTimestampMs = ((int) $this->createdTimestamp->format('U')) * 1000
