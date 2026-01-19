@@ -8,6 +8,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
+use Assert\Assert;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
@@ -44,6 +45,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
 
         $payload = json_encode(value: $dto->toArray());
+        Assert::that(value: $payload)->string();
+
+        /** @var string $payload */
 
         $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
             ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())

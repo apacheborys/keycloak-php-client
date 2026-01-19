@@ -82,6 +82,8 @@ final readonly class JsonWebToken implements JsonSerializable
         $decoded = base64_decode(string: strtr(string: $part, from: '-_', to: '+/'), strict: true);
         Assert::that(value: $decoded)->string();
 
+        /** @var string $decoded */
+
         return $decoded;
     }
 

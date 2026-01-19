@@ -202,6 +202,8 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         $createdAt = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6f', $timestampMs / 1000));
         Assert::that(value: $createdAt)->isInstanceOf(className: DateTimeImmutable::class);
 
+        /** @var DateTimeImmutable $createdAt */
+
         return $createdAt;
     }
 
