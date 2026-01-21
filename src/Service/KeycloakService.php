@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Service;
 
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
@@ -21,15 +23,25 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[\Override]
-    public function createUser(KeycloakUserInterface $localUser): array
+    public function createUser(KeycloakUserInterface $localUser): KeycloakUser
     {
         $mapper = $this->getMapperForLocalUser(localUser: $localUser);
+        $createUserDto = $mapper->prepareLocalUserForKeycloakUserCreation(localUser: $localUser);
 
-        $this->httpClient->createUser(
-            dto: $mapper->prepareLocalUserForKeycloakUserCreation(localUser: $localUser)
+        $this->httpClient->createUser(dto: $createUserDto);
+
+        $searchDto = new SearchUsersDto(
+            realm: $createUserDto->getRealm(),
+            email: $createUserDto->getEmail(),
         );
 
-        return [];
+        $result = $this->httpClient->getUsers(dto: $searchDto);
+
+        if (count(value: $result) !== 1) {
+            throw new LogicException(message: "Can't find just created user with email " . $createUserDto->getEmail());
+        }
+
+        return $result[0];
     }
 
     #[\Override]
@@ -55,7 +67,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     private function getMapperForLocalUser(KeycloakUserInterface $localUser): LocalKeycloakUserBridgeMapperInterface
     {
         foreach ($this->mappers as $mapper) {
-            if ($mapper->support($localUser)) {
+            if ($mapper->support(localUser: $localUser)) {
                 return $mapper;
             }
         }

@@ -52,6 +52,11 @@ readonly final class CreateUserDto
         return $this->realm;
     }
 
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
     public function toArray(): array
     {
         $result = [

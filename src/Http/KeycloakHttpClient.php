@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
 use Assert\Assert;
 use LogicException;
@@ -32,9 +34,41 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[\Override]
-    public function getUser(array $payload): array
+    public function getUsers(SearchUsersDto $dto): array
     {
-        throw new LogicException(message: 'Not implemented');
+        $token = $this->getAccessToken(realm: $dto->getRealm());
+
+        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
+        $query = $this->buildUsersQuery(dto: $dto);
+
+        if ($query !== '') {
+            $endpoint .= '?' . $query;
+        }
+
+        $request = $this->requestFactory->createRequest(method: 'GET', uri: $endpoint)
+            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
+            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak users request failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
+        Assert::that(value: $data)->isArray();
+
+        $users = [];
+        foreach ($data as $userData) {
+            Assert::that(value: $userData)->isArray();
+            $users[] = KeycloakUser::fromArray(data: $userData);
+        }
+
+        return $users;
     }
 
     #[\Override]
@@ -164,5 +198,27 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         }
 
         return $accessToken;
+    }
+
+    private function buildUsersQuery(SearchUsersDto $dto): string
+    {
+        $queryParts = [];
+
+        $params = $dto->getQueryParameters();
+        if ($params !== []) {
+            $queryParts[] = http_build_query(
+                data: $params,
+                numeric_prefix: '',
+                arg_separator: '&',
+                encoding_type: PHP_QUERY_RFC3986
+            );
+        }
+
+        foreach ($dto->getCustomAttributes() as $attributeName => $customAttribute) {
+            $queryParts[] = 'q=' . rawurlencode((string) $attributeName)
+                . ':' . rawurlencode((string) $customAttribute);
+        }
+
+        return implode('&', $queryParts);
     }
 }

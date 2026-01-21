@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 
 interface KeycloakHttpClientInterface
 {
-    public function getUser(array $payload): array;
+    public function getUsers(SearchUsersDto $dto): array;
 
     public function createUser(CreateUserDto $dto): void;
 
