@@ -19,7 +19,7 @@ final class KeycloakHttpClientFactory
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        CacheItemPoolInterface|null $cache = null
+        ?CacheItemPoolInterface $cache = null
     ): KeycloakHttpClientInterface {
         return new KeycloakHttpClient(
             baseUrl: $baseUrl,

@@ -63,7 +63,7 @@ final readonly class KeycloakCredentialType implements JsonSerializable, Stringa
         return $this->value;
     }
 
-    #[Override]
+    #[\Override]
     public function __toString(): string
     {
         return $this->value;

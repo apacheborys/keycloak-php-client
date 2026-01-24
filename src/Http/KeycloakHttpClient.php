@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
@@ -85,10 +86,8 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
 
-        $payload = json_encode(value: $dto->toArray());
-        Assert::that(value: $payload)->string();
-
         /** @var string $payload */
+        $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
             ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
@@ -213,6 +212,40 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         }
 
         return $realms;
+    }
+
+    #[\Override]
+    public function resetPassword(ResetUserPasswordDto $dto): void
+    {
+        $token = $this->getAccessToken();
+
+        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() .
+                    '/users/' . $dto->getUser()->getId() . '/reset-password';
+
+        /** @var string $payload */
+        $payload = json_encode(
+            value: [
+                'type' => $dto->getType()->value(),
+                'temporary' => $dto->isTemporary(),
+                'value' => $dto->getValue(),
+            ],
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
+            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
+            ->withHeader(name: 'Content-Type', value: 'application/json')
+            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
+            ->withBody(body: $this->streamFactory->createStream(content: $payload));
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode === 204) {
+            return;
+        }
+
+        throw new LogicException("Can't set password, response: " . $response->getBody()->getContents());
     }
 
     private function getAccessToken(): JsonWebToken
