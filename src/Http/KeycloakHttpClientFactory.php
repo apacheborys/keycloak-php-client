@@ -13,6 +13,7 @@ final class KeycloakHttpClientFactory
 {
     public function create(
         string $baseUrl,
+        string $clientRealm,
         string $clientId,
         string $clientSecret,
         ClientInterface $httpClient,
@@ -22,6 +23,7 @@ final class KeycloakHttpClientFactory
     ): KeycloakHttpClientInterface {
         return new KeycloakHttpClient(
             baseUrl: $baseUrl,
+            clientRealm: $clientRealm,
             clientId: $clientId,
             clientSecret: $clientSecret,
             httpClient: $httpClient,

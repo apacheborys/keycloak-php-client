@@ -179,7 +179,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
          */
 
         Assert::that(value: Uuid::isValid(uuid: $data['id']))->true();
-        
+
         $createdAt = self::fromTimestampMs(timestampMs: $data['createdTimestamp']);
 
         $access = self::buildAccess(data: $data['access'] ?? null);
@@ -207,7 +207,11 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
 
     private static function fromTimestampMs(int $timestampMs): DateTimeImmutable
     {
-        $createdAt = DateTimeImmutable::createFromFormat(format: 'U.u', datetime: sprintf(format: '%.6f', values: $timestampMs / 1000));
+        $createdAt = DateTimeImmutable::createFromFormat(
+            format: 'U.u',
+            datetime: sprintf(format: '%.6f', values: $timestampMs / 1000)
+        );
+
         Assert::that(value: $createdAt)->isInstanceOf(className: DateTimeImmutable::class);
 
         /** @var DateTimeImmutable $createdAt */

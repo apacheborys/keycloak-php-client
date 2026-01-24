@@ -56,6 +56,12 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $this->httpClient->deleteUser($userId);
     }
 
+    #[\Override()]
+    public function getAvailableRealms(): array
+    {
+        return $this->httpClient->getAvailableRealms();
+    }
+
     #[\Override]
     public function authenticateJwt(string $jwt, string $realm): bool
     {

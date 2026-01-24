@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
 interface KeycloakHttpClientInterface
 {
@@ -24,4 +25,9 @@ interface KeycloakHttpClientInterface
     public function deleteRole(string $role): void;
 
     public function getJwks(string $realm): array;
+
+    /**
+     * @return KeycloakRealm[]
+     */
+    public function getAvailableRealms(): array;
 }
