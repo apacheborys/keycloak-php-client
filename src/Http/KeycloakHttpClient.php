@@ -16,6 +16,7 @@ use Assert\Assert;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use RuntimeException;
@@ -44,16 +45,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     {
         $token = $this->getAccessToken();
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
         $query = $this->buildUsersQuery(dto: $dto);
-
-        if ($query !== '') {
-            $endpoint .= '?' . $query;
-        }
-
-        $request = $this->requestFactory->createRequest(method: 'GET', uri: $endpoint)
-            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getRealm() . '/users', query: $query);
+        $request = $this->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
 
         $response = $this->httpClient->sendRequest(request: $request);
         $statusCode = $response->getStatusCode();
@@ -65,8 +63,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             );
         }
 
-        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
-        Assert::that(value: $data)->isArray();
+        $data = $this->decodeJson(body: $body);
 
         /** @var array<int, array<string, mixed>> $data */
 
@@ -84,16 +81,20 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     {
         $token = $this->getAccessToken();
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() . '/users';
+        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getRealm() . '/users');
 
         /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
-        $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
-            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
-            ->withHeader(name: 'Content-Type', value: 'application/json')
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
-            ->withBody(body: $this->streamFactory->createStream(content: $payload));
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
 
         $response = $this->httpClient->sendRequest(request: $request);
         $statusCode = $response->getStatusCode();
@@ -126,7 +127,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     #[\Override]
     public function getRoles(): array
     {
-        throw new LogicException('HTTP getRole is not implemented yet.');
+        throw new LogicException('HTTP getRoles is not implemented yet.');
     }
 
     #[\Override]
@@ -141,7 +142,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         throw new LogicException(message: 'HTTP getJwks is not implemented yet.');
     }
 
-    #[\Override()]
+    #[\Override]
     public function getAvailableRealms(): array
     {
         $cacheKey = 'keycloak.realm_list.' . sha1(string: $this->baseUrl . '|' . $this->clientId);
@@ -153,8 +154,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
                 $cachedRealms = $cacheItem->get();
 
                 if (is_string(value: $cachedRealms) && $cachedRealms !== '') {
-                    $data = json_decode(json: $cachedRealms, associative: true, flags: JSON_THROW_ON_ERROR);
-                    Assert::that(value: $data)->isArray();
+                    $data = $this->decodeJson(body: $cachedRealms);
 
                     /** @var array<int, array<string, mixed>> $data */
 
@@ -175,12 +175,20 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             'briefRepresentation' => 'true',
         ];
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms?' .
-                    http_build_query(data: $parameters, arg_separator: '&', encoding_type: PHP_QUERY_RFC3986);
+        $endpoint = $this->buildEndpoint(
+            path: '/realms',
+            query: http_build_query(
+                data: $parameters,
+                arg_separator: '&',
+                encoding_type: PHP_QUERY_RFC3986
+            ),
+        );
 
-        $request = $this->requestFactory->createRequest(method: 'GET', uri: $endpoint)
-            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+        $request = $this->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
 
         $response = $this->httpClient->sendRequest(request: $request);
         $statusCode = $response->getStatusCode();
@@ -200,8 +208,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             $this->cache->save(item: $cacheItem);
         }
 
-        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
-        Assert::that(value: $data)->isArray();
+        $data = $this->decodeJson(body: $body);
 
         /** @var array<int, array<string, mixed>> $data */
 
@@ -219,8 +226,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     {
         $token = $this->getAccessToken();
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/realms/' . $dto->getRealm() .
-                    '/users/' . $dto->getUser()->getId() . '/reset-password';
+        $endpoint = $this->buildEndpoint(
+            path: '/realms/' . $dto->getRealm() . '/users/' . $dto->getUser()->getId() . '/reset-password'
+        );
 
         /** @var string $payload */
         $payload = json_encode(
@@ -232,11 +240,15 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             flags: JSON_THROW_ON_ERROR,
         );
 
-        $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
-            ->withHeader(name: 'Authorization', value: 'Bearer ' . $token->getRawToken())
-            ->withHeader(name: 'Content-Type', value: 'application/json')
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
-            ->withBody(body: $this->streamFactory->createStream(content: $payload));
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
 
         $response = $this->httpClient->sendRequest(request: $request);
         $statusCode = $response->getStatusCode();
@@ -265,8 +277,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             }
         }
 
-        $endpoint = rtrim(string: $this->baseUrl, characters: '/') .
-                        '/realms/' . $this->clientRealm . '/protocol/openid-connect/token';
+        $endpoint = $this->buildEndpoint(
+            path: '/realms/' . $this->clientRealm . '/protocol/openid-connect/token'
+        );
 
         $payload = http_build_query(
             data: [
@@ -279,10 +292,12 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             encoding_type: PHP_QUERY_RFC3986
         );
 
-        $request = $this->requestFactory->createRequest(method: 'POST', uri: $endpoint)
-            ->withHeader(name: 'Content-Type', value: 'application/x-www-form-urlencoded')
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME)
-            ->withBody(body: $this->streamFactory->createStream(content: $payload));
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            body: $payload,
+        );
 
         $response = $this->httpClient->sendRequest(request: $request);
         $statusCode = $response->getStatusCode();
@@ -294,11 +309,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             );
         }
 
-        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
-
-        if (!is_array(value: $data)) {
-            throw new RuntimeException(message: 'Keycloak token response is not valid JSON.');
-        }
+        $data = $this->decodeJson(body: $body);
 
         $dto = RequestAccessDto::fromArray(data: $data);
         $accessToken = JsonWebToken::fromRawToken(rawToken: $dto->getAccessToken());
@@ -306,12 +317,60 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         if ($this->cache !== null) {
             $cacheItem = $this->cache->getItem(key: $cacheKey);
             $cacheItem->set(value: $accessToken->getRawToken());
-            $cacheItem->expiresAfter(time: $dto->getExpiresIn() - 1);
+            $cacheItem->expiresAfter(time: max(0, $dto->getExpiresIn() - 1));
 
             $this->cache->save(item: $cacheItem);
         }
 
         return $accessToken;
+    }
+
+    private function buildEndpoint(string $path, string $query = ''): string
+    {
+        $endpoint = rtrim(string: $this->baseUrl, characters: '/') . '/' . ltrim($path, '/');
+
+        if ($query === '') {
+            return $endpoint;
+        }
+
+        return $endpoint . '?' . $query;
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    private function createRequest(
+        string $method,
+        string $endpoint,
+        array $headers = [],
+        ?string $body = null,
+    ): RequestInterface {
+        $request = $this->requestFactory
+            ->createRequest(method: $method, uri: $endpoint)
+            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+
+        foreach ($headers as $headerName => $headerValue) {
+            $request = $request->withHeader(name: $headerName, value: $headerValue);
+        }
+
+        if ($body !== null) {
+            $request = $request->withBody(body: $this->streamFactory->createStream(content: $body));
+        }
+
+        return $request;
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function decodeJson(string $body): array
+    {
+        $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
+        Assert::that(value: $data)->isArray();
+
+        /** @var array<mixed> $data */
+
+        return $data;
     }
 
     private function buildUsersQuery(SearchUsersDto $dto): string

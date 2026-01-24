@@ -62,7 +62,7 @@ final readonly class KeycloakRealm implements JsonSerializable
         );
     }
 
-    #[\Override()]
+    #[\Override]
     public function jsonSerialize(): array
     {
         $result = [
@@ -70,7 +70,7 @@ final readonly class KeycloakRealm implements JsonSerializable
         ];
 
         if (!is_null(value: $this->id)) {
-            $result['id'] = $this->id;
+            $result['id'] = $this->id->toString();
         }
 
         if (!is_null(value: $this->displayName)) {

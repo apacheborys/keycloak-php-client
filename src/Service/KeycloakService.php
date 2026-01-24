@@ -32,7 +32,9 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         KeycloakUserInterface $localUser,
         PasswordDto $passwordDto,
     ): KeycloakUser {
-        if (is_null($passwordDto->getPlainPassword())) {
+        $plainPassword = $passwordDto->getPlainPassword();
+
+        if ($plainPassword === null) {
             $credentials = [
                 new KeycloakCredential(
                     type: KeycloakCredentialType::password(),
@@ -63,12 +65,12 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             throw new LogicException(message: "Can't find just created user with email " . $createUserDto->getEmail());
         }
 
-        if (is_string(value: $passwordDto->getPlainPassword())) {
+        if ($plainPassword !== null) {
             $resetUserPasswordDto = new ResetUserPasswordDto(
                 realm: $createUserDto->getRealm(),
                 user: $result[0],
                 type: KeycloakCredentialType::password(),
-                value: $passwordDto->getPlainPassword(),
+                value: $plainPassword,
                 temporary: false
             );
 
@@ -90,7 +92,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $this->httpClient->deleteUser($userId);
     }
 
-    #[\Override()]
+    #[\Override]
     public function getAvailableRealms(): array
     {
         return $this->httpClient->getAvailableRealms();
@@ -117,45 +119,87 @@ final readonly class KeycloakService implements KeycloakServiceInterface
 
     private function buildCredentialData(PasswordDto $passwordDto): string
     {
-        $result = [];
-
-        $result = match ($passwordDto->getHashAlgorithm()) {
-            HashAlgorithm::ARGON, HashAlgorithm::BCRYPT => [
-                'algorithm' => $passwordDto->getHashAlgorithm()->value,
-                'hashIterations' => $passwordDto->getHashIterations(),
-            ],
-            HashAlgorithm::MD5 => [
-                'algorithm' => $passwordDto->getHashAlgorithm()->value,
-                'hashIterations' => 1,
-            ],
-            default => throw new LogicException("Can't find proper algorithm to construct credentials data"),
-        };
+        $hashContext = $this->buildHashContext(passwordDto: $passwordDto);
 
         /** @var string $credentialsData */
-        $credentialsData = json_encode(value: $result, flags: JSON_THROW_ON_ERROR);
+        $credentialsData = json_encode(
+            value: [
+                'algorithm' => $hashContext['algorithm'],
+                'hashIterations' => $hashContext['hashIterations'],
+            ],
+            flags: JSON_THROW_ON_ERROR,
+        );
 
         return $credentialsData;
     }
 
     private function buildSecretData(PasswordDto $passwordDto): string
     {
-        $result = [];
-
-        $result = match ($passwordDto->getHashAlgorithm()) {
-            HashAlgorithm::ARGON, HashAlgorithm::BCRYPT => [
-                'value' => $passwordDto->getHashedPassword(),
-                'salt' => $passwordDto->getHashSalt(),
-            ],
-            HashAlgorithm::MD5 => [
-                'value' => $passwordDto->getHashedPassword(),
-                'salt' => '',
-            ],
-            default => throw new LogicException("Can't find proper algorithm to construct secret data"),
-        };
+        $hashContext = $this->buildHashContext(passwordDto: $passwordDto);
 
         /** @var string $secretData */
-        $secretData = json_encode(value: $result, depth: JSON_THROW_ON_ERROR);
+        $secretData = json_encode(
+            value: [
+                'value' => $this->requireHashedPassword(passwordDto: $passwordDto),
+                'salt' => $hashContext['salt'],
+            ],
+            flags: JSON_THROW_ON_ERROR,
+        );
 
         return $secretData;
+    }
+
+    /**
+     * @return array{algorithm: string, hashIterations: int, salt: string}
+     */
+    private function buildHashContext(PasswordDto $passwordDto): array
+    {
+        $hashAlgorithm = $passwordDto->getHashAlgorithm();
+        if ($hashAlgorithm === null) {
+            throw new LogicException("Hash algorithm is required to build credentials data");
+        }
+
+        return match ($hashAlgorithm) {
+            HashAlgorithm::ARGON, HashAlgorithm::BCRYPT => [
+                'algorithm' => $hashAlgorithm->value,
+                'hashIterations' => $this->requireHashIterations(passwordDto: $passwordDto),
+                'salt' => $this->requireHashSalt(passwordDto: $passwordDto),
+            ],
+            HashAlgorithm::MD5 => [
+                'algorithm' => $hashAlgorithm->value,
+                'hashIterations' => 1,
+                'salt' => '',
+            ],
+        };
+    }
+
+    private function requireHashedPassword(PasswordDto $passwordDto): string
+    {
+        $hashedPassword = $passwordDto->getHashedPassword();
+        if ($hashedPassword === null) {
+            throw new LogicException("Hashed password is required to build credentials data");
+        }
+
+        return $hashedPassword;
+    }
+
+    private function requireHashIterations(PasswordDto $passwordDto): int
+    {
+        $hashIterations = $passwordDto->getHashIterations();
+        if ($hashIterations === null) {
+            throw new LogicException("Hash iterations are required to build credentials data");
+        }
+
+        return $hashIterations;
+    }
+
+    private function requireHashSalt(PasswordDto $passwordDto): string
+    {
+        $hashSalt = $passwordDto->getHashSalt();
+        if ($hashSalt === null) {
+            throw new LogicException("Hash salt is required to build credentials data");
+        }
+
+        return $hashSalt;
     }
 }

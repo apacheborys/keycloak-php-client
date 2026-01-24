@@ -56,7 +56,7 @@ final readonly class JsonWebToken implements JsonSerializable
 
         $headerJson = self::decodePart(part: $parts[0]);
 
-        $decodedHeader = json_decode(json: $headerJson, associative: true);
+        $decodedHeader = json_decode(json: $headerJson, associative: true, flags: JSON_THROW_ON_ERROR);
         Assert::that(value: $decodedHeader)->isArray();
 
         /** @var array $decodedHeader */
@@ -87,7 +87,6 @@ final readonly class JsonWebToken implements JsonSerializable
         Assert::that(value: $decoded)->string();
 
         /** @var string $decoded */
-
         return $decoded;
     }
 

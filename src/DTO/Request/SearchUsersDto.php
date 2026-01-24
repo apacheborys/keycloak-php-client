@@ -6,12 +6,15 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 readonly final class SearchUsersDto
 {
+    /**
+     * @param array<string, string> $customAttributes
+     */
     public function __construct(
         private string $realm,
         private ?string $search = null,
         private ?string $username = null,
         private ?string $email = null,
-        private ?array $customAttributes = [],
+        private array $customAttributes = [],
         private int $first = 0,
         private int $max = 20,
         private bool $exact = false
@@ -54,10 +57,6 @@ readonly final class SearchUsersDto
      */
     public function getCustomAttributes(): array
     {
-        if (!is_array(value: $this->customAttributes)) {
-            return [];
-        }
-
         $attributes = [];
         foreach ($this->customAttributes as $attributeName => $customAttribute) {
             $attributes[(string) $attributeName] = (string) $customAttribute;

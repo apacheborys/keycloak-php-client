@@ -10,9 +10,11 @@ use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
 
 interface LocalKeycloakUserBridgeMapperInterface
 {
+    /**
+     * @param list<KeycloakCredential> $credentials
+     */
     public function prepareLocalUserForKeycloakUserCreation(
         KeycloakUserInterface $localUser,
-        /** @var KeycloakCredential[] $credentials */
         array $credentials
     ): CreateUserDto;
 
