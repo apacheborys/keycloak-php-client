@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -47,27 +48,30 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         }
 
         $mapper = $this->getMapperForLocalUser(localUser: $localUser);
-        $createUserDto = $mapper->prepareLocalUserForKeycloakUserCreation(
-            localUser: $localUser,
+        $profileDto = $mapper->prepareLocalUserForKeycloakUserCreation(
+            localUser: $localUser
+        );
+        $createUserDto = new CreateUserDto(
+            profile: $profileDto,
             credentials: $credentials,
         );
 
         $this->httpClient->createUser(dto: $createUserDto);
 
         $searchDto = new SearchUsersDto(
-            realm: $createUserDto->getRealm(),
-            email: $createUserDto->getEmail(),
+            realm: $profileDto->getRealm(),
+            email: $profileDto->getEmail(),
         );
 
         $result = $this->httpClient->getUsers(dto: $searchDto);
 
         if (count(value: $result) !== 1) {
-            throw new LogicException(message: "Can't find just created user with email " . $createUserDto->getEmail());
+            throw new LogicException(message: "Can't find just created user with email " . $profileDto->getEmail());
         }
 
         if ($plainPassword !== null) {
             $resetUserPasswordDto = new ResetUserPasswordDto(
-                realm: $createUserDto->getRealm(),
+                realm: $profileDto->getRealm(),
                 user: $result[0],
                 type: KeycloakCredentialType::password(),
                 value: $plainPassword,

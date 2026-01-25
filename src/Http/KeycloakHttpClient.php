@@ -81,7 +81,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     {
         $token = $this->getAccessToken();
 
-        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getRealm() . '/users');
+        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getProfile()->getRealm() . '/users');
 
         /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
