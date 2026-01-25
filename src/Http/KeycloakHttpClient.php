@@ -25,7 +25,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 {
     private const string CLIENT_NAME = 'Keycloak PHP Client';
 
-    private const int REALM_LIST_TTL = 3600;
+    public const int REALM_LIST_TTL = 3600;
 
     public function __construct(
         private string $baseUrl,
