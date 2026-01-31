@@ -162,13 +162,13 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
      */
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'id');
-        Assert::that(value: $data)->keyExists(key: 'username');
-        Assert::that(value: $data)->keyExists(key: 'createdTimestamp');
+        Assert::that($data)->keyExists('id');
+        Assert::that($data)->keyExists('username');
+        Assert::that($data)->keyExists('createdTimestamp');
 
-        Assert::that(value: $data['id'])->string()->notBlank();
-        Assert::that(value: $data['username'])->string()->notBlank();
-        Assert::that(value: $data['createdTimestamp'])->integer()->greaterOrEqualThan(limit: 0);
+        Assert::that($data['id'])->string()->notBlank();
+        Assert::that($data['username'])->string()->notBlank();
+        Assert::that($data['createdTimestamp'])->integer()->greaterOrEqualThan(0);
 
         /**
          * @var array{
@@ -178,7 +178,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
          * } $data
          */
 
-        Assert::that(value: Uuid::isValid(uuid: $data['id']))->true();
+        Assert::that(Uuid::isValid($data['id']))->true();
 
         $createdAt = self::fromTimestampMs(timestampMs: $data['createdTimestamp']);
 
@@ -212,7 +212,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             datetime: sprintf(format: '%.6f', values: $timestampMs / 1000)
         );
 
-        Assert::that(value: $createdAt)->isInstanceOf(className: DateTimeImmutable::class);
+        Assert::that($createdAt)->isInstanceOf(DateTimeImmutable::class);
 
         /** @var DateTimeImmutable $createdAt */
 
@@ -228,7 +228,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             return $default;
         }
 
-        Assert::that(value: $data[$key])->string();
+        Assert::that($data[$key])->string();
 
         /** @phpstan-ignore-next-line */
         return $data[$key];
@@ -243,7 +243,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             return $default;
         }
 
-        Assert::that(value: $data[$key])->boolean();
+        Assert::that($data[$key])->boolean();
 
         /** @phpstan-ignore-next-line */
         return $data[$key];
@@ -258,7 +258,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             return $default;
         }
 
-        Assert::that(value: $data[$key])->integer();
+        Assert::that($data[$key])->integer();
 
         /** @phpstan-ignore-next-line */
         return $data[$key];
@@ -329,13 +329,13 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             return [];
         }
 
-        Assert::that(value: $data)->isArray();
+        Assert::that($data)->isArray();
 
         /** @var array $data */
 
         $values = [];
         foreach ($data as $value) {
-            Assert::that(value: $value)->string()->notBlank();
+            Assert::that($value)->string()->notBlank();
             /** @var non-empty-string $value */
             $values[] = $value;
         }

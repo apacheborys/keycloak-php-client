@@ -40,31 +40,31 @@ final readonly class JsonWebToken implements JsonSerializable
 
     public static function fromRawToken(string $rawToken): self
     {
-        Assert::that(value: $rawToken)->notBlank();
+        Assert::that($rawToken)->notBlank();
 
         /**
          * @var string[] $parts
          */
         $parts = explode(separator: '.', string: $rawToken);
 
-        Assert::that(value: $parts)->isArray()->count(count: 3);
+        Assert::that($parts)->isArray()->count(3);
 
         foreach ($parts as $key => $part) {
-            Assert::that(value: $key)->integer()->between(lowerLimit: 0, upperLimit: 2);
-            Assert::that(value: $part)->string();
+            Assert::that($key)->integer()->between(0, 2);
+            Assert::that($part)->string();
         }
 
         $headerJson = self::decodePart(part: $parts[0]);
 
         $decodedHeader = json_decode(json: $headerJson, associative: true, flags: JSON_THROW_ON_ERROR);
-        Assert::that(value: $decodedHeader)->isArray();
+        Assert::that($decodedHeader)->isArray();
 
         /** @var array $decodedHeader */
 
         $payloadJson = self::decodePart(part: $parts[1]);
 
         $decodedPayload = json_decode(json: $payloadJson, associative: true, flags: JSON_THROW_ON_ERROR);
-        Assert::that(value: $decodedPayload)->isArray();
+        Assert::that($decodedPayload)->isArray();
 
         /** @var array $decodedPayload */
 
@@ -84,7 +84,7 @@ final readonly class JsonWebToken implements JsonSerializable
         }
 
         $decoded = base64_decode(string: strtr(string: $part, from: '-_', to: '+/'), strict: true);
-        Assert::that(value: $decoded)->string();
+        Assert::that($decoded)->string();
 
         /** @var string $decoded */
         return $decoded;

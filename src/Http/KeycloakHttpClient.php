@@ -69,7 +69,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $users = [];
         foreach ($data as $userData) {
-            Assert::that(value: $userData)->isArray();
+            Assert::that($userData)->isArray();
             $users[] = KeycloakUser::fromArray(data: $userData);
         }
 
@@ -160,7 +160,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
                     $realms = [];
                     foreach ($data as $realmData) {
-                        Assert::that(value: $realmData)->isArray();
+                        Assert::that($realmData)->isArray();
                         $realms[] = KeycloakRealm::fromArray(data: $realmData);
                     }
 
@@ -214,7 +214,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $realms = [];
         foreach ($data as $realmData) {
-            Assert::that(value: $realmData)->isArray();
+            Assert::that($realmData)->isArray();
             $realms[] = KeycloakRealm::fromArray(data: $realmData);
         }
 
@@ -366,7 +366,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     private function decodeJson(string $body): array
     {
         $data = json_decode(json: $body, associative: true, flags: JSON_THROW_ON_ERROR);
-        Assert::that(value: $data)->isArray();
+        Assert::that($data)->isArray();
 
         /** @var array<mixed> $data */
 

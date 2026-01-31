@@ -158,79 +158,79 @@ final readonly class JwtPayload
 
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'exp');
-        Assert::that(value: $data['exp'])->notEmpty()->integer();
+        Assert::that($data)->keyExists('exp');
+        Assert::that($data['exp'])->notEmpty()->integer();
         $exp = new DateTimeImmutable(datetime: '@' . $data['exp']);
 
-        Assert::that(value: $data)->keyExists(key: 'iat');
-        Assert::that(value: $data['iat'])->notEmpty()->integer();
+        Assert::that($data)->keyExists('iat');
+        Assert::that($data['iat'])->notEmpty()->integer();
         $iat = new DateTimeImmutable(datetime: '@' . $data['iat']);
 
-        Assert::that(value: $data)->keyExists(key: 'jti');
-        Assert::that(value: Uuid::isValid(uuid: $data['jti']))->true();
+        Assert::that($data)->keyExists('jti');
+        Assert::that(Uuid::isValid($data['jti']))->true();
         $jti = Uuid::fromString(uuid: $data['jti']);
 
-        Assert::that(value: $data)->keyExists(key: 'iss');
-        Assert::that(value: $data['iss'])->string()->notEmpty()->url();
+        Assert::that($data)->keyExists('iss');
+        Assert::that($data['iss'])->string()->notEmpty()->url();
         $iss = $data['iss'];
 
-        Assert::that(value: $data)->keyExists(key: 'aud');
-        Assert::that(value: $data['aud'])->string()->notEmpty();
+        Assert::that($data)->keyExists('aud');
+        Assert::that($data['aud'])->string()->notEmpty();
         $aud = $data['aud'];
 
-        Assert::that(value: $data)->keyExists(key: 'sub');
-        Assert::that(value: Uuid::isValid(uuid: $data['sub']))->true();
+        Assert::that($data)->keyExists('sub');
+        Assert::that(Uuid::isValid($data['sub']))->true();
         $sub = Uuid::fromString(uuid: $data['sub']);
 
-        Assert::that(value: $data)->keyExists(key: 'typ');
-        Assert::that(value: $data['typ'])->string()->notEmpty();
+        Assert::that($data)->keyExists('typ');
+        Assert::that($data['typ'])->string()->notEmpty();
         $typ = $data['typ'];
 
-        Assert::that(value: $data)->keyExists(key: 'azp');
-        Assert::that(value: $data['azp'])->string()->notEmpty();
+        Assert::that($data)->keyExists('azp');
+        Assert::that($data['azp'])->string()->notEmpty();
         $azp = $data['azp'];
 
-        Assert::that(value: $data)->keyExists(key: 'acr');
-        Assert::that(value: $data['acr'])->numeric()->notEmpty();
+        Assert::that($data)->keyExists('acr');
+        Assert::that($data['acr'])->numeric()->notEmpty();
         $acr = (int) $data['acr'];
 
-        Assert::that(value: $data)->keyExists(key: 'realm_access');
-        Assert::that(value: $data['realm_access'])->isArray()->keyExists(key: 'roles');
-        Assert::that(value: $data['realm_access']['roles'])->isArray();
+        Assert::that($data)->keyExists('realm_access');
+        Assert::that($data['realm_access'])->isArray()->keyExists('roles');
+        Assert::that($data['realm_access']['roles'])->isArray();
         $realmAccess = $data['realm_access'];
 
-        Assert::that(value: $data)->keyExists(key: 'resource_access');
-        Assert::that(value: $data['resource_access'])->isArray()->keyExists(key: 'backend');
-        Assert::that(value: $data['resource_access']['backend'])->isArray()->keyExists(key: 'roles');
-        Assert::that(value: $data['resource_access']['backend']['roles'])->isArray();
+        Assert::that($data)->keyExists('resource_access');
+        Assert::that($data['resource_access'])->isArray()->keyExists('backend');
+        Assert::that($data['resource_access']['backend'])->isArray()->keyExists('roles');
+        Assert::that($data['resource_access']['backend']['roles'])->isArray();
 
-        Assert::that(value: $data['resource_access'])->isArray()->keyExists(key: 'account');
-        Assert::that(value: $data['resource_access']['account'])->isArray()->keyExists(key: 'roles');
-        Assert::that(value: $data['resource_access']['account']['roles'])->isArray();
+        Assert::that($data['resource_access'])->isArray()->keyExists('account');
+        Assert::that($data['resource_access']['account'])->isArray()->keyExists('roles');
+        Assert::that($data['resource_access']['account']['roles'])->isArray();
         $resourceAccess = $data['resource_access'];
 
-        Assert::that(value: $data)->keyExists(key: 'scope');
-        Assert::that(value: $data['scope'])->string();
+        Assert::that($data)->keyExists('scope');
+        Assert::that($data['scope'])->string();
         $scope = $data['scope'];
 
-        Assert::that(value: $data)->keyExists(key: 'email_verified');
-        Assert::that(value: $data['email_verified'])->boolean();
+        Assert::that($data)->keyExists('email_verified');
+        Assert::that($data['email_verified'])->boolean();
         $emailVerified = $data['email_verified'];
 
-        Assert::that(value: $data)->keyExists(key: 'clientHost');
-        Assert::that(value: $data['clientHost'])->string()->ip();
+        Assert::that($data)->keyExists('clientHost');
+        Assert::that($data['clientHost'])->string()->ip();
         $clientHost = $data['clientHost'];
 
-        Assert::that(value: $data)->keyExists(key: 'preferred_username');
-        Assert::that(value: $data['preferred_username'])->string()->notBlank();
+        Assert::that($data)->keyExists('preferred_username');
+        Assert::that($data['preferred_username'])->string()->notBlank();
         $preferredUsername = $data['preferred_username'];
 
-        Assert::that(value: $data)->keyExists(key: 'clientAddress');
-        Assert::that(value: $data['clientAddress'])->string()->ip();
+        Assert::that($data)->keyExists('clientAddress');
+        Assert::that($data['clientAddress'])->string()->ip();
         $clientAddress = $data['clientAddress'];
 
-        Assert::that(value: $data)->keyExists(key: 'client_id');
-        Assert::that(value: $data['client_id'])->string()->notBlank();
+        Assert::that($data)->keyExists('client_id');
+        Assert::that($data['client_id'])->string()->notBlank();
         $clientId = $data['client_id'];
 
         return new self(

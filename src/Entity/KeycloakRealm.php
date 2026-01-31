@@ -22,30 +22,30 @@ final readonly class KeycloakRealm implements JsonSerializable
 
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'realm');
-        Assert::that(value: $data['realm'])->string()->notBlank();
+        Assert::that($data)->keyExists('realm');
+        Assert::that($data['realm'])->string()->notBlank();
 
         $id = null;
         if (array_key_exists(key: 'id', array: $data)) {
-            Assert::that(value: Uuid::isValid(uuid: $data['id']))->true();
+            Assert::that(Uuid::isValid($data['id']))->true();
             $id = Uuid::fromString(uuid: $data['id']);
         }
 
         $displayName = null;
         if (array_key_exists(key: 'displayName', array: $data)) {
-            Assert::that(value: $data['displayName'])->string();
+            Assert::that($data['displayName'])->string();
             $displayName = $data['displayName'];
         }
 
         $displayNameHtml = null;
         if (array_key_exists(key: 'displayNameHtml', array: $data)) {
-            Assert::that(value: $data['displayNameHtml'])->string();
+            Assert::that($data['displayNameHtml'])->string();
             $displayNameHtml = $data['displayNameHtml'];
         }
 
         $enabled = null;
         if (array_key_exists(key: 'enabled', array: $data)) {
-            Assert::that(value: $data['enabled'])->boolean();
+            Assert::that($data['enabled'])->boolean();
             $enabled = $data['enabled'];
         }
 

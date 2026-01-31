@@ -41,14 +41,14 @@ final readonly class JwtHeader
 
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'alg');
-        Assert::that(value: $data['alg'])->string();
+        Assert::that($data)->keyExists('alg');
+        Assert::that($data['alg'])->string();
 
-        Assert::that(value: $data)->keyExists(key: 'typ');
-        Assert::that(value: $data['typ'])->string()->eq(value2: 'JWT');
+        Assert::that($data)->keyExists('typ');
+        Assert::that($data['typ'])->string()->eq('JWT');
 
-        Assert::that(value: $data)->keyExists(key: 'kid');
-        Assert::that(value: $data['kid'])->string();
+        Assert::that($data)->keyExists('kid');
+        Assert::that($data['kid'])->string();
 
         return new self(
             alg: $data['alg'],

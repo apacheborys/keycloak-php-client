@@ -61,20 +61,20 @@ final readonly class KeycloakUserAccess implements JsonSerializable
      */
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'manageGroupMembership');
-        Assert::that(value: $data['manageGroupMembership'])->boolean();
+        Assert::that($data)->keyExists('manageGroupMembership');
+        Assert::that($data['manageGroupMembership'])->boolean();
 
-        Assert::that(value: $data)->keyExists(key: 'view');
-        Assert::that(value: $data['view'])->boolean();
+        Assert::that($data)->keyExists('view');
+        Assert::that($data['view'])->boolean();
 
-        Assert::that(value: $data)->keyExists(key: 'mapRoles');
-        Assert::that(value: $data['mapRoles'])->boolean();
+        Assert::that($data)->keyExists('mapRoles');
+        Assert::that($data['mapRoles'])->boolean();
 
-        Assert::that(value: $data)->keyExists(key: 'impersonate');
-        Assert::that(value: $data['impersonate'])->boolean();
+        Assert::that($data)->keyExists('impersonate');
+        Assert::that($data['impersonate'])->boolean();
 
-        Assert::that(value: $data)->keyExists(key: 'manage');
-        Assert::that(value: $data['manage'])->boolean();
+        Assert::that($data)->keyExists('manage');
+        Assert::that($data['manage'])->boolean();
 
         return new self(
             manageGroupMembership: $data['manageGroupMembership'],

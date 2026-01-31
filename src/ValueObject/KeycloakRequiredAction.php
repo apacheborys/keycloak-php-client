@@ -27,7 +27,7 @@ final readonly class KeycloakRequiredAction implements JsonSerializable, Stringa
 
     public static function fromString(string $value): self
     {
-        Assert::that(value: $value)->string()->notBlank();
+        Assert::that($value)->string()->notBlank();
 
         return new self(value: $value);
     }

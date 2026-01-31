@@ -17,11 +17,11 @@ readonly final class CreateUserProfileDto
         private string $lastName,
         private string $realm,
     ) {
-        Assert::that(value: $username)->notEmpty();
-        Assert::that(value: $email)->notEmpty()->email();
-        Assert::that(value: $firstName)->notEmpty();
-        Assert::that(value: $lastName)->notEmpty();
-        Assert::that(value: $realm)->notEmpty();
+        Assert::that($username)->notEmpty();
+        Assert::that($email)->notEmpty()->email();
+        Assert::that($firstName)->notEmpty();
+        Assert::that($lastName)->notEmpty();
+        Assert::that($realm)->notEmpty();
     }
 
     public function getRealm(): string

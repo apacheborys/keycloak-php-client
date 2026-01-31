@@ -15,13 +15,13 @@ final readonly class KeycloakClientConfig
         private string $clientSecret,
         private ?int $realmListTtl = null,
     ) {
-        Assert::that(value: $this->baseUrl)->notEmpty()->url();
-        Assert::that(value: $this->clientRealm)->notEmpty();
-        Assert::that(value: $this->clientId)->notEmpty();
-        Assert::that(value: $this->clientSecret)->notEmpty();
+        Assert::that($this->baseUrl)->notEmpty()->url();
+        Assert::that($this->clientRealm)->notEmpty();
+        Assert::that($this->clientId)->notEmpty();
+        Assert::that($this->clientSecret)->notEmpty();
 
         if ($this->realmListTtl !== null) {
-            Assert::that(value: $this->realmListTtl)->integer()->greaterOrEqualThan(limit: 0);
+            Assert::that($this->realmListTtl)->integer()->greaterOrEqualThan(0);
         }
     }
 

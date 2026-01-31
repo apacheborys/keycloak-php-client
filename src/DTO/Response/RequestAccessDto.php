@@ -50,23 +50,23 @@ final readonly class RequestAccessDto
 
     public static function fromArray(array $data): self
     {
-        Assert::that(value: $data)->keyExists(key: 'access_token');
-        Assert::that(value: $data['access_token'])->string()->notBlank();
+        Assert::that($data)->keyExists('access_token');
+        Assert::that($data['access_token'])->string()->notBlank();
 
-        Assert::that(value: $data)->keyExists(key: 'expires_in');
-        Assert::that(value: $data['expires_in'])->integer()->greaterOrEqualThan(limit: 0);
+        Assert::that($data)->keyExists('expires_in');
+        Assert::that($data['expires_in'])->integer()->greaterOrEqualThan(0);
 
-        Assert::that(value: $data)->keyExists(key: 'refresh_expires_in');
-        Assert::that(value: $data['refresh_expires_in'])->integer()->greaterOrEqualThan(limit: 0);
+        Assert::that($data)->keyExists('refresh_expires_in');
+        Assert::that($data['refresh_expires_in'])->integer()->greaterOrEqualThan(0);
 
-        Assert::that(value: $data)->keyExists(key: 'token_type');
-        Assert::that(value: $data['token_type'])->string()->eq(value2: 'Bearer');
+        Assert::that($data)->keyExists('token_type');
+        Assert::that($data['token_type'])->string()->eq('Bearer');
 
-        Assert::that(value: $data)->keyExists(key: 'not-before-policy');
-        Assert::that(value: $data['not-before-policy'])->integer()->greaterOrEqualThan(limit: 0);
+        Assert::that($data)->keyExists('not-before-policy');
+        Assert::that($data['not-before-policy'])->integer()->greaterOrEqualThan(0);
 
-        Assert::that(value: $data)->keyExists(key: 'scope');
-        Assert::that(value: $data['scope'])->string();
+        Assert::that($data)->keyExists('scope');
+        Assert::that($data['scope'])->string();
 
         return new self(
             accessToken: $data['access_token'],
