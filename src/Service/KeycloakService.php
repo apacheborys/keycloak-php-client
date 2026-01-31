@@ -24,7 +24,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         /**
          * @var LocalKeycloakUserBridgeMapperInterface[] $mappers
          */
-        private array $mappers,
+        private iterable $mappers,
     ) {
     }
 
