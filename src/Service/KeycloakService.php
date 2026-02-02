@@ -16,6 +16,7 @@ use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
 use Apacheborys\KeycloakPhpClient\ValueObject\HashAlgorithm;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
+use Override;
 
 final readonly class KeycloakService implements KeycloakServiceInterface
 {
@@ -28,7 +29,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     ) {
     }
 
-    #[\Override]
+    #[Override]
     public function createUser(
         KeycloakUserInterface $localUser,
         PasswordDto $passwordDto,
@@ -84,25 +85,25 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         return $result[0];
     }
 
-    #[\Override]
+    #[Override]
     public function updateUser(string $userId, array $payload): array
     {
         return $this->httpClient->updateUser($userId, $payload);
     }
 
-    #[\Override]
+    #[Override]
     public function deleteUser(string $userId): void
     {
         $this->httpClient->deleteUser($userId);
     }
 
-    #[\Override]
+    #[Override]
     public function getAvailableRealms(): array
     {
         return $this->httpClient->getAvailableRealms();
     }
 
-    #[\Override]
+    #[Override]
     public function authenticateJwt(string $jwt, string $realm): bool
     {
         $this->httpClient->getJwks(realm: $realm);
