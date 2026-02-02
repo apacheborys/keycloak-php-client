@@ -346,15 +346,15 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         ?string $body = null,
     ): RequestInterface {
         $request = $this->requestFactory
-            ->createRequest(method: $method, uri: $endpoint)
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+            ->createRequest($method, $endpoint)
+            ->withHeader('User-Agent', self::CLIENT_NAME);
 
         foreach ($headers as $headerName => $headerValue) {
             $request = $request->withHeader(name: $headerName, value: $headerValue);
         }
 
         if ($body !== null) {
-            $request = $request->withBody(body: $this->streamFactory->createStream(content: $body));
+            $request = $request->withBody(body: $this->streamFactory->createStream($body));
         }
 
         return $request;
