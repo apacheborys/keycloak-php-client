@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
 use Assert\Assert;
 use LogicException;
+use Override;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -40,13 +41,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     ) {
     }
 
-    #[\Override]
+    #[Override]
     public function getUsers(SearchUsersDto $dto): array
     {
         $token = $this->getAccessToken();
 
         $query = $this->buildUsersQuery(dto: $dto);
-        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getRealm() . '/users', query: $query);
+        $endpoint = $this->buildEndpoint(path: '/admin/realms/' . $dto->getRealm() . '/users', query: $query);
         $request = $this->createRequest(
             method: 'GET',
             endpoint: $endpoint,
@@ -76,12 +77,12 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         return $users;
     }
 
-    #[\Override]
+    #[Override]
     public function createUser(CreateUserDto $dto): void
     {
         $token = $this->getAccessToken();
 
-        $endpoint = $this->buildEndpoint(path: '/realms/' . $dto->getProfile()->getRealm() . '/users');
+        $endpoint = $this->buildEndpoint(path: '/admin/realms/' . $dto->getProfile()->getRealm() . '/users');
 
         /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
@@ -106,43 +107,43 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         throw new CreateUserException(message: (string) $response->getBody());
     }
 
-    #[\Override]
+    #[Override]
     public function updateUser(string $userId, array $payload): array
     {
         throw new LogicException(message: 'HTTP updateUser is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function deleteUser(string $userId): void
     {
         throw new LogicException(message: 'HTTP deleteUser is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function createRealm(array $payload): array
     {
         throw new LogicException(message: 'HTTP createRealm is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function getRoles(): array
     {
         throw new LogicException('HTTP getRoles is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function deleteRole(string $role): void
     {
         throw new LogicException(message: 'HTTP deleteRole is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function getJwks(string $realm): array
     {
         throw new LogicException(message: 'HTTP getJwks is not implemented yet.');
     }
 
-    #[\Override]
+    #[Override]
     public function getAvailableRealms(): array
     {
         $cacheKey = 'keycloak.realm_list.' . sha1(string: $this->baseUrl . '|' . $this->clientId);
@@ -176,7 +177,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         ];
 
         $endpoint = $this->buildEndpoint(
-            path: '/realms',
+            path: '/admin/realms',
             query: http_build_query(
                 data: $parameters,
                 arg_separator: '&',
@@ -221,13 +222,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         return $realms;
     }
 
-    #[\Override]
+    #[Override]
     public function resetPassword(ResetUserPasswordDto $dto): void
     {
         $token = $this->getAccessToken();
 
         $endpoint = $this->buildEndpoint(
-            path: '/realms/' . $dto->getRealm() . '/users/' . $dto->getUser()->getId() . '/reset-password'
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUser()->getId() . '/reset-password'
         );
 
         /** @var string $payload */
@@ -241,7 +242,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         );
 
         $request = $this->createRequest(
-            method: 'POST',
+            method: 'PUT',
             endpoint: $endpoint,
             headers: [
                 'Authorization' => 'Bearer ' . $token->getRawToken(),
@@ -346,15 +347,15 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         ?string $body = null,
     ): RequestInterface {
         $request = $this->requestFactory
-            ->createRequest(method: $method, uri: $endpoint)
-            ->withHeader(name: 'User-Agent', value: self::CLIENT_NAME);
+            ->createRequest($method, $endpoint)
+            ->withHeader('User-Agent', self::CLIENT_NAME);
 
         foreach ($headers as $headerName => $headerValue) {
-            $request = $request->withHeader(name: $headerName, value: $headerValue);
+            $request = $request->withHeader($headerName, $headerValue);
         }
 
         if ($body !== null) {
-            $request = $request->withBody(body: $this->streamFactory->createStream(content: $body));
+            $request = $request->withBody($this->streamFactory->createStream($body));
         }
 
         return $request;

@@ -30,8 +30,9 @@ final readonly class JwtPayload
         private string $iss,
         /**
          * Audience (who or what the token is intended for)
+         * @var string[]
          */
-        private string $aud,
+        private array $aud,
         /**
          * Subject (whom the token refers to)
          */
@@ -85,7 +86,10 @@ final readonly class JwtPayload
         return $this->iss;
     }
 
-    public function getAud(): string
+    /**
+     * @return string[]
+     */
+    public function getAud(): array
     {
         return $this->aud;
     }
@@ -175,7 +179,7 @@ final readonly class JwtPayload
         $iss = $data['iss'];
 
         Assert::that($data)->keyExists('aud');
-        Assert::that($data['aud'])->string()->notEmpty();
+        Assert::that($data['aud'])->isArray()->notEmpty();
         $aud = $data['aud'];
 
         Assert::that($data)->keyExists('sub');

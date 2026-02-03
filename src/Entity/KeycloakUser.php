@@ -11,6 +11,7 @@ use Assert\Assert;
 use DateTimeImmutable;
 use DateTimeInterface;
 use JsonSerializable;
+use Override;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -39,37 +40,37 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     ) {
     }
 
-    #[\Override]
+    #[Override]
     public function getId(): string
     {
         return $this->id->toString();
     }
 
-    #[\Override]
+    #[Override]
     public function getUsername(): string
     {
         return $this->username;
     }
 
-    #[\Override]
+    #[Override]
     public function getEmail(): string
     {
         return $this->email;
     }
 
-    #[\Override]
+    #[Override]
     public function isEmailVerified(): bool
     {
         return $this->emailVerified;
     }
 
-    #[\Override]
+    #[Override]
     public function getFirstName(): string
     {
         return $this->firstName;
     }
 
-    #[\Override]
+    #[Override]
     public function getLastName(): string
     {
         return $this->lastName;
@@ -78,19 +79,19 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     /**
      * @return list<string>
      */
-    #[\Override]
+    #[Override]
     public function getRoles(): array
     {
         return $this->roles;
     }
 
-    #[\Override]
+    #[Override]
     public function getCreatedAt(): DateTimeInterface
     {
         return $this->createdTimestamp;
     }
 
-    #[\Override]
+    #[Override]
     public function isEnabled(): bool
     {
         return $this->enabled;
@@ -127,7 +128,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         return $this->requiredActions;
     }
 
-    #[\Override]
+    #[Override]
     public function jsonSerialize(): array
     {
         $createdTimestampMs = ((int) $this->createdTimestamp->format('U')) * 1000
@@ -209,7 +210,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     {
         $createdAt = DateTimeImmutable::createFromFormat(
             format: 'U.u',
-            datetime: sprintf(format: '%.6f', values: $timestampMs / 1000)
+            datetime: sprintf('%.6f', $timestampMs / 1000)
         );
 
         Assert::that($createdAt)->isInstanceOf(DateTimeImmutable::class);
