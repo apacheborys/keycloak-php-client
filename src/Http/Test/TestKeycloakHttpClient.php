@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
+use Override;
 use Throwable;
 
 final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
@@ -36,7 +39,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $this->calls;
     }
 
-    #[\Override]
+    #[Override]
     public function getUsers(SearchUsersDto $dto): array
     {
         /** @var array $result */
@@ -45,13 +48,13 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function createUser(CreateUserDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
-    #[\Override]
+    #[Override]
     public function updateUser(string $userId, array $payload): array
     {
         /** @var array $result */
@@ -60,13 +63,13 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function deleteUser(string $userId): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$userId]);
     }
 
-    #[\Override]
+    #[Override]
     public function createRealm(array $payload): array
     {
         /** @var array $result */
@@ -75,7 +78,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function getRoles(): array
     {
         /** @var array $result */
@@ -90,7 +93,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         $this->nextResult(method: __FUNCTION__, args: [$role]);
     }
 
-    #[\Override]
+    #[Override]
     public function getJwks(string $realm): array
     {
         /** @var array $result */
@@ -99,7 +102,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function getAvailableRealms(): array
     {
         /** @var array $result */
@@ -108,10 +111,19 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function resetPassword(ResetUserPasswordDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function loginUser(LoginUserDto $dto): RequestAccessDto
+    {
+        /** @var RequestAccessDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
     }
 
     /**

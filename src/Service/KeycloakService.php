@@ -8,6 +8,7 @@ use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
@@ -109,6 +110,15 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $this->httpClient->getJwks(realm: $realm);
 
         throw new LogicException('JWT authentication is not implemented yet.');
+    }
+
+    #[Override]
+    public function loginUser(KeycloakUserInterface $user): RequestAccessDto
+    {
+        $mapper = $this->getMapperForLocalUser(localUser: $user);
+        $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user);
+
+        return $this->httpClient->loginUser(dto: $loginDto);
     }
 
     private function getMapperForLocalUser(KeycloakUserInterface $localUser): LocalKeycloakUserBridgeMapperInterface

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\DTO\Response;
 
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Assert\Assert;
 
 final readonly class RequestAccessDto
 {
     public function __construct(
-        private string $accessToken,
+        private JsonWebToken $accessToken,
         private int $expiresIn,
         private int $refreshExpiresIn,
         private string $tokenType,
@@ -18,7 +19,7 @@ final readonly class RequestAccessDto
     ) {
     }
 
-    public function getAccessToken(): string
+    public function getAccessToken(): JsonWebToken
     {
         return $this->accessToken;
     }
@@ -53,6 +54,8 @@ final readonly class RequestAccessDto
         Assert::that($data)->keyExists('access_token');
         Assert::that($data['access_token'])->string()->notBlank();
 
+        $accessToken = JsonWebToken::fromRawToken($data['access_token']);
+
         Assert::that($data)->keyExists('expires_in');
         Assert::that($data['expires_in'])->integer()->greaterOrEqualThan(0);
 
@@ -69,7 +72,7 @@ final readonly class RequestAccessDto
         Assert::that($data['scope'])->string();
 
         return new self(
-            accessToken: $data['access_token'],
+            accessToken: $accessToken,
             expiresIn: $data['expires_in'],
             refreshExpiresIn: $data['refresh_expires_in'],
             tokenType: $data['token_type'],

@@ -20,6 +20,20 @@ final class KeycloakHttpClientFactory
         StreamFactoryInterface $streamFactory,
         ?CacheItemPoolInterface $cache = null
     ): KeycloakHttpClientInterface {
+        $realmListTtl = $config->getRealmListTtl();
+        if ($realmListTtl === null) {
+            return new KeycloakHttpClient(
+                baseUrl: $config->getBaseUrl(),
+                clientRealm: $config->getClientRealm(),
+                clientId: $config->getClientId(),
+                clientSecret: $config->getClientSecret(),
+                httpClient: $httpClient,
+                requestFactory: $requestFactory,
+                streamFactory: $streamFactory,
+                cache: $cache,
+            );
+        }
+
         return new KeycloakHttpClient(
             baseUrl: $config->getBaseUrl(),
             clientRealm: $config->getClientRealm(),
@@ -29,7 +43,7 @@ final class KeycloakHttpClientFactory
             requestFactory: $requestFactory,
             streamFactory: $streamFactory,
             cache: $cache,
-            realmListTtl: $config->getRealmListTtl() ?? KeycloakHttpClient::REALM_LIST_TTL,
+            realmListTtl: $realmListTtl,
         );
     }
 

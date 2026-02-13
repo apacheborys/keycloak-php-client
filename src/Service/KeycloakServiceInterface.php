@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
@@ -23,4 +24,6 @@ interface KeycloakServiceInterface
     public function getAvailableRealms(): array;
 
     public function authenticateJwt(string $jwt, string $realm): bool;
+
+    public function loginUser(KeycloakUserInterface $user): RequestAccessDto;
 }

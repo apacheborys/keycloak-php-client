@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
 interface KeycloakHttpClientInterface
@@ -33,4 +35,6 @@ interface KeycloakHttpClientInterface
     public function getAvailableRealms(): array;
 
     public function resetPassword(ResetUserPasswordDto $dto): void;
+
+    public function loginUser(LoginUserDto $dto): RequestAccessDto;
 }
