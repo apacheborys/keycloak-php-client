@@ -13,7 +13,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
-use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
+use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -157,7 +157,7 @@ final class TestKeycloakHttpClientTest extends TestCase
             clientId: 'backend',
             clientSecret: 'secret',
             refreshToken: 'refresh-token',
-            grantType: KeycloakGrantType::REFRESH_TOKEN,
+            grantType: OidcGrantType::REFRESH_TOKEN,
         );
 
         $expected = new RequestAccessDto(

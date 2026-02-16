@@ -14,7 +14,6 @@ use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
-use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
 use Assert\Assert;
 use LogicException;
 use Override;

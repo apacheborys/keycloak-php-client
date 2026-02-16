@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
-use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
+use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Assert\Assert;
 
 readonly final class LoginUserDto
@@ -16,11 +16,15 @@ readonly final class LoginUserDto
         private ?string $username = null,
         private ?string $password = null,
         private ?string $refreshToken = null,
-        private KeycloakGrantType $grantType = KeycloakGrantType::PASSWORD,
+        private ?string $scope = null,
+        private OidcGrantType $grantType = OidcGrantType::PASSWORD,
     ) {
         Assert::that($this->realm)->notEmpty();
         Assert::that($this->clientId)->notEmpty();
         Assert::that($this->clientSecret)->notEmpty();
+        if ($this->scope !== null) {
+            Assert::that($this->scope)->notEmpty();
+        }
         $this->validateByGrantType();
     }
 
@@ -29,9 +33,14 @@ readonly final class LoginUserDto
         return $this->realm;
     }
 
-    public function getGrantType(): KeycloakGrantType
+    public function getGrantType(): OidcGrantType
     {
         return $this->grantType;
+    }
+
+    public function getScope(): ?string
+    {
+        return $this->scope;
     }
 
     /**
@@ -45,12 +54,16 @@ readonly final class LoginUserDto
             'client_secret' => $this->clientSecret,
         ];
 
-        if ($this->grantType === KeycloakGrantType::PASSWORD) {
+        if ($this->scope !== null) {
+            $result['scope'] = $this->scope;
+        }
+
+        if ($this->grantType === OidcGrantType::PASSWORD) {
             $result['username'] = (string) $this->username;
             $result['password'] = (string) $this->password;
         }
 
-        if ($this->grantType === KeycloakGrantType::REFRESH_TOKEN) {
+        if ($this->grantType === OidcGrantType::REFRESH_TOKEN) {
             $result['refresh_token'] = (string) $this->refreshToken;
         }
 
@@ -59,7 +72,7 @@ readonly final class LoginUserDto
 
     private function validateByGrantType(): void
     {
-        if ($this->grantType === KeycloakGrantType::PASSWORD) {
+        if ($this->grantType === OidcGrantType::PASSWORD) {
             Assert::that($this->username)->notEmpty();
             Assert::that($this->password)->notEmpty();
             return;

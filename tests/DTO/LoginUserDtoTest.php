@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
-use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
+use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -42,7 +42,7 @@ final class LoginUserDtoTest extends TestCase
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
-            grantType: KeycloakGrantType::PASSWORD,
+            grantType: OidcGrantType::PASSWORD,
         );
     }
 
@@ -53,7 +53,7 @@ final class LoginUserDtoTest extends TestCase
             clientId: 'backend',
             clientSecret: 'secret',
             refreshToken: 'refresh-token',
-            grantType: KeycloakGrantType::REFRESH_TOKEN,
+            grantType: OidcGrantType::REFRESH_TOKEN,
         );
 
         self::assertSame(
@@ -75,7 +75,31 @@ final class LoginUserDtoTest extends TestCase
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
-            grantType: KeycloakGrantType::REFRESH_TOKEN,
+            grantType: OidcGrantType::REFRESH_TOKEN,
+        );
+    }
+
+    public function testScopeIsIncludedWhenProvided(): void
+    {
+        $dto = new LoginUserDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            username: 'oleg@example.com',
+            password: 'Roadsurfer!2026',
+            scope: 'openid profile',
+        );
+
+        self::assertSame(
+            [
+                'grant_type' => 'password',
+                'client_id' => 'backend',
+                'client_secret' => 'secret',
+                'scope' => 'openid profile',
+                'username' => 'oleg@example.com',
+                'password' => 'Roadsurfer!2026',
+            ],
+            $dto->toFormParams(),
         );
     }
 }

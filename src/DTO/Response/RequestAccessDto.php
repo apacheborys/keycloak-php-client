@@ -17,6 +17,7 @@ final readonly class RequestAccessDto
         private int $nonBeforePolicy,
         private string $scope,
         private ?string $refreshToken = null,
+        private ?JsonWebToken $idToken = null,
     ) {
     }
 
@@ -55,6 +56,11 @@ final readonly class RequestAccessDto
         return $this->refreshToken;
     }
 
+    public function getIdToken(): ?JsonWebToken
+    {
+        return $this->idToken;
+    }
+
     public static function fromArray(array $data): self
     {
         Assert::that($data)->keyExists('access_token');
@@ -74,6 +80,12 @@ final readonly class RequestAccessDto
             $refreshToken = $data['refresh_token'];
         }
 
+        $idToken = null;
+        if (array_key_exists('id_token', $data)) {
+            Assert::that($data['id_token'])->string()->notBlank();
+            $idToken = JsonWebToken::fromRawToken($data['id_token']);
+        }
+
         Assert::that($data)->keyExists('token_type');
         Assert::that($data['token_type'])->string()->eq('Bearer');
 
@@ -91,6 +103,7 @@ final readonly class RequestAccessDto
             nonBeforePolicy: $data['not-before-policy'],
             scope: $data['scope'],
             refreshToken: $refreshToken,
+            idToken: $idToken,
         );
     }
 }
