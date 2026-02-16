@@ -6,7 +6,6 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
