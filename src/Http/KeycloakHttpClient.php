@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
 use Assert\Assert;
 use LogicException;
 use Override;
@@ -288,37 +289,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function loginUser(LoginUserDto $dto): RequestAccessDto
     {
-        $endpoint = $this->buildEndpoint(
-            path: '/realms/' . $dto->getRealm() . '/protocol/openid-connect/token'
-        );
+        return $this->requestToken(dto: $dto);
+    }
 
-        $payload = http_build_query(
-            data: $dto->toFormParams(),
-            numeric_prefix: '',
-            arg_separator: '&',
-            encoding_type: PHP_QUERY_RFC3986
-        );
-
-        $request = $this->createRequest(
-            method: 'POST',
-            endpoint: $endpoint,
-            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
-            body: $payload,
-        );
-
-        $response = $this->httpClient->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak login request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->decodeJson(body: $body);
-
-        return RequestAccessDto::fromArray(data: $data);
+    #[Override]
+    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    {
+        return $this->requestToken(dto: $dto);
     }
 
     private function getAccessToken(): JsonWebToken
@@ -383,6 +360,46 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         }
 
         return $dto->getAccessToken();
+    }
+
+    private function requestToken(LoginUserDto $dto): RequestAccessDto
+    {
+        $endpoint = $this->buildEndpoint(
+            path: '/realms/' . $dto->getRealm() . '/protocol/openid-connect/token'
+        );
+
+        $payload = http_build_query(
+            data: $dto->toFormParams(),
+            numeric_prefix: '',
+            arg_separator: '&',
+            encoding_type: PHP_QUERY_RFC3986
+        );
+
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            body: $payload,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf(
+                    'Keycloak %s request failed with status %d: %s',
+                    $dto->getGrantType()->value,
+                    $statusCode,
+                    $body
+                )
+            );
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        return RequestAccessDto::fromArray(data: $data);
     }
 
     private function buildEndpoint(string $path, string $query = ''): string

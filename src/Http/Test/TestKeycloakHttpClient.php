@@ -127,6 +127,15 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
+    #[\Override]
+    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    {
+        /** @var RequestAccessDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
     /**
      * @param list<mixed> $args
      */

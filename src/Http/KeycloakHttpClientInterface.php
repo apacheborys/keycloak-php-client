@@ -38,4 +38,6 @@ interface KeycloakHttpClientInterface
     public function resetPassword(ResetUserPasswordDto $dto): void;
 
     public function loginUser(LoginUserDto $dto): RequestAccessDto;
+
+    public function refreshToken(LoginUserDto $dto): RequestAccessDto;
 }

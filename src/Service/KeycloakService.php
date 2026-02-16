@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
@@ -120,6 +121,12 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user);
 
         return $this->httpClient->loginUser(dto: $loginDto);
+    }
+
+    #[Override]
+    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    {
+        return $this->httpClient->refreshToken($dto);
     }
 
     private function getMapperForLocalUser(KeycloakUserInterface $localUser): LocalKeycloakUserBridgeMapperInterface

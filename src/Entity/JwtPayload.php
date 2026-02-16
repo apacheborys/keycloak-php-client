@@ -179,8 +179,7 @@ final readonly class JwtPayload
         $iss = $data['iss'];
 
         Assert::that($data)->keyExists('aud');
-        Assert::that($data['aud'])->isArray()->notEmpty();
-        $aud = $data['aud'];
+        $aud = self::normalizeAudience($data['aud']);
 
         Assert::that($data)->keyExists('sub');
         Assert::that(Uuid::isValid($data['sub']))->true();
@@ -256,5 +255,28 @@ final readonly class JwtPayload
             clientAddress: $clientAddress,
             clientId: $clientId,
         );
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function normalizeAudience(mixed $data): array
+    {
+        if (is_string($data)) {
+            /** @var string $data */
+            Assert::that($data)->notEmpty();
+            return [$data];
+        }
+
+        Assert::that($data)->isArray()->notEmpty();
+
+        /** @var array $data */
+        $values = [];
+        foreach ($data as $value) {
+            Assert::that($value)->string()->notEmpty();
+            $values[] = $value;
+        }
+
+        return array_values($values);
     }
 }

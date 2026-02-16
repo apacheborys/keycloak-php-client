@@ -13,6 +13,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakGrantType;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -141,6 +142,41 @@ final class TestKeycloakHttpClientTest extends TestCase
             [
                 [
                     'method' => 'deleteUser',
+                    'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testRefreshTokenConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new LoginUserDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            refreshToken: 'refresh-token',
+            grantType: KeycloakGrantType::REFRESH_TOKEN,
+        );
+
+        $expected = new RequestAccessDto(
+            accessToken: JsonWebToken::fromRawToken($this->buildJwtToken()),
+            expiresIn: 3600,
+            refreshExpiresIn: 1800,
+            tokenType: 'Bearer',
+            nonBeforePolicy: 0,
+            scope: 'email profile',
+            refreshToken: 'refresh-token',
+        );
+
+        $client->queueResult('refreshToken', $expected);
+
+        self::assertSame($expected, $client->refreshToken($dto));
+        self::assertSame(
+            [
+                [
+                    'method' => 'refreshToken',
                     'args' => [$dto],
                 ],
             ],

@@ -16,6 +16,7 @@ final readonly class RequestAccessDto
         private string $tokenType,
         private int $nonBeforePolicy,
         private string $scope,
+        private ?string $refreshToken = null,
     ) {
     }
 
@@ -49,6 +50,11 @@ final readonly class RequestAccessDto
         return $this->scope;
     }
 
+    public function getRefreshToken(): ?string
+    {
+        return $this->refreshToken;
+    }
+
     public static function fromArray(array $data): self
     {
         Assert::that($data)->keyExists('access_token');
@@ -61,6 +67,12 @@ final readonly class RequestAccessDto
 
         Assert::that($data)->keyExists('refresh_expires_in');
         Assert::that($data['refresh_expires_in'])->integer()->greaterOrEqualThan(0);
+
+        $refreshToken = null;
+        if (array_key_exists('refresh_token', $data)) {
+            Assert::that($data['refresh_token'])->string()->notBlank();
+            $refreshToken = $data['refresh_token'];
+        }
 
         Assert::that($data)->keyExists('token_type');
         Assert::that($data['token_type'])->string()->eq('Bearer');
@@ -78,6 +90,7 @@ final readonly class RequestAccessDto
             tokenType: $data['token_type'],
             nonBeforePolicy: $data['not-before-policy'],
             scope: $data['scope'],
+            refreshToken: $refreshToken,
         );
     }
 }
