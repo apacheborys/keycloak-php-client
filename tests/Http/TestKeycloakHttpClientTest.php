@@ -13,8 +13,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
-use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
+use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
+use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -102,7 +103,7 @@ final class TestKeycloakHttpClientTest extends TestCase
             username: 'oleg@example.com',
             password: 'Roadsurfer!2026',
         );
-        $jwt = $this->buildJwtToken();
+        $jwt = JwtTestFactory::buildJwtToken();
 
         $expected = new OidcTokenResponseDto(
             accessToken: JsonWebToken::fromRawToken($jwt),
@@ -161,7 +162,7 @@ final class TestKeycloakHttpClientTest extends TestCase
         );
 
         $expected = new OidcTokenResponseDto(
-            accessToken: JsonWebToken::fromRawToken($this->buildJwtToken()),
+            accessToken: JsonWebToken::fromRawToken(JwtTestFactory::buildJwtToken()),
             expiresIn: 3600,
             refreshExpiresIn: 1800,
             tokenType: 'Bearer',
@@ -184,45 +185,4 @@ final class TestKeycloakHttpClientTest extends TestCase
         );
     }
 
-    private function buildJwtToken(): string
-    {
-        $header = [
-            'alg' => 'RS256',
-            'typ' => 'JWT',
-            'kid' => 'kid',
-        ];
-        $payload = [
-            'exp' => time() + 3600,
-            'iat' => time(),
-            'jti' => 'f9b4b801-bb78-4167-be60-b42d453332e7',
-            'iss' => 'http://localhost:8080/realms/master',
-            'aud' => ['account'],
-            'sub' => '92a372d5-c338-4e77-a1b3-08771241036e',
-            'typ' => 'Bearer',
-            'azp' => 'backend',
-            'acr' => 1,
-            'realm_access' => ['roles' => ['role']],
-            'resource_access' => [
-                'backend' => ['roles' => ['role']],
-                'account' => ['roles' => ['role']],
-            ],
-            'scope' => 'email profile',
-            'email_verified' => true,
-            'clientHost' => '127.0.0.1',
-            'preferred_username' => 'oleg@example.com',
-            'clientAddress' => '127.0.0.1',
-            'client_id' => 'backend',
-        ];
-
-        return $this->base64UrlEncode($header) . '.' .
-            $this->base64UrlEncode($payload) . '.' .
-            $this->base64UrlEncode(['sig' => 'signature']);
-    }
-
-    private function base64UrlEncode(array $data): string
-    {
-        $json = json_encode($data, JSON_THROW_ON_ERROR);
-
-        return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
-    }
 }

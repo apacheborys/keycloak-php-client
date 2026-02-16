@@ -18,7 +18,7 @@ interface KeycloakServiceInterface
 
     public function updateUser(string $userId, array $payload): array;
 
-    public function deleteUser(DeleteUserDto $dto): void;
+    public function deleteUser(KeycloakUserInterface $user): void;
 
     /**
      * @return KeycloakRealm[]
