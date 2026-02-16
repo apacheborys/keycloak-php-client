@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -114,9 +116,31 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function deleteUser(string $userId): void
+    public function deleteUser(DeleteUserDto $dto): void
     {
-        throw new LogicException(message: 'HTTP deleteUser is not implemented yet.');
+        $token = $this->getAccessToken();
+
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+        );
+
+        $request = $this->createRequest(
+            method: 'DELETE',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak delete user failed with status %d: %s', $statusCode, $body)
+        );
     }
 
     #[Override]
@@ -261,6 +285,18 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         throw new LogicException("Can't set password, response: " . $response->getBody()->getContents());
     }
 
+    #[Override]
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    {
+        return $this->requestToken(dto: $dto);
+    }
+
+    #[Override]
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    {
+        return $this->requestToken(dto: $dto);
+    }
+
     private function getAccessToken(): JsonWebToken
     {
         $cacheKey = 'keycloak.access_token.' .
@@ -312,18 +348,57 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $data = $this->decodeJson(body: $body);
 
-        $dto = RequestAccessDto::fromArray(data: $data);
-        $accessToken = JsonWebToken::fromRawToken(rawToken: $dto->getAccessToken());
+        $dto = OidcTokenResponseDto::fromArray(data: $data);
 
         if ($this->cache !== null) {
             $cacheItem = $this->cache->getItem(key: $cacheKey);
-            $cacheItem->set(value: $accessToken->getRawToken());
+            $cacheItem->set(value: $dto->getAccessToken()->getRawToken());
             $cacheItem->expiresAfter(time: max(0, $dto->getExpiresIn() - 1));
 
             $this->cache->save(item: $cacheItem);
         }
 
-        return $accessToken;
+        return $dto->getAccessToken();
+    }
+
+    private function requestToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    {
+        $endpoint = $this->buildEndpoint(
+            path: '/realms/' . $dto->getRealm() . '/protocol/openid-connect/token'
+        );
+
+        $payload = http_build_query(
+            data: $dto->toFormParams(),
+            numeric_prefix: '',
+            arg_separator: '&',
+            encoding_type: PHP_QUERY_RFC3986
+        );
+
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            body: $payload,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf(
+                    'Keycloak %s request failed with status %d: %s',
+                    $dto->getGrantType()->value,
+                    $statusCode,
+                    $body
+                )
+            );
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        return OidcTokenResponseDto::fromArray(data: $data);
     }
 
     private function buildEndpoint(string $path, string $query = ''): string

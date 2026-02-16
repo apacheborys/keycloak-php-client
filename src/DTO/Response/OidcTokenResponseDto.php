@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\DTO\Response;
 
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Assert\Assert;
 
-final readonly class RequestAccessDto
+final readonly class OidcTokenResponseDto
 {
     public function __construct(
-        private string $accessToken,
+        private JsonWebToken $accessToken,
         private int $expiresIn,
         private int $refreshExpiresIn,
         private string $tokenType,
         private int $nonBeforePolicy,
         private string $scope,
+        private ?string $refreshToken = null,
+        private ?JsonWebToken $idToken = null,
     ) {
     }
 
-    public function getAccessToken(): string
+    public function getAccessToken(): JsonWebToken
     {
         return $this->accessToken;
     }
@@ -48,16 +51,40 @@ final readonly class RequestAccessDto
         return $this->scope;
     }
 
+    public function getRefreshToken(): ?string
+    {
+        return $this->refreshToken;
+    }
+
+    public function getIdToken(): ?JsonWebToken
+    {
+        return $this->idToken;
+    }
+
     public static function fromArray(array $data): self
     {
         Assert::that($data)->keyExists('access_token');
         Assert::that($data['access_token'])->string()->notBlank();
+
+        $accessToken = JsonWebToken::fromRawToken($data['access_token']);
 
         Assert::that($data)->keyExists('expires_in');
         Assert::that($data['expires_in'])->integer()->greaterOrEqualThan(0);
 
         Assert::that($data)->keyExists('refresh_expires_in');
         Assert::that($data['refresh_expires_in'])->integer()->greaterOrEqualThan(0);
+
+        $refreshToken = null;
+        if (array_key_exists('refresh_token', $data)) {
+            Assert::that($data['refresh_token'])->string()->notBlank();
+            $refreshToken = $data['refresh_token'];
+        }
+
+        $idToken = null;
+        if (array_key_exists('id_token', $data)) {
+            Assert::that($data['id_token'])->string()->notBlank();
+            $idToken = JsonWebToken::fromRawToken($data['id_token']);
+        }
 
         Assert::that($data)->keyExists('token_type');
         Assert::that($data['token_type'])->string()->eq('Bearer');
@@ -69,12 +96,14 @@ final readonly class RequestAccessDto
         Assert::that($data['scope'])->string();
 
         return new self(
-            accessToken: $data['access_token'],
+            accessToken: $accessToken,
             expiresIn: $data['expires_in'],
             refreshExpiresIn: $data['refresh_expires_in'],
             tokenType: $data['token_type'],
             nonBeforePolicy: $data['not-before-policy'],
             scope: $data['scope'],
+            refreshToken: $refreshToken,
+            idToken: $idToken,
         );
     }
 }

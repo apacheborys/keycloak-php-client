@@ -6,9 +6,14 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
+use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -84,5 +89,140 @@ final class TestKeycloakHttpClientTest extends TestCase
             ],
             $client->getCalls(),
         );
+    }
+
+    public function testRequestTokenByPasswordConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+
+        $dto = new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            username: 'oleg@example.com',
+            password: 'Roadsurfer!2026',
+        );
+        $jwt = $this->buildJwtToken();
+
+        $expected = new OidcTokenResponseDto(
+            accessToken: JsonWebToken::fromRawToken($jwt),
+            expiresIn: 3600,
+            refreshExpiresIn: 0,
+            tokenType: 'Bearer',
+            nonBeforePolicy: 0,
+            scope: 'email profile',
+        );
+
+        $client->queueResult('requestTokenByPassword', $expected);
+
+        self::assertSame($expected, $client->requestTokenByPassword($dto));
+        self::assertSame(
+            [
+                [
+                    'method' => 'requestTokenByPassword',
+                    'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testDeleteUserConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new DeleteUserDto(
+            realm: 'master',
+            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+        );
+
+        $client->queueResult('deleteUser', null);
+        $client->deleteUser($dto);
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'deleteUser',
+                    'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testRefreshTokenConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            refreshToken: 'refresh-token',
+            grantType: OidcGrantType::REFRESH_TOKEN,
+        );
+
+        $expected = new OidcTokenResponseDto(
+            accessToken: JsonWebToken::fromRawToken($this->buildJwtToken()),
+            expiresIn: 3600,
+            refreshExpiresIn: 1800,
+            tokenType: 'Bearer',
+            nonBeforePolicy: 0,
+            scope: 'email profile',
+            refreshToken: 'refresh-token',
+        );
+
+        $client->queueResult('refreshToken', $expected);
+
+        self::assertSame($expected, $client->refreshToken($dto));
+        self::assertSame(
+            [
+                [
+                    'method' => 'refreshToken',
+                    'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    private function buildJwtToken(): string
+    {
+        $header = [
+            'alg' => 'RS256',
+            'typ' => 'JWT',
+            'kid' => 'kid',
+        ];
+        $payload = [
+            'exp' => time() + 3600,
+            'iat' => time(),
+            'jti' => 'f9b4b801-bb78-4167-be60-b42d453332e7',
+            'iss' => 'http://localhost:8080/realms/master',
+            'aud' => ['account'],
+            'sub' => '92a372d5-c338-4e77-a1b3-08771241036e',
+            'typ' => 'Bearer',
+            'azp' => 'backend',
+            'acr' => 1,
+            'realm_access' => ['roles' => ['role']],
+            'resource_access' => [
+                'backend' => ['roles' => ['role']],
+                'account' => ['roles' => ['role']],
+            ],
+            'scope' => 'email profile',
+            'email_verified' => true,
+            'clientHost' => '127.0.0.1',
+            'preferred_username' => 'oleg@example.com',
+            'clientAddress' => '127.0.0.1',
+            'client_id' => 'backend',
+        ];
+
+        return $this->base64UrlEncode($header) . '.' .
+            $this->base64UrlEncode($payload) . '.' .
+            $this->base64UrlEncode(['sig' => 'signature']);
+    }
+
+    private function base64UrlEncode(array $data): string
+    {
+        $json = json_encode($data, JSON_THROW_ON_ERROR);
+
+        return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
     }
 }

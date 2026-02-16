@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
 interface KeycloakHttpClientInterface
@@ -17,7 +20,7 @@ interface KeycloakHttpClientInterface
 
     public function updateUser(string $userId, array $payload): array;
 
-    public function deleteUser(string $userId): void;
+    public function deleteUser(DeleteUserDto $dto): void;
 
     public function createRealm(array $payload): array;
 
@@ -33,4 +36,8 @@ interface KeycloakHttpClientInterface
     public function getAvailableRealms(): array;
 
     public function resetPassword(ResetUserPasswordDto $dto): void;
+
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto;
+
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }

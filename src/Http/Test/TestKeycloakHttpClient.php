@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
+use Override;
 use Throwable;
 
 final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
@@ -36,7 +40,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $this->calls;
     }
 
-    #[\Override]
+    #[Override]
     public function getUsers(SearchUsersDto $dto): array
     {
         /** @var array $result */
@@ -45,13 +49,13 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function createUser(CreateUserDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
-    #[\Override]
+    #[Override]
     public function updateUser(string $userId, array $payload): array
     {
         /** @var array $result */
@@ -60,13 +64,13 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
-    public function deleteUser(string $userId): void
+    #[Override]
+    public function deleteUser(DeleteUserDto $dto): void
     {
-        $this->nextResult(method: __FUNCTION__, args: [$userId]);
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
-    #[\Override]
+    #[Override]
     public function createRealm(array $payload): array
     {
         /** @var array $result */
@@ -75,7 +79,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function getRoles(): array
     {
         /** @var array $result */
@@ -90,7 +94,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         $this->nextResult(method: __FUNCTION__, args: [$role]);
     }
 
-    #[\Override]
+    #[Override]
     public function getJwks(string $realm): array
     {
         /** @var array $result */
@@ -99,7 +103,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function getAvailableRealms(): array
     {
         /** @var array $result */
@@ -108,10 +112,28 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
         return $result;
     }
 
-    #[\Override]
+    #[Override]
     public function resetPassword(ResetUserPasswordDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    {
+        /** @var OidcTokenResponseDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[\Override]
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    {
+        /** @var OidcTokenResponseDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
     }
 
     /**
