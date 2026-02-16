@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
@@ -118,6 +119,28 @@ final class TestKeycloakHttpClientTest extends TestCase
             [
                 [
                     'method' => 'loginUser',
+                    'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testDeleteUserConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new DeleteUserDto(
+            realm: 'master',
+            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+        );
+
+        $client->queueResult('deleteUser', null);
+        $client->deleteUser($dto);
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'deleteUser',
                     'args' => [$dto],
                 ],
             ],

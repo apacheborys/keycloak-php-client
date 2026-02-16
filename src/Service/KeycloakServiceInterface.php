@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -16,7 +17,7 @@ interface KeycloakServiceInterface
 
     public function updateUser(string $userId, array $payload): array;
 
-    public function deleteUser(string $userId): void;
+    public function deleteUser(DeleteUserDto $dto): void;
 
     /**
      * @return KeycloakRealm[]

@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
@@ -93,9 +94,9 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function deleteUser(string $userId): void
+    public function deleteUser(DeleteUserDto $dto): void
     {
-        $this->httpClient->deleteUser($userId);
+        $this->httpClient->deleteUser($dto);
     }
 
     #[Override]

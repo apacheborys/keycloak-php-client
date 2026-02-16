@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -64,9 +65,9 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function deleteUser(string $userId): void
+    public function deleteUser(DeleteUserDto $dto): void
     {
-        $this->nextResult(method: __FUNCTION__, args: [$userId]);
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
     #[Override]

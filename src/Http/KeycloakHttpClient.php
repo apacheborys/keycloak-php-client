@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -115,9 +116,31 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function deleteUser(string $userId): void
+    public function deleteUser(DeleteUserDto $dto): void
     {
-        throw new LogicException(message: 'HTTP deleteUser is not implemented yet.');
+        $token = $this->getAccessToken();
+
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+        );
+
+        $request = $this->createRequest(
+            method: 'DELETE',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak delete user failed with status %d: %s', $statusCode, $body)
+        );
     }
 
     #[Override]
