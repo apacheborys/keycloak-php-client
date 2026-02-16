@@ -96,9 +96,12 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function deleteUser(DeleteUserDto $dto): void
+    public function deleteUser(KeycloakUserInterface $user): void
     {
-        $this->httpClient->deleteUser($dto);
+        $mapper = $this->getMapperForLocalUser(localUser: $user);
+        $deleteDto = $mapper->prepareLocalUserForKeycloakUserDeletion(localUser: $user);
+
+        $this->httpClient->deleteUser($deleteDto);
     }
 
     #[Override]

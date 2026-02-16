@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Oidc;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
 
@@ -60,7 +61,7 @@ final class OidcComplianceTest extends TestCase
 
     public function testTokenResponseParsesIdTokenWhenPresent(): void
     {
-        $jwt = $this->buildJwtToken();
+        $jwt = JwtTestFactory::buildJwtToken();
         $data = [
             'access_token' => $jwt,
             'expires_in' => 3600,
@@ -79,46 +80,4 @@ final class OidcComplianceTest extends TestCase
         self::assertInstanceOf(JsonWebToken::class, $dto->getIdToken());
     }
 
-    private function buildJwtToken(): string
-    {
-        $header = [
-            'alg' => 'RS256',
-            'typ' => 'JWT',
-            'kid' => 'kid',
-        ];
-        
-        $payload = [
-            'exp' => time() + 3600,
-            'iat' => time(),
-            'jti' => 'f9b4b801-bb78-4167-be60-b42d453332e7',
-            'iss' => 'http://localhost:8080/realms/master',
-            'aud' => ['account'],
-            'sub' => '92a372d5-c338-4e77-a1b3-08771241036e',
-            'typ' => 'Bearer',
-            'azp' => 'backend',
-            'acr' => 1,
-            'realm_access' => ['roles' => ['role']],
-            'resource_access' => [
-                'backend' => ['roles' => ['role']],
-                'account' => ['roles' => ['role']],
-            ],
-            'scope' => 'email profile',
-            'email_verified' => true,
-            'clientHost' => '127.0.0.1',
-            'preferred_username' => 'oleg@example.com',
-            'clientAddress' => '127.0.0.1',
-            'client_id' => 'backend',
-        ];
-
-        return $this->base64UrlEncode($header) . '.' .
-            $this->base64UrlEncode($payload) . '.' .
-            $this->base64UrlEncode(['sig' => 'signature']);
-    }
-
-    private function base64UrlEncode(array $data): string
-    {
-        $json = json_encode($data, JSON_THROW_ON_ERROR);
-
-        return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
-    }
 }
