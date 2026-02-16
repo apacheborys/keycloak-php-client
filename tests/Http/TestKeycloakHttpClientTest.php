@@ -7,9 +7,9 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
@@ -91,11 +91,11 @@ final class TestKeycloakHttpClientTest extends TestCase
         );
     }
 
-    public function testLoginUserConsumesQueue(): void
+    public function testRequestTokenByPasswordConsumesQueue(): void
     {
         $client = new TestKeycloakHttpClient();
 
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -104,7 +104,7 @@ final class TestKeycloakHttpClientTest extends TestCase
         );
         $jwt = $this->buildJwtToken();
 
-        $expected = new RequestAccessDto(
+        $expected = new OidcTokenResponseDto(
             accessToken: JsonWebToken::fromRawToken($jwt),
             expiresIn: 3600,
             refreshExpiresIn: 0,
@@ -113,13 +113,13 @@ final class TestKeycloakHttpClientTest extends TestCase
             scope: 'email profile',
         );
 
-        $client->queueResult('loginUser', $expected);
+        $client->queueResult('requestTokenByPassword', $expected);
 
-        self::assertSame($expected, $client->loginUser($dto));
+        self::assertSame($expected, $client->requestTokenByPassword($dto));
         self::assertSame(
             [
                 [
-                    'method' => 'loginUser',
+                    'method' => 'requestTokenByPassword',
                     'args' => [$dto],
                 ],
             ],
@@ -152,7 +152,7 @@ final class TestKeycloakHttpClientTest extends TestCase
     public function testRefreshTokenConsumesQueue(): void
     {
         $client = new TestKeycloakHttpClient();
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -160,7 +160,7 @@ final class TestKeycloakHttpClientTest extends TestCase
             grantType: OidcGrantType::REFRESH_TOKEN,
         );
 
-        $expected = new RequestAccessDto(
+        $expected = new OidcTokenResponseDto(
             accessToken: JsonWebToken::fromRawToken($this->buildJwtToken()),
             expiresIn: 3600,
             refreshExpiresIn: 1800,

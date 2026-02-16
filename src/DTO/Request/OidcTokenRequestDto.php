@@ -7,7 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Assert\Assert;
 
-readonly final class LoginUserDto
+readonly final class OidcTokenRequestDto
 {
     public function __construct(
         private string $realm,

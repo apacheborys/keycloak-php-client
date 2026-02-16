@@ -6,10 +6,10 @@ namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
 use Override;
@@ -119,18 +119,18 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function loginUser(LoginUserDto $dto): RequestAccessDto
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
-        /** @var RequestAccessDto $result */
+        /** @var OidcTokenResponseDto $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
     }
 
     #[\Override]
-    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
-        /** @var RequestAccessDto $result */
+        /** @var OidcTokenResponseDto $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
-final class LoginUserDtoTest extends TestCase
+final class OidcTokenRequestDtoTest extends TestCase
 {
     public function testToFormParams(): void
     {
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -38,7 +38,7 @@ final class LoginUserDtoTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new LoginUserDto(
+        new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -48,7 +48,7 @@ final class LoginUserDtoTest extends TestCase
 
     public function testRefreshTokenFormParams(): void
     {
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -71,7 +71,7 @@ final class LoginUserDtoTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new LoginUserDto(
+        new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -81,7 +81,7 @@ final class LoginUserDtoTest extends TestCase
 
     public function testScopeIsIncludedWhenProvided(): void
     {
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',

@@ -6,10 +6,10 @@ namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -286,13 +286,13 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function loginUser(LoginUserDto $dto): RequestAccessDto
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         return $this->requestToken(dto: $dto);
     }
 
     #[Override]
-    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         return $this->requestToken(dto: $dto);
     }
@@ -348,7 +348,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $data = $this->decodeJson(body: $body);
 
-        $dto = RequestAccessDto::fromArray(data: $data);
+        $dto = OidcTokenResponseDto::fromArray(data: $data);
 
         if ($this->cache !== null) {
             $cacheItem = $this->cache->getItem(key: $cacheKey);
@@ -361,7 +361,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         return $dto->getAccessToken();
     }
 
-    private function requestToken(LoginUserDto $dto): RequestAccessDto
+    private function requestToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         $endpoint = $this->buildEndpoint(
             path: '/realms/' . $dto->getRealm() . '/protocol/openid-connect/token'
@@ -398,7 +398,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $data = $this->decodeJson(body: $body);
 
-        return RequestAccessDto::fromArray(data: $data);
+        return OidcTokenResponseDto::fromArray(data: $data);
     }
 
     private function buildEndpoint(string $path, string $query = ''): string

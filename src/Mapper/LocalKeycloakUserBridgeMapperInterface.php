@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Mapper;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 
 interface LocalKeycloakUserBridgeMapperInterface
@@ -16,7 +16,7 @@ interface LocalKeycloakUserBridgeMapperInterface
 
     public function prepareLocalUserForKeycloakLoginUser(
         KeycloakUserInterface $localUser
-    ): LoginUserDto;
+    ): OidcTokenRequestDto;
 
     public function support(KeycloakUserInterface $localUser): bool;
 }

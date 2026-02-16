@@ -7,10 +7,10 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
@@ -55,6 +55,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $profileDto = $mapper->prepareLocalUserForKeycloakUserCreation(
             localUser: $localUser
         );
+
         $createUserDto = new CreateUserDto(
             profile: $profileDto,
             credentials: $credentials,
@@ -115,16 +116,16 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function loginUser(KeycloakUserInterface $user): RequestAccessDto
+    public function loginUser(KeycloakUserInterface $user): OidcTokenResponseDto
     {
         $mapper = $this->getMapperForLocalUser(localUser: $user);
         $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user);
 
-        return $this->httpClient->loginUser(dto: $loginDto);
+        return $this->httpClient->requestTokenByPassword(dto: $loginDto);
     }
 
     #[Override]
-    public function refreshToken(LoginUserDto $dto): RequestAccessDto
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         return $this->httpClient->refreshToken($dto);
     }

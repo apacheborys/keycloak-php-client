@@ -7,7 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Response;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Assert\Assert;
 
-final readonly class RequestAccessDto
+final readonly class OidcTokenResponseDto
 {
     public function __construct(
         private JsonWebToken $accessToken,

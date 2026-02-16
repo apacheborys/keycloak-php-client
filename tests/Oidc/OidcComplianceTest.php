@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Oidc;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
@@ -14,7 +14,7 @@ final class OidcComplianceTest extends TestCase
 {
     public function testPasswordGrantRequestShape(): void
     {
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -39,7 +39,7 @@ final class OidcComplianceTest extends TestCase
 
     public function testRefreshTokenGrantRequestShape(): void
     {
-        $dto = new LoginUserDto(
+        $dto = new OidcTokenRequestDto(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -72,7 +72,7 @@ final class OidcComplianceTest extends TestCase
             'id_token' => $jwt,
         ];
 
-        $dto = RequestAccessDto::fromArray(data: $data);
+        $dto = OidcTokenResponseDto::fromArray(data: $data);
 
         self::assertInstanceOf(JsonWebToken::class, $dto->getAccessToken());
         self::assertSame('refresh-token', $dto->getRefreshToken());
@@ -86,6 +86,7 @@ final class OidcComplianceTest extends TestCase
             'typ' => 'JWT',
             'kid' => 'kid',
         ];
+        
         $payload = [
             'exp' => time() + 3600,
             'iat' => time(),

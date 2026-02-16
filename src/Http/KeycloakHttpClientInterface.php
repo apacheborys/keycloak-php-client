@@ -6,10 +6,10 @@ namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
 interface KeycloakHttpClientInterface
@@ -37,7 +37,7 @@ interface KeycloakHttpClientInterface
 
     public function resetPassword(ResetUserPasswordDto $dto): void;
 
-    public function loginUser(LoginUserDto $dto): RequestAccessDto;
+    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 
-    public function refreshToken(LoginUserDto $dto): RequestAccessDto;
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }

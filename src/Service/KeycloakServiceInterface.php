@@ -6,8 +6,8 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\LoginUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\RequestAccessDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
@@ -27,7 +27,7 @@ interface KeycloakServiceInterface
 
     public function authenticateJwt(string $jwt, string $realm): bool;
 
-    public function loginUser(KeycloakUserInterface $user): RequestAccessDto;
+    public function loginUser(KeycloakUserInterface $user): OidcTokenResponseDto;
 
-    public function refreshToken(LoginUserDto $dto): RequestAccessDto;
+    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }
