@@ -27,7 +27,7 @@ interface KeycloakServiceInterface
 
     public function authenticateJwt(string $jwt, string $realm): bool;
 
-    public function loginUser(KeycloakUserInterface $user): OidcTokenResponseDto;
+    public function loginUser(KeycloakUserInterface $user, string $plainPassword): OidcTokenResponseDto;
 
     public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }

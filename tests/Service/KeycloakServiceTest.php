@@ -140,6 +140,7 @@ final class KeycloakServiceTest extends TestCase
     {
         $httpClient = new TestKeycloakHttpClient();
         $tokenRequest = $this->buildTokenRequestDto();
+        $plainPassword = 'SecretPassword!2026';
 
         $mapper = new ServiceTestMapper($this->buildProfileDto(), $tokenRequest);
         $service = new KeycloakService($httpClient, [$mapper]);
@@ -147,9 +148,10 @@ final class KeycloakServiceTest extends TestCase
 
         $httpClient->queueResult('requestTokenByPassword', $this->buildTokenResponseDto());
 
-        $result = $service->loginUser($user);
+        $result = $service->loginUser($user, $plainPassword);
         self::assertInstanceOf(OidcTokenResponseDto::class, $result);
         self::assertSame('requestTokenByPassword', $httpClient->getCalls()[0]['method']);
+        self::assertSame($plainPassword, $mapper->getCapturedPlainPassword());
     }
 
     public function testRefreshTokenDelegatesToHttpClient(): void

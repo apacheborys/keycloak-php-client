@@ -12,6 +12,8 @@ use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
 
 final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 {
+    private ?string $capturedPlainPassword = null;
+
     public function __construct(
         private CreateUserProfileDto $createUserProfile,
         private OidcTokenRequestDto $tokenRequest,
@@ -26,8 +28,11 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     }
 
     public function prepareLocalUserForKeycloakLoginUser(
-        KeycloakUserInterface $localUser
+        KeycloakUserInterface $localUser,
+        string $plainPassword,
     ): OidcTokenRequestDto {
+        $this->capturedPlainPassword = $plainPassword;
+
         return $this->tokenRequest;
     }
 
@@ -43,5 +48,10 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     public function support(KeycloakUserInterface $localUser): bool
     {
         return true;
+    }
+
+    public function getCapturedPlainPassword(): ?string
+    {
+        return $this->capturedPlainPassword;
     }
 }
