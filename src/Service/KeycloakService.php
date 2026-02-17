@@ -118,10 +118,10 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function loginUser(KeycloakUserInterface $user): OidcTokenResponseDto
+    public function loginUser(KeycloakUserInterface $user, string $plainPassword): OidcTokenResponseDto
     {
         $mapper = $this->getMapperForLocalUser(localUser: $user);
-        $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user);
+        $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user, plainPassword: $plainPassword);
 
         return $this->httpClient->requestTokenByPassword(dto: $loginDto);
     }

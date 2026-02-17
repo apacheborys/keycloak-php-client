@@ -16,7 +16,8 @@ interface LocalKeycloakUserBridgeMapperInterface
     ): CreateUserProfileDto;
 
     public function prepareLocalUserForKeycloakLoginUser(
-        KeycloakUserInterface $localUser
+        KeycloakUserInterface $localUser,
+        string $plainPassword
     ): OidcTokenRequestDto;
 
     public function prepareLocalUserForKeycloakUserDeletion(
