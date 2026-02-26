@@ -203,9 +203,7 @@ final readonly class JwtPayload
         $realmAccess = $data['realm_access'];
 
         Assert::that($data)->keyExists('resource_access');
-        Assert::that($data['resource_access'])->isArray()->keyExists('backend');
-        Assert::that($data['resource_access']['backend'])->isArray()->keyExists('roles');
-        Assert::that($data['resource_access']['backend']['roles'])->isArray();
+        Assert::that($data['resource_access'])->isArray();
 
         Assert::that($data['resource_access'])->isArray()->keyExists('account');
         Assert::that($data['resource_access']['account'])->isArray()->keyExists('roles');
@@ -220,21 +218,15 @@ final readonly class JwtPayload
         Assert::that($data['email_verified'])->boolean();
         $emailVerified = $data['email_verified'];
 
-        Assert::that($data)->keyExists('clientHost');
-        Assert::that($data['clientHost'])->string()->ip();
-        $clientHost = $data['clientHost'];
+        $clientHost = $data['clientHost'] ?? '';
 
         Assert::that($data)->keyExists('preferred_username');
         Assert::that($data['preferred_username'])->string()->notBlank();
         $preferredUsername = $data['preferred_username'];
 
-        Assert::that($data)->keyExists('clientAddress');
-        Assert::that($data['clientAddress'])->string()->ip();
-        $clientAddress = $data['clientAddress'];
+        $clientAddress = $data['clientAddress'] ?? '';
 
-        Assert::that($data)->keyExists('client_id');
-        Assert::that($data['client_id'])->string()->notBlank();
-        $clientId = $data['client_id'];
+        $clientId = $data['client_id'] ?? '';
 
         return new self(
             exp: $exp,

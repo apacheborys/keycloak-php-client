@@ -23,7 +23,7 @@ final readonly class KeycloakCredential implements JsonSerializable
         return [
             'type' => $this->type->value(),
             'temporary' => $this->temporary,
-            'credentialsData' => $this->credentialData,
+            'credentialData' => $this->credentialData,
             'secretData' => $this->secretData,
         ];
     }
