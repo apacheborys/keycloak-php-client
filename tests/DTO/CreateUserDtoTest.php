@@ -47,7 +47,7 @@ final class CreateUserDtoTest extends TestCase
                     [
                         'type' => 'password',
                         'temporary' => false,
-                        'credentialsData' => '{"algorithm":"bcrypt","hashIterations":10}',
+                        'credentialData' => '{"algorithm":"bcrypt","hashIterations":10}',
                         'secretData' => '{"value":"hash","salt":"salt"}',
                     ],
                 ],
