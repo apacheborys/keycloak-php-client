@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Mapper;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 
 interface LocalKeycloakUserBridgeMapperInterface
@@ -23,6 +24,11 @@ interface LocalKeycloakUserBridgeMapperInterface
     public function prepareLocalUserForKeycloakUserDeletion(
         KeycloakUserInterface $localUser
     ): DeleteUserDto;
+
+    public function prepareLocalUserDiffForKeycloakUserUpdate(
+        KeycloakUserInterface $oldUserVersion,
+        KeycloakUserInterface $newUserVersion
+    ): UpdateUserDto;
 
     public function support(KeycloakUserInterface $localUser): bool;
 }

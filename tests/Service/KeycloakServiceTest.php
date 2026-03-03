@@ -7,6 +7,8 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Service;
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -72,15 +74,71 @@ final class KeycloakServiceTest extends TestCase
     public function testUpdateUserDelegatesToHttpClient(): void
     {
         $httpClient = new TestKeycloakHttpClient();
+        $mappedUpdateDto = new UpdateUserDto(
+            realm: 'master',
+            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            profile: new UpdateUserProfileDto(
+                username: 'user@example.com',
+                email: 'new@example.com',
+                firstName: 'New',
+            ),
+        );
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto(),
+            updateUserDto: $mappedUpdateDto
+        );
+        $service = new KeycloakService($httpClient, [$mapper]);
+        $oldUserVersion = new ServiceTestUser(
+            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            email: 'old@example.com',
+            firstName: 'Old',
+        );
+        $newUserVersion = new ServiceTestUser(
+            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            email: 'new@example.com',
+            firstName: 'New',
+        );
+        $updatedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'email' => 'new@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+
+        $httpClient->queueResult('updateUser', null);
+        $httpClient->queueResult('getUsers', [$updatedUser]);
+
+        $result = $service->updateUser($oldUserVersion, $newUserVersion);
+
+        self::assertSame($updatedUser, $result);
+        self::assertSame(
+            ['updateUser', 'getUsers'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
+        self::assertSame($mappedUpdateDto, $httpClient->getCalls()[0]['args'][0]);
+        self::assertSame($oldUserVersion, $mapper->getCapturedOldUserForUpdate());
+        self::assertSame($newUserVersion, $mapper->getCapturedNewUserForUpdate());
+    }
+
+    public function testUpdateUserRejectsDifferentIds(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Old and new user versions must reference the same user id.');
+
+        $httpClient = new TestKeycloakHttpClient();
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto()
         );
         $service = new KeycloakService($httpClient, [$mapper]);
 
-        $httpClient->queueResult('updateUser', ['ok' => true]);
+        $oldUserVersion = new ServiceTestUser(id: '92a372d5-c338-4e77-a1b3-08771241036e');
+        $newUserVersion = new ServiceTestUser(id: 'd15f15d4-c107-4a99-8281-8b2a7d7c6d6a');
 
-        self::assertSame(['ok' => true], $service->updateUser('id', ['foo' => 'bar']));
+        $service->updateUser($oldUserVersion, $newUserVersion);
     }
 
     public function testDeleteUserUsesMapperAndHttpClient(): void

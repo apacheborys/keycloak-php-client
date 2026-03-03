@@ -9,6 +9,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
@@ -56,12 +57,9 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function updateUser(string $userId, array $payload): array
+    public function updateUser(UpdateUserDto $dto): void
     {
-        /** @var array $result */
-        $result = $this->nextResult(method: __FUNCTION__, args: [$userId, $payload]);
-
-        return $result;
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
     #[Override]

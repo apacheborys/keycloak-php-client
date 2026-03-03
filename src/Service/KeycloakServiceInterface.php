@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
@@ -16,7 +15,10 @@ interface KeycloakServiceInterface
 {
     public function createUser(KeycloakUserInterface $localUser, PasswordDto $passwordDto): KeycloakUser;
 
-    public function updateUser(string $userId, array $payload): array;
+    public function updateUser(
+        KeycloakUserInterface $oldUserVersion,
+        KeycloakUserInterface $newUserVersion
+    ): KeycloakUser;
 
     public function deleteUser(KeycloakUserInterface $user): void;
 

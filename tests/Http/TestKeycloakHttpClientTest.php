@@ -9,6 +9,8 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
@@ -86,6 +88,33 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'createUser',
                     'args' => [$createUserDto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testUpdateUserConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new UpdateUserDto(
+            realm: 'master',
+            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            profile: new UpdateUserProfileDto(
+                username: 'user@example.com',
+                email: 'updated@example.com',
+                firstName: 'Updated',
+            ),
+        );
+
+        $client->queueResult('updateUser', null);
+        $client->updateUser($dto);
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'updateUser',
+                    'args' => [$dto],
                 ],
             ],
             $client->getCalls(),
