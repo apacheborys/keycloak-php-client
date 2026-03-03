@@ -37,7 +37,7 @@ readonly final class UpdateUserDto
     /**
      * @return array{
      *     username: string,
-     *     email: string,
+     *     email?: string,
      *     emailVerified?: bool,
      *     enabled?: bool,
      *     firstName?: string,

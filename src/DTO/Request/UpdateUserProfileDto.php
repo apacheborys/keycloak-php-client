@@ -10,14 +10,17 @@ readonly final class UpdateUserProfileDto
 {
     public function __construct(
         private string $username,
-        private string $email,
+        private ?string $email = null,
         private ?bool $emailVerified = null,
         private ?bool $enabled = null,
         private ?string $firstName = null,
         private ?string $lastName = null,
     ) {
         Assert::that($this->username)->notEmpty();
-        Assert::that($this->email)->notEmpty()->email();
+
+        if ($this->email !== null) {
+            Assert::that($this->email)->notEmpty()->email();
+        }
 
         if ($this->firstName !== null) {
             Assert::that($this->firstName)->notEmpty();
@@ -33,7 +36,7 @@ readonly final class UpdateUserProfileDto
         return $this->username;
     }
 
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }
@@ -41,7 +44,7 @@ readonly final class UpdateUserProfileDto
     /**
      * @return array{
      *     username: string,
-     *     email: string,
+     *     email?: string,
      *     emailVerified?: bool,
      *     enabled?: bool,
      *     firstName?: string,
@@ -52,8 +55,11 @@ readonly final class UpdateUserProfileDto
     {
         $result = [
             'username' => $this->username,
-            'email' => $this->email,
         ];
+
+        if ($this->email !== null) {
+            $result['email'] = $this->email;
+        }
 
         if ($this->emailVerified !== null) {
             $result['emailVerified'] = $this->emailVerified;

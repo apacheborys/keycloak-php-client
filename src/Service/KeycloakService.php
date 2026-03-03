@@ -106,12 +106,13 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             newUserVersion: $newUserVersion
         );
 
-        $this->httpClient->updateUser(dto: $dto);
         $searchDto = new SearchUsersDto(
             realm: $dto->getRealm(),
-            email: $dto->getProfile()->getEmail(),
+            email: $dto->getProfile()->getUsername(),
             exact: true,
         );
+
+        $this->httpClient->updateUser(dto: $dto);
 
         /** @var array<int, KeycloakUser> $users */
         $users = $this->httpClient->getUsers(dto: $searchDto);
