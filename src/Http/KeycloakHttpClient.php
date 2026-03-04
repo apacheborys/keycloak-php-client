@@ -10,6 +10,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
@@ -30,6 +33,8 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     private const string CLIENT_NAME = 'Keycloak PHP Client';
 
     public const int REALM_LIST_TTL = 3600;
+    public const int OPENID_CONFIGURATION_TTL = 86400;
+    public const int JWK_BY_KID_TTL = 86400;
 
     public function __construct(
         private string $baseUrl,
@@ -41,6 +46,8 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         private StreamFactoryInterface $streamFactory,
         private ?CacheItemPoolInterface $cache = null,
         private int $realmListTtl = self::REALM_LIST_TTL,
+        private int $openIdConfigurationTtl = self::OPENID_CONFIGURATION_TTL,
+        private int $jwkByKidTtl = self::JWK_BY_KID_TTL,
     ) {
     }
 
@@ -192,9 +199,132 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function getJwks(string $realm): array
+    public function getOpenIdConfiguration(string $realm, bool $allowToUseCache = true): OpenIdConfigurationDto
     {
-        throw new LogicException(message: 'HTTP getJwks is not implemented yet.');
+        $cacheKey = 'keycloak.openid_configuration.' . sha1(string: $this->baseUrl . '|' . $realm);
+
+        if ($allowToUseCache && $this->cache !== null) {
+            $cacheItem = $this->cache->getItem(key: $cacheKey);
+
+            if ($cacheItem->isHit()) {
+                $cachedValue = $cacheItem->get();
+
+                if (is_string(value: $cachedValue) && $cachedValue !== '') {
+                    $cachedData = $this->decodeJson(body: $cachedValue);
+
+                    return OpenIdConfigurationDto::fromArray(data: $cachedData);
+                }
+            }
+        }
+
+        $endpoint = $this->buildEndpoint(path: '/realms/' . $realm . '/.well-known/openid-configuration');
+        $request = $this->createRequest(method: 'GET', endpoint: $endpoint);
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak OpenID configuration request failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        if ($this->cache !== null) {
+            $cacheItem = $this->cache->getItem(key: $cacheKey);
+            $cacheItem->set(value: $body);
+            $cacheItem->expiresAfter(time: $this->openIdConfigurationTtl);
+            $this->cache->save(item: $cacheItem);
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        return OpenIdConfigurationDto::fromArray(data: $data);
+    }
+
+    #[Override]
+    public function getJwk(
+        string $realm,
+        string $kid,
+        string $jwksUri,
+        bool $allowToUseCache = true,
+    ): ?JwkDto {
+        if ($allowToUseCache) {
+            $cachedJwk = $this->getCachedJwk(realm: $realm, kid: $kid);
+
+            if ($cachedJwk instanceof JwkDto) {
+                return $cachedJwk;
+            }
+        }
+
+        $jwks = $this->getJwks(
+            realm: $realm,
+            jwksUri: $jwksUri,
+        );
+
+        return $jwks->findByKid(kid: $kid);
+    }
+
+    private function getCachedJwk(string $realm, string $kid): ?JwkDto
+    {
+        if ($this->cache === null) {
+            return null;
+        }
+
+        $cacheItem = $this->cache->getItem(
+            key: 'keycloak.jwk_by_kid.' . sha1(string: $this->baseUrl . '|' . $realm . '|' . $kid)
+        );
+
+        if (!$cacheItem->isHit()) {
+            return null;
+        }
+
+        $cachedValue = $cacheItem->get();
+        if (!is_string(value: $cachedValue) || $cachedValue === '') {
+            return null;
+        }
+
+        $cachedData = $this->decodeJson(body: $cachedValue);
+
+        return JwkDto::fromArray(data: $cachedData);
+    }
+
+    #[Override]
+    public function getJwks(string $realm, string $jwksUri): JwksDto
+    {
+        $request = $this->createRequest(
+            method: 'GET',
+            endpoint: $jwksUri,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak JWKS request failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        $jwks = JwksDto::fromArray(data: $data);
+
+        if ($this->cache !== null) {
+            foreach ($jwks->getKeys() as $key) {
+                $keyCacheItem = $this->cache->getItem(
+                    key: 'keycloak.jwk_by_kid.' . sha1(string: $this->baseUrl . '|' . $realm . '|' . $key->getKid())
+                );
+                /** @var string $serialized */
+                $serialized = json_encode(value: $key->toArray(), flags: JSON_THROW_ON_ERROR);
+                $keyCacheItem->set(value: $serialized);
+                $keyCacheItem->expiresAfter(time: $this->jwkByKidTtl);
+                $this->cache->save(item: $keyCacheItem);
+            }
+        }
+
+        return $jwks;
     }
 
     #[Override]

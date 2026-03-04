@@ -11,6 +11,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
@@ -173,6 +176,92 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'deleteUser',
                     'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testGetOpenIdConfigurationConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $expected = new OpenIdConfigurationDto(
+            issuer: 'http://localhost:8080/realms/master',
+            jwksUri: 'http://localhost:8080/realms/master/protocol/openid-connect/certs',
+        );
+
+        $client->queueResult('getOpenIdConfiguration', $expected);
+
+        self::assertSame($expected, $client->getOpenIdConfiguration('master'));
+        self::assertSame(
+            [
+                [
+                    'method' => 'getOpenIdConfiguration',
+                    'args' => ['master', true],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testGetJwksConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $expected = new JwksDto(
+            keys: [
+                new JwkDto(
+                    kty: 'RSA',
+                    kid: 'kid',
+                    use: 'sig',
+                    alg: 'RS256',
+                    n: 'modulus',
+                    e: 'AQAB',
+                    x5c: ['certificate'],
+                ),
+            ],
+        );
+
+        $client->queueResult('getJwks', $expected);
+
+        self::assertSame(
+            $expected,
+            $client->getJwks('master', 'http://localhost:8080/realms/master/protocol/openid-connect/certs')
+        );
+        self::assertSame(
+            [
+                [
+                    'method' => 'getJwks',
+                    'args' => ['master', 'http://localhost:8080/realms/master/protocol/openid-connect/certs'],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testGetJwkConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $expected = new JwkDto(
+            kty: 'RSA',
+            kid: 'kid',
+            use: 'sig',
+            alg: 'RS256',
+            n: 'modulus',
+            e: 'AQAB',
+            x5c: ['certificate'],
+        );
+
+        $client->queueResult('getJwk', $expected);
+
+        self::assertSame(
+            $expected,
+            $client->getJwk('master', 'kid', 'http://localhost:8080/realms/master/protocol/openid-connect/certs')
+        );
+        self::assertSame(
+            [
+                [
+                    'method' => 'getJwk',
+                    'args' => ['master', 'kid', 'http://localhost:8080/realms/master/protocol/openid-connect/certs', true],
                 ],
             ],
             $client->getCalls(),
