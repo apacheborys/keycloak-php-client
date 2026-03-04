@@ -24,6 +24,7 @@ use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use LogicException;
 use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class KeycloakServiceTest extends TestCase
 {
@@ -228,6 +229,33 @@ final class KeycloakServiceTest extends TestCase
                         'http://localhost:8080/realms/master/protocol/openid-connect/certs',
                         true,
                     ],
+                ],
+            ],
+            $httpClient->getCalls(),
+        );
+    }
+
+    public function testVerifyJwtReturnsFalseWhenOpenIdConfigurationRequestFails(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = new KeycloakService($httpClient, [$mapper]);
+
+        $bundle = $this->buildSignedTokenAndJwks(realm: 'master');
+        $httpClient->queueResult(
+            'getOpenIdConfiguration',
+            new RuntimeException('OpenID configuration is unavailable')
+        );
+
+        self::assertFalse($service->verifyJwt($bundle['jwt']));
+        self::assertSame(
+            [
+                [
+                    'method' => 'getOpenIdConfiguration',
+                    'args' => ['master', true],
                 ],
             ],
             $httpClient->getCalls(),

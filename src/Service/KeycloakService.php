@@ -21,6 +21,7 @@ use Apacheborys\KeycloakPhpClient\ValueObject\HashAlgorithm;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use Override;
+use Psr\Log\LoggerInterface;
 
 final readonly class KeycloakService implements KeycloakServiceInterface
 {
@@ -30,6 +31,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
          * @var LocalKeycloakUserBridgeMapperInterface[] $mappers
          */
         private iterable $mappers,
+        private ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -72,6 +74,15 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $result = $this->httpClient->getUsers(dto: $searchDto);
 
         if (count(value: $result) !== 1) {
+            $this->debug(
+                message: 'Create user failed: expected exactly one user after creation.',
+                context: [
+                    'email' => $profileDto->getEmail(),
+                    'realm' => $profileDto->getRealm(),
+                    'matched_users_count' => count(value: $result),
+                ],
+            );
+
             throw new LogicException(message: "Can't find just created user with email " . $profileDto->getEmail());
         }
 
@@ -96,6 +107,14 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         KeycloakUserInterface $newUserVersion
     ): KeycloakUser {
         if ($oldUserVersion->getId() !== $newUserVersion->getId()) {
+            $this->debug(
+                message: 'Update user failed: old and new user identifiers are different.',
+                context: [
+                    'old_user_id' => $oldUserVersion->getId(),
+                    'new_user_id' => $newUserVersion->getId(),
+                ],
+            );
+
             throw new LogicException('Old and new user versions must reference the same user id.');
         }
 
@@ -125,6 +144,20 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             }
         }
 
+        $this->debug(
+            message: 'Update user failed: updated user was not found after update request.',
+            context: [
+                'expected_user_id' => $dto->getUserId(),
+                'realm' => $dto->getRealm(),
+                'found_user_ids' => array_values(
+                    array_map(
+                        static fn (KeycloakUser $user): string => $user->getId(),
+                        $users
+                    )
+                ),
+            ],
+        );
+
         throw new LogicException(
             message: "Can't find updated user with id " . $dto->getUserId() . ' in realm ' . $dto->getRealm()
         );
@@ -148,38 +181,115 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     #[Override]
     public function verifyJwt(string $jwt): bool
     {
+        $jwtFingerprint = sha1(string: $jwt);
+
         try {
             $token = JsonWebToken::fromRawToken(rawToken: $jwt);
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
+            $this->debug(
+                message: 'JWT verification failed: unable to parse token.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'exception_message' => $exception->getMessage(),
+                ],
+            );
+
             return false;
         }
 
-        if (!$this->verifyTemporalClaims(token: $token)) {
+        $temporalFailureReason = null;
+        if (!$this->verifyTemporalClaims(token: $token, failureReason: $temporalFailureReason)) {
+            $this->debug(
+                message: 'JWT verification failed: temporal claims check failed.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'reason' => $temporalFailureReason,
+                    'exp' => $token->getPayload()->getExp()->getTimestamp(),
+                    'iat' => $token->getPayload()->getIat()->getTimestamp(),
+                ],
+            );
+
             return false;
         }
 
         $realm = $this->extractRealmFromIssuer(issuer: $token->getPayload()->getIss());
         if ($realm === null) {
+            $this->debug(
+                message: 'JWT verification failed: realm cannot be extracted from token issuer.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'issuer' => $token->getPayload()->getIss(),
+                ],
+            );
+
             return false;
         }
 
-        $openIdConfiguration = $this->httpClient->getOpenIdConfiguration(realm: $realm);
+        try {
+            $openIdConfiguration = $this->httpClient->getOpenIdConfiguration(realm: $realm);
 
-        $jwk = $this->httpClient->getJwk(
-            realm: $realm,
-            kid: $token->getHeader()->getKid(),
-            jwksUri: $openIdConfiguration->getJwksUri(),
-        );
+            $jwk = $this->httpClient->getJwk(
+                realm: $realm,
+                kid: $token->getHeader()->getKid(),
+                jwksUri: $openIdConfiguration->getJwksUri(),
+            );
+        } catch (\Throwable $exception) {
+            $this->debug(
+                message: 'JWT verification failed: unable to obtain OpenID configuration or JWK.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'realm' => $realm,
+                    'kid' => $token->getHeader()->getKid(),
+                    'exception_message' => $exception->getMessage(),
+                ],
+            );
+
+            return false;
+        }
 
         if (!$jwk instanceof JwkDto) {
+            $this->debug(
+                message: 'JWT verification failed: JWK was not found for token kid.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'realm' => $realm,
+                    'kid' => $token->getHeader()->getKid(),
+                ],
+            );
+
             return false;
         }
 
-        return $this->verifySignatureWithJwk(
-            jwt: $jwt,
-            algorithm: $token->getHeader()->getAlg(),
-            jwk: $jwk
+        if (
+            !$this->verifySignatureWithJwk(
+                jwt: $jwt,
+                algorithm: $token->getHeader()->getAlg(),
+                jwk: $jwk
+            )
+        ) {
+            $this->debug(
+                message: 'JWT verification failed: signature verification returned false.',
+                context: [
+                    'jwt_fingerprint' => $jwtFingerprint,
+                    'realm' => $realm,
+                    'kid' => $token->getHeader()->getKid(),
+                    'alg' => $token->getHeader()->getAlg(),
+                ],
+            );
+
+            return false;
+        }
+
+        $this->debug(
+            message: 'JWT verification succeeded.',
+            context: [
+                'jwt_fingerprint' => $jwtFingerprint,
+                'realm' => $realm,
+                'kid' => $token->getHeader()->getKid(),
+            ],
         );
+
+        return true;
     }
 
     #[Override]
@@ -205,6 +315,14 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             }
         }
 
+        $this->debug(
+            message: 'Mapper resolution failed: mapper for local user was not found.',
+            context: [
+                'user_class' => $localUser::class,
+                'user_id' => $localUser->getId(),
+            ],
+        );
+
         throw new LogicException(message: "Can't find proper mapper for " . $localUser::class);
     }
 
@@ -220,6 +338,16 @@ final readonly class KeycloakService implements KeycloakServiceInterface
                 return $mapper;
             }
         }
+
+        $this->debug(
+            message: 'Mapper resolution failed: mapper for user update pair was not found.',
+            context: [
+                'old_user_class' => $oldUserVersion::class,
+                'old_user_id' => $oldUserVersion->getId(),
+                'new_user_class' => $newUserVersion::class,
+                'new_user_id' => $newUserVersion->getId(),
+            ],
+        );
 
         throw new LogicException(
             message: "Can't find proper mapper for update pair: "
@@ -315,15 +443,17 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         return $hashSalt;
     }
 
-    private function verifyTemporalClaims(JsonWebToken $token): bool
+    private function verifyTemporalClaims(JsonWebToken $token, ?string &$failureReason = null): bool
     {
         $now = time();
 
         if ($token->getPayload()->getExp()->getTimestamp() <= $now) {
+            $failureReason = 'token_expired';
             return false;
         }
 
         if ($token->getPayload()->getIat()->getTimestamp() > ($now + 300)) {
+            $failureReason = 'token_issued_in_future';
             return false;
         }
 
@@ -425,5 +555,13 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         }
 
         return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function debug(string $message, array $context = []): void
+    {
+        $this->logger?->debug(message: $message, context: $context);
     }
 }
