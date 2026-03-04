@@ -10,6 +10,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
@@ -29,7 +32,16 @@ interface KeycloakHttpClientInterface
 
     public function deleteRole(string $role): void;
 
-    public function getJwks(string $realm): array;
+    public function getOpenIdConfiguration(string $realm, bool $allowToUseCache = true): OpenIdConfigurationDto;
+
+    public function getJwk(
+        string $realm,
+        string $kid,
+        string $jwksUri,
+        bool $allowToUseCache = true,
+    ): ?JwkDto;
+
+    public function getJwks(string $realm, string $jwksUri): JwksDto;
 
     /**
      * @return KeycloakRealm[]

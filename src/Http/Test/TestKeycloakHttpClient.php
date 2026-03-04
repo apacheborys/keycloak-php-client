@@ -10,6 +10,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
@@ -93,10 +96,32 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function getJwks(string $realm): array
+    public function getOpenIdConfiguration(string $realm, bool $allowToUseCache = true): OpenIdConfigurationDto
     {
-        /** @var array $result */
-        $result = $this->nextResult(method: __FUNCTION__, args: [$realm]);
+        /** @var OpenIdConfigurationDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$realm, $allowToUseCache]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function getJwk(
+        string $realm,
+        string $kid,
+        string $jwksUri,
+        bool $allowToUseCache = true,
+    ): ?JwkDto {
+        /** @var ?JwkDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$realm, $kid, $jwksUri, $allowToUseCache]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function getJwks(string $realm, string $jwksUri): JwksDto
+    {
+        /** @var JwksDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$realm, $jwksUri]);
 
         return $result;
     }

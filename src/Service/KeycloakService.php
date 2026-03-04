@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
@@ -108,7 +110,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
 
         $searchDto = new SearchUsersDto(
             realm: $dto->getRealm(),
-            email: $dto->getProfile()->getUsername(),
+            email: $dto->getProfile()->getEmail(),
             exact: true,
         );
 
@@ -144,11 +146,40 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function authenticateJwt(string $jwt, string $realm): bool
+    public function verifyJwt(string $jwt): bool
     {
-        $this->httpClient->getJwks(realm: $realm);
+        try {
+            $token = JsonWebToken::fromRawToken(rawToken: $jwt);
+        } catch (\Throwable) {
+            return false;
+        }
 
-        throw new LogicException('JWT authentication is not implemented yet.');
+        if (!$this->verifyTemporalClaims(token: $token)) {
+            return false;
+        }
+
+        $realm = $this->extractRealmFromIssuer(issuer: $token->getPayload()->getIss());
+        if ($realm === null) {
+            return false;
+        }
+
+        $openIdConfiguration = $this->httpClient->getOpenIdConfiguration(realm: $realm);
+
+        $jwk = $this->httpClient->getJwk(
+            realm: $realm,
+            kid: $token->getHeader()->getKid(),
+            jwksUri: $openIdConfiguration->getJwksUri(),
+        );
+
+        if (!$jwk instanceof JwkDto) {
+            return false;
+        }
+
+        return $this->verifySignatureWithJwk(
+            jwt: $jwt,
+            algorithm: $token->getHeader()->getAlg(),
+            jwk: $jwk
+        );
     }
 
     #[Override]
@@ -282,5 +313,117 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         }
 
         return $hashSalt;
+    }
+
+    private function verifyTemporalClaims(JsonWebToken $token): bool
+    {
+        $now = time();
+
+        if ($token->getPayload()->getExp()->getTimestamp() <= $now) {
+            return false;
+        }
+
+        if ($token->getPayload()->getIat()->getTimestamp() > ($now + 300)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function extractRealmFromIssuer(string $issuer): ?string
+    {
+        $path = parse_url(url: $issuer, component: PHP_URL_PATH);
+        if (!is_string(value: $path) || $path === '') {
+            return null;
+        }
+
+        $segments = explode(separator: '/', string: trim(string: $path, characters: '/'));
+
+        foreach ($segments as $index => $segment) {
+            if ($segment !== 'realms') {
+                continue;
+            }
+
+            $realm = $segments[$index + 1] ?? null;
+            if (!is_string($realm) || $realm === '') {
+                return null;
+            }
+
+            return $realm;
+        }
+
+        return null;
+    }
+
+    private function verifySignatureWithJwk(string $jwt, string $algorithm, JwkDto $jwk): bool
+    {
+        $opensslAlgorithm = $this->resolveOpenSslAlgorithm(algorithm: $algorithm);
+        if ($opensslAlgorithm === null) {
+            return false;
+        }
+
+        $certificate = $jwk->getFirstCertificate();
+        if ($certificate === null) {
+            return false;
+        }
+
+        $pem = $this->buildCertificatePem(certificate: $certificate);
+        $publicKey = openssl_pkey_get_public(public_key: $pem);
+
+        if ($publicKey === false) {
+            return false;
+        }
+
+        $parts = explode(separator: '.', string: $jwt);
+        if (count(value: $parts) !== 3) {
+            return false;
+        }
+
+        $signature = $this->decodeBase64Url(value: $parts[2]);
+        if ($signature === null) {
+            return false;
+        }
+
+        $input = $parts[0] . '.' . $parts[1];
+        $result = openssl_verify(
+            data: $input,
+            signature: $signature,
+            public_key: $publicKey,
+            algorithm: $opensslAlgorithm
+        );
+
+        return $result === 1;
+    }
+
+    private function resolveOpenSslAlgorithm(string $algorithm): ?int
+    {
+        return match ($algorithm) {
+            'RS256' => OPENSSL_ALGO_SHA256,
+            'RS384' => OPENSSL_ALGO_SHA384,
+            'RS512' => OPENSSL_ALGO_SHA512,
+            default => null,
+        };
+    }
+
+    private function buildCertificatePem(string $certificate): string
+    {
+        return "-----BEGIN CERTIFICATE-----\n"
+            . chunk_split(string: $certificate, length: 64, separator: "\n")
+            . "-----END CERTIFICATE-----\n";
+    }
+
+    private function decodeBase64Url(string $value): ?string
+    {
+        $remainder = strlen(string: $value) % 4;
+        if ($remainder !== 0) {
+            $value .= str_repeat(string: '=', times: 4 - $remainder);
+        }
+
+        $decoded = base64_decode(string: strtr(string: $value, from: '-_', to: '+/'), strict: true);
+        if ($decoded === false) {
+            return null;
+        }
+
+        return $decoded;
     }
 }

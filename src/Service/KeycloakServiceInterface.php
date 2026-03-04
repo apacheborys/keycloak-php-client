@@ -27,7 +27,7 @@ interface KeycloakServiceInterface
      */
     public function getAvailableRealms(): array;
 
-    public function authenticateJwt(string $jwt, string $realm): bool;
+    public function verifyJwt(string $jwt): bool;
 
     public function loginUser(KeycloakUserInterface $user, string $plainPassword): OidcTokenResponseDto;
 
