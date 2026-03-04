@@ -10,8 +10,19 @@ use DateTimeInterface;
 
 final class ServiceTestUser implements KeycloakUserInterface
 {
-    public function __construct(private string $id)
-    {
+    /**
+     * @param list<string> $roles
+     */
+    public function __construct(
+        private string $id,
+        private string $username = 'user@example.com',
+        private string $email = 'user@example.com',
+        private bool $emailVerified = true,
+        private string $firstName = 'User',
+        private string $lastName = 'Example',
+        private bool $enabled = true,
+        private array $roles = [],
+    ) {
     }
 
     public function getId(): string
@@ -21,32 +32,32 @@ final class ServiceTestUser implements KeycloakUserInterface
 
     public function getUsername(): string
     {
-        return 'user@example.com';
+        return $this->username;
     }
 
     public function getEmail(): string
     {
-        return 'user@example.com';
+        return $this->email;
     }
 
     public function isEmailVerified(): bool
     {
-        return true;
+        return $this->emailVerified;
     }
 
     public function getFirstName(): string
     {
-        return 'User';
+        return $this->firstName;
     }
 
     public function getLastName(): string
     {
-        return 'Example';
+        return $this->lastName;
     }
 
     public function getRoles(): array
     {
-        return [];
+        return $this->roles;
     }
 
     public function getCreatedAt(): DateTimeInterface
@@ -56,6 +67,6 @@ final class ServiceTestUser implements KeycloakUserInterface
 
     public function isEnabled(): bool
     {
-        return true;
+        return $this->enabled;
     }
 }

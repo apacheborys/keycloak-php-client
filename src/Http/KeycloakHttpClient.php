@@ -9,6 +9,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
@@ -110,9 +111,38 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function updateUser(string $userId, array $payload): array
+    public function updateUser(UpdateUserDto $dto): void
     {
-        throw new LogicException(message: 'HTTP updateUser is not implemented yet.');
+        $token = $this->getAccessToken();
+
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+        );
+
+        /** @var string $payload */
+        $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
+
+        $request = $this->createRequest(
+            method: 'PUT',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak update user failed with status %d: %s', $statusCode, $body)
+        );
     }
 
     #[Override]

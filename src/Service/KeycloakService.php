@@ -89,9 +89,43 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     }
 
     #[Override]
-    public function updateUser(string $userId, array $payload): array
-    {
-        return $this->httpClient->updateUser($userId, $payload);
+    public function updateUser(
+        KeycloakUserInterface $oldUserVersion,
+        KeycloakUserInterface $newUserVersion
+    ): KeycloakUser {
+        if ($oldUserVersion->getId() !== $newUserVersion->getId()) {
+            throw new LogicException('Old and new user versions must reference the same user id.');
+        }
+
+        $mapper = $this->getMapperForLocalUserPair(
+            oldUserVersion: $oldUserVersion,
+            newUserVersion: $newUserVersion
+        );
+        $dto = $mapper->prepareLocalUserDiffForKeycloakUserUpdate(
+            oldUserVersion: $oldUserVersion,
+            newUserVersion: $newUserVersion
+        );
+
+        $searchDto = new SearchUsersDto(
+            realm: $dto->getRealm(),
+            email: $dto->getProfile()->getUsername(),
+            exact: true,
+        );
+
+        $this->httpClient->updateUser(dto: $dto);
+
+        /** @var array<int, KeycloakUser> $users */
+        $users = $this->httpClient->getUsers(dto: $searchDto);
+
+        foreach ($users as $user) {
+            if ($user->getId() === $dto->getUserId()) {
+                return $user;
+            }
+        }
+
+        throw new LogicException(
+            message: "Can't find updated user with id " . $dto->getUserId() . ' in realm ' . $dto->getRealm()
+        );
     }
 
     #[Override]
@@ -141,6 +175,27 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         }
 
         throw new LogicException(message: "Can't find proper mapper for " . $localUser::class);
+    }
+
+    private function getMapperForLocalUserPair(
+        KeycloakUserInterface $oldUserVersion,
+        KeycloakUserInterface $newUserVersion
+    ): LocalKeycloakUserBridgeMapperInterface {
+        foreach ($this->mappers as $mapper) {
+            if (
+                $mapper->support(localUser: $oldUserVersion)
+                && $mapper->support(localUser: $newUserVersion)
+            ) {
+                return $mapper;
+            }
+        }
+
+        throw new LogicException(
+            message: "Can't find proper mapper for update pair: "
+                . $oldUserVersion::class
+                . ' and '
+                . $newUserVersion::class
+        );
     }
 
     private function buildCredentialData(PasswordDto $passwordDto): string
