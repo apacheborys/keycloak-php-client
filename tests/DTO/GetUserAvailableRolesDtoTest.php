@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
+
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
+use Assert\InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+
+final class GetUserAvailableRolesDtoTest extends TestCase
+{
+    public function testGetters(): void
+    {
+        $dto = new GetUserAvailableRolesDto(
+            realm: 'master',
+            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+        );
+
+        self::assertSame('master', $dto->getRealm());
+        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $dto->getUserId());
+    }
+
+    public function testInvalidUserIdThrows(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new GetUserAvailableRolesDto(
+            realm: 'master',
+            userId: 'not-a-uuid',
+        );
+    }
+}

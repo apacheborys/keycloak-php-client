@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
+use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -81,18 +86,45 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function getRoles(): array
+    public function getRoles(GetRolesDto $dto): array
     {
         /** @var array $result */
-        $result = $this->nextResult(method: __FUNCTION__, args: []);
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
     }
 
-    #[\Override]
-    public function deleteRole(string $role): void
+    #[Override]
+    public function getAvailableUserRoles(GetUserAvailableRolesDto $dto): array
     {
-        $this->nextResult(method: __FUNCTION__, args: [$role]);
+        /** @var array $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function createRole(CreateRoleDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[\Override]
+    public function deleteRole(DeleteRoleDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function assignRolesToUser(AssignUserRolesDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function unassignRolesFromUser(AssignUserRolesDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
 
     #[Override]

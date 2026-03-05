@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures;
 
+use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
@@ -17,6 +18,14 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     private ?string $capturedPlainPassword = null;
     private ?KeycloakUserInterface $capturedOldUserForUpdate = null;
     private ?KeycloakUserInterface $capturedNewUserForUpdate = null;
+    /**
+     * @var list<RoleDto>
+     */
+    private array $capturedAvailableRolesForCreation = [];
+    /**
+     * @var list<RoleDto>
+     */
+    private array $capturedAvailableRolesForUpdate = [];
 
     public function __construct(
         private CreateUserProfileDto $createUserProfile,
@@ -26,9 +35,18 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     ) {
     }
 
+    public function getRealm(KeycloakUserInterface $localUser): string
+    {
+        return $this->createUserProfile->getRealm();
+    }
+
     public function prepareLocalUserForKeycloakUserCreation(
-        KeycloakUserInterface $localUser
+        KeycloakUserInterface $localUser,
+        array $availableRoles
     ): CreateUserProfileDto {
+        /** @var list<RoleDto> $availableRoles */
+        $this->capturedAvailableRolesForCreation = $availableRoles;
+
         return $this->createUserProfile;
     }
 
@@ -52,10 +70,13 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 
     public function prepareLocalUserDiffForKeycloakUserUpdate(
         KeycloakUserInterface $oldUserVersion,
-        KeycloakUserInterface $newUserVersion
+        KeycloakUserInterface $newUserVersion,
+        array $availableRoles
     ): UpdateUserDto {
         $this->capturedOldUserForUpdate = $oldUserVersion;
         $this->capturedNewUserForUpdate = $newUserVersion;
+        /** @var list<RoleDto> $availableRoles */
+        $this->capturedAvailableRolesForUpdate = $availableRoles;
 
         if ($this->updateUserDto !== null) {
             return $this->updateUserDto;
@@ -71,6 +92,10 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
                 enabled: $newUserVersion->isEnabled(),
                 firstName: $newUserVersion->getFirstName(),
                 lastName: $newUserVersion->getLastName(),
+                roles: array_map(
+                    static fn (string $roleName): RoleDto => new RoleDto(name: $roleName),
+                    $newUserVersion->getRoles(),
+                ),
             ),
         );
     }
@@ -93,5 +118,21 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     public function getCapturedNewUserForUpdate(): ?KeycloakUserInterface
     {
         return $this->capturedNewUserForUpdate;
+    }
+
+    /**
+     * @return list<RoleDto>
+     */
+    public function getCapturedAvailableRolesForCreation(): array
+    {
+        return $this->capturedAvailableRolesForCreation;
+    }
+
+    /**
+     * @return list<RoleDto>
+     */
+    public function getCapturedAvailableRolesForUpdate(): array
+    {
+        return $this->capturedAvailableRolesForUpdate;
     }
 }
