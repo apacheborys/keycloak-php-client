@@ -7,7 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 use Assert\Assert;
 use Ramsey\Uuid\UuidInterface;
 
-readonly final class DeleteUserDto
+readonly final class GetUserAvailableRolesDto
 {
     public function __construct(
         private string $realm,

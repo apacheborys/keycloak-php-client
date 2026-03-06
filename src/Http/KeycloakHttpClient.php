@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http;
 
+use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -123,7 +129,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $token = $this->getAccessToken();
 
         $endpoint = $this->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
         );
 
         /** @var string $payload */
@@ -158,7 +164,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $token = $this->getAccessToken();
 
         $endpoint = $this->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
         );
 
         $request = $this->createRequest(
@@ -187,15 +193,159 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function getRoles(): array
+    public function getRoles(GetRolesDto $dto): array
     {
-        throw new LogicException('HTTP getRoles is not implemented yet.');
+        $token = $this->getAccessToken();
+        $endpoint = $this->buildEndpoint(path: '/admin/realms/' . $dto->getRealm() . '/roles');
+
+        $request = $this->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak get roles failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        /** @var array<int, mixed> $data */
+        $roles = [];
+        foreach ($data as $item) {
+            Assert::that($item)->isArray();
+            /** @var array<string, mixed> $item */
+            $roles[] = RoleDto::fromArray(data: $item);
+        }
+
+        return $roles;
     }
 
     #[Override]
-    public function deleteRole(string $role): void
+    public function getAvailableUserRoles(GetUserAvailableRolesDto $dto): array
     {
-        throw new LogicException(message: 'HTTP deleteRole is not implemented yet.');
+        $token = $this->getAccessToken();
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm()
+                . '/users/' . $dto->getUserId()->toString()
+                . '/role-mappings/realm/available'
+        );
+
+        $request = $this->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak get available user roles failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = $this->decodeJson(body: $body);
+
+        /** @var array<int, mixed> $data */
+        $roles = [];
+        foreach ($data as $item) {
+            Assert::that($item)->isArray();
+            /** @var array<string, mixed> $item */
+            $roles[] = RoleDto::fromArray(data: $item);
+        }
+
+        return $roles;
+    }
+
+    #[Override]
+    public function createRole(CreateRoleDto $dto): void
+    {
+        $token = $this->getAccessToken();
+        $endpoint = $this->buildEndpoint(path: '/admin/realms/' . $dto->getRealm() . '/roles');
+
+        /** @var string $payload */
+        $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
+
+        $request = $this->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        // If role was created in parallel by another process, Keycloak may return 409.
+        if ($statusCode === 409) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak create role failed with status %d: %s', $statusCode, $body)
+        );
+    }
+
+    #[Override]
+    public function deleteRole(DeleteRoleDto $dto): void
+    {
+        $token = $this->getAccessToken();
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/roles/' . rawurlencode($dto->getRoleName())
+        );
+
+        $request = $this->createRequest(
+            method: 'DELETE',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak delete role failed with status %d: %s', $statusCode, $body)
+        );
+    }
+
+    #[Override]
+    public function assignRolesToUser(AssignUserRolesDto $dto): void
+    {
+        $this->changeUserRoleMappings(
+            dto: $dto,
+            method: 'POST',
+        );
+    }
+
+    #[Override]
+    public function unassignRolesFromUser(AssignUserRolesDto $dto): void
+    {
+        $this->changeUserRoleMappings(
+            dto: $dto,
+            method: 'DELETE',
+        );
     }
 
     #[Override]
@@ -559,6 +709,54 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $data = $this->decodeJson(body: $body);
 
         return OidcTokenResponseDto::fromArray(data: $data);
+    }
+
+    private function changeUserRoleMappings(
+        AssignUserRolesDto $dto,
+        string $method,
+    ): void {
+        $roles = $dto->getRoles();
+        if ($roles === []) {
+            return;
+        }
+
+        foreach ($roles as $role) {
+            Assert::that($role)->isInstanceOf(RoleDto::class);
+        }
+
+        $token = $this->getAccessToken();
+        $endpoint = $this->buildEndpoint(
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/users/'
+                . $dto->getUserId()->toString()
+                . '/role-mappings/realm'
+        );
+
+        /** @var string $payload */
+        $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
+
+        $request = $this->createRequest(
+            method: $method,
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
+
+        $response = $this->httpClient->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf('Keycloak user role mapping failed with status %d: %s', $statusCode, $body)
+        );
     }
 
     private function buildEndpoint(string $path, string $query = ''): string

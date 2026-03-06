@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 use Assert\Assert;
-use Ramsey\Uuid\UuidInterface;
 
-readonly final class DeleteUserDto
+readonly final class DeleteRoleDto
 {
     public function __construct(
         private string $realm,
-        private UuidInterface $userId,
+        private string $roleName,
     ) {
         Assert::that($this->realm)->notEmpty();
+        Assert::that($this->roleName)->notEmpty();
     }
 
     public function getRealm(): string
@@ -21,8 +21,8 @@ readonly final class DeleteUserDto
         return $this->realm;
     }
 
-    public function getUserId(): UuidInterface
+    public function getRoleName(): string
     {
-        return $this->userId;
+        return $this->roleName;
     }
 }

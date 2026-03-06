@@ -6,8 +6,9 @@ namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
-use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
+use TypeError;
 
 final class UpdateUserDtoTest extends TestCase
 {
@@ -15,7 +16,7 @@ final class UpdateUserDtoTest extends TestCase
     {
         $dto = new UpdateUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
             profile: new UpdateUserProfileDto(
                 username: 'oleg@example.com',
                 email: 'oleg.new@example.com',
@@ -25,7 +26,7 @@ final class UpdateUserDtoTest extends TestCase
         );
 
         self::assertSame('master', $dto->getRealm());
-        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $dto->getUserId());
+        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $dto->getUserId()->toString());
         self::assertSame('oleg@example.com', $dto->getProfile()->getUsername());
         self::assertSame('oleg.new@example.com', $dto->getProfile()->getEmail());
         self::assertSame(
@@ -39,9 +40,9 @@ final class UpdateUserDtoTest extends TestCase
         );
     }
 
-    public function testInvalidUserIdThrows(): void
+    public function testInvalidUserIdTypeThrows(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(TypeError::class);
 
         new UpdateUserDto(
             realm: 'master',
