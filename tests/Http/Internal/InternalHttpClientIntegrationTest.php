@@ -46,13 +46,13 @@ final class InternalHttpClientIntegrationTest extends TestCase
             httpClient: new NativePsr18Client(),
             requestFactory: new SimpleRequestFactory(),
             streamFactory: new SimpleStreamFactory(),
-            cache: $this->cache,
         );
         $this->accessTokenProvider = new AccessTokenProvider(
             httpCore: $this->httpCore,
             clientRealm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
+            cache: $this->cache,
         );
     }
 
@@ -176,10 +176,6 @@ final class InternalHttpClientIntegrationTest extends TestCase
         $client = new OidcInteractionHttpClient(
             httpCore: $this->httpCore,
             accessTokenProvider: $this->accessTokenProvider,
-            clientId: 'backend',
-            realmListTtl: 3600,
-            openIdConfigurationTtl: 86400,
-            jwkByKidTtl: 86400,
         );
 
         $response = $client->requestTokenByPassword(

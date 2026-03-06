@@ -34,7 +34,6 @@ final class KeycloakHttpClientFactory
             httpClient: $httpClient,
             requestFactory: $requestFactory,
             streamFactory: $streamFactory,
-            cache: $cache,
         );
 
         $accessTokenProvider = new AccessTokenProvider(
@@ -42,6 +41,7 @@ final class KeycloakHttpClientFactory
             clientRealm: $config->getClientRealm(),
             clientId: $config->getClientId(),
             clientSecret: $config->getClientSecret(),
+            cache: $cache,
         );
 
         $userManagement = new UserManagementHttpClient(
@@ -57,16 +57,18 @@ final class KeycloakHttpClientFactory
         $oidcInteraction = new OidcInteractionHttpClient(
             httpCore: $httpCore,
             accessTokenProvider: $accessTokenProvider,
-            clientId: $config->getClientId(),
-            realmListTtl: $config->getRealmListTtl() ?? self::DEFAULT_REALM_LIST_TTL,
-            openIdConfigurationTtl: self::DEFAULT_OPENID_CONFIGURATION_TTL,
-            jwkByKidTtl: self::DEFAULT_JWK_BY_KID_TTL,
         );
 
         return new KeycloakHttpClient(
             userManagement: $userManagement,
             roleManagement: $roleManagement,
             oidcInteraction: $oidcInteraction,
+            baseUrl: $config->getBaseUrl(),
+            clientId: $config->getClientId(),
+            cache: $cache,
+            realmListTtl: $config->getRealmListTtl() ?? self::DEFAULT_REALM_LIST_TTL,
+            openIdConfigurationTtl: self::DEFAULT_OPENID_CONFIGURATION_TTL,
+            jwkByKidTtl: self::DEFAULT_JWK_BY_KID_TTL,
         );
     }
 

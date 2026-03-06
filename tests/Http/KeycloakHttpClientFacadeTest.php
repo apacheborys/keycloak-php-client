@@ -93,7 +93,7 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         $oidcInteraction
             ->expects(self::once())
             ->method('getOpenIdConfiguration')
-            ->with('master', true)
+            ->with('master')
             ->willReturn($expected);
 
         $client = $this->createClient(

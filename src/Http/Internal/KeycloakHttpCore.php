@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
 use Assert\Assert;
-use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
@@ -21,18 +20,12 @@ final readonly class KeycloakHttpCore
         private ClientInterface $httpClient,
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
-        private ?CacheItemPoolInterface $cache = null,
     ) {
     }
 
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
-    }
-
-    public function getCache(): ?CacheItemPoolInterface
-    {
-        return $this->cache;
     }
 
     public function sendRequest(RequestInterface $request): ResponseInterface

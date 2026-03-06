@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
+use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClient;
+use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
@@ -12,13 +15,15 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\NativePsr18Client;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
+use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 final class OidcInteractionHttpClientCacheTest extends TestCase
 {
     private ?PhpMockServer $server = null;
-    private OidcInteractionHttpClient $client;
+    private KeycloakHttpClient $client;
+    private InMemoryCachePool $cache;
 
     protected function setUp(): void
     {
@@ -31,26 +36,32 @@ final class OidcInteractionHttpClientCacheTest extends TestCase
         }
 
         $cache = new InMemoryCachePool();
+        $this->cache = $cache;
         $core = new KeycloakHttpCore(
             baseUrl: $this->server->getBaseUrl(),
             httpClient: new NativePsr18Client(),
             requestFactory: new SimpleRequestFactory(),
             streamFactory: new SimpleStreamFactory(),
-            cache: $cache,
         );
 
-        $this->client = new OidcInteractionHttpClient(
+        $oidcInteraction = new OidcInteractionHttpClient(
             httpCore: $core,
             accessTokenProvider: new AccessTokenProvider(
                 httpCore: $core,
                 clientRealm: 'master',
                 clientId: 'backend',
                 clientSecret: 'secret',
+                cache: $cache,
             ),
+        );
+
+        $this->client = new KeycloakHttpClient(
+            userManagement: $this->createStub(UserManagementHttpClientInterface::class),
+            roleManagement: $this->createStub(RoleManagementHttpClientInterface::class),
+            oidcInteraction: $oidcInteraction,
+            baseUrl: $this->server->getBaseUrl(),
             clientId: 'backend',
-            realmListTtl: 3600,
-            openIdConfigurationTtl: 86400,
-            jwkByKidTtl: 86400,
+            cache: $cache,
         );
     }
 
@@ -206,5 +217,43 @@ final class OidcInteractionHttpClientCacheTest extends TestCase
         self::assertNotNull($refreshed);
         self::assertSame('second-modulus', $refreshed->getN());
         self::assertCount(2, $this->server->getRequests());
+    }
+
+    public function testAvailableRealmsCacheHitAfterMiss(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'GET /admin/realms?briefRepresentation=true' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                ['realm' => 'master'],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $first = $this->client->getAvailableRealms();
+        $second = $this->client->getAvailableRealms();
+
+        self::assertCount(1, $first);
+        self::assertSame('master', $first[0]->jsonSerialize()['realm']);
+        self::assertCount(1, $second);
+        self::assertCount(1, $this->server->getRequests());
+    }
+
+    private function seedAccessToken(): void
+    {
+        $cacheKey = 'keycloak.access_token.' . sha1($this->server->getBaseUrl() . '|master|backend');
+        $cacheItem = $this->cache->getItem($cacheKey);
+        $cacheItem->set(JwtTestFactory::buildJwtToken());
+        $cacheItem->expiresAfter(3600);
+        $this->cache->save($cacheItem);
     }
 }

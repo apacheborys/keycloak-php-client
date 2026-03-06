@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 
 final readonly class AccessTokenProvider
@@ -15,6 +16,7 @@ final readonly class AccessTokenProvider
         private string $clientRealm,
         private string $clientId,
         private string $clientSecret,
+        private ?CacheItemPoolInterface $cache = null,
     ) {
     }
 
@@ -23,7 +25,7 @@ final readonly class AccessTokenProvider
         $cacheKey = 'keycloak.access_token.'
             . sha1(string: $this->httpCore->getBaseUrl() . '|' . $this->clientRealm . '|' . $this->clientId);
 
-        $cache = $this->httpCore->getCache();
+        $cache = $this->cache;
         if ($cache !== null) {
             $cacheItem = $cache->getItem(key: $cacheKey);
 
