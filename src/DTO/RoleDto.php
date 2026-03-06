@@ -6,31 +6,22 @@ namespace Apacheborys\KeycloakPhpClient\DTO;
 
 use Assert\Assert;
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final readonly class RoleDto
 {
     public function __construct(
         private string $name,
-        private ?string $id = null,
+        private ?UuidInterface $id = null,
         private ?string $description = null,
         private bool $composite = false,
         private bool $clientRole = false,
-        private ?string $containerId = null,
+        private ?UuidInterface $containerId = null,
     ) {
         Assert::that($this->name)->string()->notBlank();
 
-        if ($this->id !== null) {
-            Assert::that($this->id)->string()->notBlank();
-            Assert::that(Uuid::isValid($this->id))->true();
-        }
-
         if ($this->description !== null) {
             Assert::that($this->description)->string();
-        }
-
-        if ($this->containerId !== null) {
-            Assert::that($this->containerId)->string()->notBlank();
-            Assert::that(Uuid::isValid($this->containerId))->true();
         }
     }
 
@@ -39,7 +30,7 @@ final readonly class RoleDto
         return $this->name;
     }
 
-    public function getId(): ?string
+    public function getId(): ?UuidInterface
     {
         return $this->id;
     }
@@ -59,7 +50,7 @@ final readonly class RoleDto
         return $this->clientRole;
     }
 
-    public function getContainerId(): ?string
+    public function getContainerId(): ?UuidInterface
     {
         return $this->containerId;
     }
@@ -83,7 +74,7 @@ final readonly class RoleDto
         ];
 
         if ($this->id !== null) {
-            $data['id'] = $this->id;
+            $data['id'] = $this->id->toString();
         }
 
         if ($this->description !== null) {
@@ -91,7 +82,7 @@ final readonly class RoleDto
         }
 
         if ($this->containerId !== null) {
-            $data['containerId'] = $this->containerId;
+            $data['containerId'] = $this->containerId->toString();
         }
 
         return $data;
@@ -166,11 +157,11 @@ final readonly class RoleDto
 
         return new self(
             name: $data['name'],
-            id: is_string($data['id'] ?? null) ? $data['id'] : null,
+            id: is_string($data['id'] ?? null) ? Uuid::fromString($data['id']) : null,
             description: is_string($data['description'] ?? null) ? $data['description'] : null,
             composite: (bool) ($data['composite'] ?? false),
             clientRole: (bool) ($data['clientRole'] ?? false),
-            containerId: is_string($data['containerId'] ?? null) ? $data['containerId'] : null,
+            containerId: is_string($data['containerId'] ?? null) ? Uuid::fromString($data['containerId']) : null,
         );
     }
 }

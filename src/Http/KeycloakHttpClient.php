@@ -129,7 +129,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $token = $this->getAccessToken();
 
         $endpoint = $this->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
         );
 
         /** @var string $payload */
@@ -164,7 +164,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $token = $this->getAccessToken();
 
         $endpoint = $this->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
         );
 
         $request = $this->createRequest(
@@ -233,7 +233,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
         $token = $this->getAccessToken();
         $endpoint = $this->buildEndpoint(
             path: '/admin/realms/' . $dto->getRealm()
-                . '/users/' . $dto->getUserId()
+                . '/users/' . $dto->getUserId()->toString()
                 . '/role-mappings/realm/available'
         );
 
@@ -726,7 +726,11 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
 
         $token = $this->getAccessToken();
         $endpoint = $this->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId() . '/role-mappings/realm'
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/users/'
+                . $dto->getUserId()->toString()
+                . '/role-mappings/realm'
         );
 
         /** @var string $payload */

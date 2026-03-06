@@ -6,7 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Assert\Assert;
-use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 readonly final class AssignUserRolesDto
 {
@@ -15,12 +15,10 @@ readonly final class AssignUserRolesDto
      */
     public function __construct(
         private string $realm,
-        private string $userId,
+        private UuidInterface $userId,
         private array $roles,
     ) {
         Assert::that($this->realm)->notEmpty();
-        Assert::that($this->userId)->notEmpty();
-        Assert::that(Uuid::isValid($this->userId))->true();
 
         foreach ($this->roles as $role) {
             Assert::that($role)->isInstanceOf(RoleDto::class);
@@ -32,7 +30,7 @@ readonly final class AssignUserRolesDto
         return $this->realm;
     }
 
-    public function getUserId(): string
+    public function getUserId(): UuidInterface
     {
         return $this->userId;
     }

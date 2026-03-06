@@ -26,6 +26,7 @@ use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use LogicException;
 use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final class KeycloakServiceTest extends TestCase
@@ -84,7 +85,7 @@ final class KeycloakServiceTest extends TestCase
         $httpClient = new TestKeycloakHttpClient();
         $mappedUpdateDto = new UpdateUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
             profile: new UpdateUserProfileDto(
                 username: 'user@example.com',
                 email: 'new@example.com',
@@ -161,19 +162,19 @@ final class KeycloakServiceTest extends TestCase
             ]
         );
         $existingRole = new RoleDto(
-            id: '7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8',
+            id: Uuid::fromString('7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8'),
             name: 'existing-role',
             composite: false,
             clientRole: false,
-            containerId: '992b5dcf-1cdc-4b69-8fe2-0beaec437b17',
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
         );
         $missingRole = new RoleDto(
-            id: '3e7f40af-e8d4-4ead-bb8b-b034e95ffad8',
+            id: Uuid::fromString('3e7f40af-e8d4-4ead-bb8b-b034e95ffad8'),
             name: 'missing-role',
             description: 'Role for test',
             composite: false,
             clientRole: false,
-            containerId: '992b5dcf-1cdc-4b69-8fe2-0beaec437b17',
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
         );
 
         $httpClient->queueResult('getRoles', [$existingRole]);
@@ -238,7 +239,7 @@ final class KeycloakServiceTest extends TestCase
         $httpClient = new TestKeycloakHttpClient();
         $mappedUpdateDto = new UpdateUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
             profile: new UpdateUserProfileDto(
                 username: 'user@example.com',
                 email: 'new@example.com',
@@ -269,18 +270,18 @@ final class KeycloakServiceTest extends TestCase
             ]
         );
         $roleOld = new RoleDto(
-            id: 'e95d307d-ef1c-4151-8d4b-11376ef7e307',
+            id: Uuid::fromString('e95d307d-ef1c-4151-8d4b-11376ef7e307'),
             name: 'role-old',
             composite: false,
             clientRole: false,
-            containerId: '992b5dcf-1cdc-4b69-8fe2-0beaec437b17',
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
         );
         $roleNew = new RoleDto(
-            id: '246657bd-17c7-4f9d-9ecf-98920f099ad6',
+            id: Uuid::fromString('246657bd-17c7-4f9d-9ecf-98920f099ad6'),
             name: 'role-new',
             composite: false,
             clientRole: false,
-            containerId: '992b5dcf-1cdc-4b69-8fe2-0beaec437b17',
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
         );
 
         $httpClient->queueResult('getRoles', [$roleOld, $roleNew]);
@@ -320,7 +321,7 @@ final class KeycloakServiceTest extends TestCase
         $httpClient = new TestKeycloakHttpClient();
         $mappedUpdateDto = new UpdateUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
             profile: new UpdateUserProfileDto(
                 username: 'user@example.com',
                 email: 'new@example.com',
@@ -342,11 +343,11 @@ final class KeycloakServiceTest extends TestCase
             roles: ['role-new'],
         );
         $roleNew = new RoleDto(
-            id: '246657bd-17c7-4f9d-9ecf-98920f099ad6',
+            id: Uuid::fromString('246657bd-17c7-4f9d-9ecf-98920f099ad6'),
             name: 'role-new',
             composite: false,
             clientRole: false,
-            containerId: '992b5dcf-1cdc-4b69-8fe2-0beaec437b17',
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
         );
 
         $httpClient->queueResult('getRoles', [$roleNew]);
@@ -392,7 +393,7 @@ final class KeycloakServiceTest extends TestCase
         self::assertCount(1, $calls);
         self::assertSame('deleteUser', $calls[0]['method']);
         self::assertSame('master', $calls[0]['args'][0]->getRealm());
-        self::assertSame($user->getId(), $calls[0]['args'][0]->getUserId());
+        self::assertSame($user->getId(), $calls[0]['args'][0]->getUserId()->toString());
     }
 
     public function testGetAvailableRealmsDelegatesToHttpClient(): void

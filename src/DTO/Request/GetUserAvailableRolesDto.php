@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 use Assert\Assert;
-use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 readonly final class GetUserAvailableRolesDto
 {
     public function __construct(
         private string $realm,
-        private string $userId,
+        private UuidInterface $userId,
     ) {
         Assert::that($this->realm)->notEmpty();
-        Assert::that($this->userId)->notEmpty();
-        Assert::that(Uuid::isValid($this->userId))->true();
     }
 
     public function getRealm(): string
@@ -23,7 +21,7 @@ readonly final class GetUserAvailableRolesDto
         return $this->realm;
     }
 
-    public function getUserId(): string
+    public function getUserId(): UuidInterface
     {
         return $this->userId;
     }

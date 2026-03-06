@@ -29,6 +29,7 @@ use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use LogicException;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final class TestKeycloakHttpClientTest extends TestCase
@@ -108,7 +109,7 @@ final class TestKeycloakHttpClientTest extends TestCase
         $client = new TestKeycloakHttpClient();
         $dto = new UpdateUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
             profile: new UpdateUserProfileDto(
                 username: 'user@example.com',
                 email: 'updated@example.com',
@@ -171,7 +172,7 @@ final class TestKeycloakHttpClientTest extends TestCase
         $client = new TestKeycloakHttpClient();
         $dto = new DeleteUserDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
         );
 
         $client->queueResult('deleteUser', null);
@@ -192,8 +193,8 @@ final class TestKeycloakHttpClientTest extends TestCase
     {
         $client = new TestKeycloakHttpClient();
         $expected = [
-            new RoleDto(name: 'admin', id: '7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8'),
-            new RoleDto(name: 'user', id: '95e9532c-a85a-4548-81a2-8845d3e5e6f5'),
+            new RoleDto(name: 'admin', id: Uuid::fromString('7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8')),
+            new RoleDto(name: 'user', id: Uuid::fromString('95e9532c-a85a-4548-81a2-8845d3e5e6f5')),
         ];
         $dto = new GetRolesDto(realm: 'master');
 
@@ -215,11 +216,11 @@ final class TestKeycloakHttpClientTest extends TestCase
     {
         $client = new TestKeycloakHttpClient();
         $expected = [
-            new RoleDto(name: 'admin', id: '7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8'),
+            new RoleDto(name: 'admin', id: Uuid::fromString('7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8')),
         ];
         $dto = new GetUserAvailableRolesDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
         );
 
         $client->queueResult('getAvailableUserRoles', $expected);
@@ -286,11 +287,11 @@ final class TestKeycloakHttpClientTest extends TestCase
         $client = new TestKeycloakHttpClient();
         $userId = '92a372d5-c338-4e77-a1b3-08771241036e';
         $roles = [
-            new RoleDto(name: 'admin', id: '7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8'),
+            new RoleDto(name: 'admin', id: Uuid::fromString('7426cf8e-5827-4eb1-bcc7-b3eaaa703bb8')),
         ];
         $dto = new AssignUserRolesDto(
             realm: 'master',
-            userId: $userId,
+            userId: Uuid::fromString($userId),
             roles: $roles,
         );
 

@@ -12,6 +12,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
+use Ramsey\Uuid\Uuid;
 
 final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 {
@@ -64,7 +65,7 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     ): DeleteUserDto {
         return new DeleteUserDto(
             realm: $this->realmForDeletion,
-            userId: $localUser->getId(),
+            userId: Uuid::fromString($localUser->getId()),
         );
     }
 
@@ -84,7 +85,7 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 
         return new UpdateUserDto(
             realm: $this->realmForDeletion,
-            userId: $newUserVersion->getId(),
+            userId: Uuid::fromString($newUserVersion->getId()),
             profile: new UpdateUserProfileDto(
                 username: $newUserVersion->getUsername(),
                 email: $newUserVersion->getEmail(),

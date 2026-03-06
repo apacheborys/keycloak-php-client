@@ -24,11 +24,13 @@ final class RoleDtoTest extends TestCase
         );
 
         self::assertSame('default-roles-master', $dto->getName());
-        self::assertSame('d813c30d-66ee-482d-a33e-4b2c96fc6361', $dto->getId());
+        self::assertNotNull($dto->getId());
+        self::assertSame('d813c30d-66ee-482d-a33e-4b2c96fc6361', $dto->getId()?->toString());
         self::assertSame('${role_default-roles}', $dto->getDescription());
         self::assertTrue($dto->isComposite());
         self::assertFalse($dto->isClientRole());
-        self::assertSame('992b5dcf-1cdc-4b69-8fe2-0beaec437b17', $dto->getContainerId());
+        self::assertNotNull($dto->getContainerId());
+        self::assertSame('992b5dcf-1cdc-4b69-8fe2-0beaec437b17', $dto->getContainerId()?->toString());
         self::assertSame(
             [
                 'name' => 'default-roles-master',

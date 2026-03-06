@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
-use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
+use TypeError;
 
 final class GetUserAvailableRolesDtoTest extends TestCase
 {
@@ -14,16 +15,16 @@ final class GetUserAvailableRolesDtoTest extends TestCase
     {
         $dto = new GetUserAvailableRolesDto(
             realm: 'master',
-            userId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
         );
 
         self::assertSame('master', $dto->getRealm());
-        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $dto->getUserId());
+        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $dto->getUserId()->toString());
     }
 
-    public function testInvalidUserIdThrows(): void
+    public function testInvalidUserIdTypeThrows(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(TypeError::class);
 
         new GetUserAvailableRolesDto(
             realm: 'master',

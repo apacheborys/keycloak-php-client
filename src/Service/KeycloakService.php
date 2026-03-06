@@ -27,6 +27,8 @@ use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use Override;
 use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final readonly class KeycloakService implements KeycloakServiceInterface
 {
@@ -134,7 +136,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             $this->httpClient->assignRolesToUser(
                 dto: new AssignUserRolesDto(
                     realm: $realm,
-                    userId: $result[0]->getId(),
+                    userId: Uuid::fromString($result[0]->getId()),
                     roles: $rolesToAssign,
                 ),
             );
@@ -193,6 +195,11 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $this->assertMappedRealmMatches(
             expectedRealm: $oldRealm,
             mappedRealm: $dto->getRealm(),
+            operation: 'updateUser',
+        );
+        $this->assertMappedUserIdMatches(
+            expectedUserId: $oldUserVersion->getId(),
+            mappedUserId: $dto->getUserId(),
             operation: 'updateUser',
         );
 
@@ -279,7 +286,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $users = $this->httpClient->getUsers(dto: $searchDto);
 
         foreach ($users as $user) {
-            if ($user->getId() === $dto->getUserId()) {
+            if ($user->getId() === $dto->getUserId()->toString()) {
                 return $user;
             }
         }
@@ -287,7 +294,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $this->debug(
             message: 'Update user failed: updated user was not found after update request.',
             context: [
-                'expected_user_id' => $dto->getUserId(),
+                'expected_user_id' => $dto->getUserId()->toString(),
                 'realm' => $oldRealm,
                 'found_user_ids' => array_values(
                     array_map(
@@ -299,7 +306,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         );
 
         throw new LogicException(
-            message: "Can't find updated user with id " . $dto->getUserId() . ' in realm ' . $oldRealm
+            message: "Can't find updated user with id " . $dto->getUserId()->toString() . ' in realm ' . $oldRealm
         );
     }
 
@@ -518,6 +525,34 @@ final readonly class KeycloakService implements KeycloakServiceInterface
                 $operation,
                 $expectedRealm,
                 $mappedRealm
+            )
+        );
+    }
+
+    private function assertMappedUserIdMatches(
+        string $expectedUserId,
+        UuidInterface $mappedUserId,
+        string $operation,
+    ): void {
+        if ($expectedUserId === $mappedUserId->toString()) {
+            return;
+        }
+
+        $this->debug(
+            message: 'Mapper returned user id different from local user id.',
+            context: [
+                'operation' => $operation,
+                'expected_user_id' => $expectedUserId,
+                'mapped_user_id' => $mappedUserId->toString(),
+            ],
+        );
+
+        throw new LogicException(
+            message: sprintf(
+                'Mapper user id mismatch during %s. Expected "%s", got "%s".',
+                $operation,
+                $expectedUserId,
+                $mappedUserId->toString(),
             )
         );
     }
