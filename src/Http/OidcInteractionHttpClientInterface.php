@@ -11,20 +11,16 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
-interface KeycloakHttpClientInterface extends
-    UserManagementHttpClientInterface,
-    RoleManagementHttpClientInterface
+interface OidcInteractionHttpClientInterface
 {
-    public function getOpenIdConfiguration(string $realm, bool $allowToUseCache = true): OpenIdConfigurationDto;
+    public function getOpenIdConfiguration(string $realm): OpenIdConfigurationDto;
 
     public function getJwk(
-        string $realm,
         string $kid,
         string $jwksUri,
-        bool $allowToUseCache = true,
     ): ?JwkDto;
 
-    public function getJwks(string $realm, string $jwksUri): JwksDto;
+    public function getJwks(string $jwksUri): JwksDto;
 
     /**
      * @return list<KeycloakRealm>
