@@ -9,11 +9,16 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
@@ -34,6 +39,7 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     public function __construct(
         private UserManagementHttpClientInterface $userManagement,
         private RoleManagementHttpClientInterface $roleManagement,
+        private RealmSettingsManagementHttpClientInterface $realmSettingsManagement,
         private OidcInteractionHttpClientInterface $oidcInteraction,
         private string $baseUrl = '',
         private string $clientId = '',
@@ -115,6 +121,30 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     public function unassignRolesFromUser(AssignUserRolesDto $dto): void
     {
         $this->roleManagement->unassignRolesFromUser(dto: $dto);
+    }
+
+    #[Override]
+    public function getUserProfile(GetUserProfileDto $dto): UserProfileDto
+    {
+        return $this->realmSettingsManagement->getUserProfile(dto: $dto);
+    }
+
+    #[Override]
+    public function createUserProfileAttribute(CreateUserProfileAttributeDto $dto): UserProfileDto
+    {
+        return $this->realmSettingsManagement->createUserProfileAttribute(dto: $dto);
+    }
+
+    #[Override]
+    public function updateUserProfileAttribute(UpdateUserProfileAttributeDto $dto): UserProfileDto
+    {
+        return $this->realmSettingsManagement->updateUserProfileAttribute(dto: $dto);
+    }
+
+    #[Override]
+    public function deleteUserProfileAttribute(DeleteUserProfileAttributeDto $dto): UserProfileDto
+    {
+        return $this->realmSettingsManagement->deleteUserProfileAttribute(dto: $dto);
     }
 
     #[Override]

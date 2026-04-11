@@ -9,11 +9,16 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
@@ -125,6 +130,42 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     public function unassignRolesFromUser(AssignUserRolesDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function getUserProfile(GetUserProfileDto $dto): UserProfileDto
+    {
+        /** @var UserProfileDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function createUserProfileAttribute(CreateUserProfileAttributeDto $dto): UserProfileDto
+    {
+        /** @var UserProfileDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function updateUserProfileAttribute(UpdateUserProfileAttributeDto $dto): UserProfileDto
+    {
+        /** @var UserProfileDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function deleteUserProfileAttribute(DeleteUserProfileAttributeDto $dto): UserProfileDto
+    {
+        /** @var UserProfileDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
     }
 
     #[Override]

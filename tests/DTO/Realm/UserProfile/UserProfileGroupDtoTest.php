@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm;
+namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfileGroupDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileGroupDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -40,4 +40,3 @@ final class UserProfileGroupDtoTest extends TestCase
         new UserProfileGroupDto(name: '');
     }
 }
-

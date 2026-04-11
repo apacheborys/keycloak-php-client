@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
+use Apacheborys\KeycloakPhpClient\Http\Internal\RealmSettingsManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\RoleManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\UserManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Cache\InMemoryCachePool;
@@ -208,6 +214,157 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('secret', $formData['client_secret'] ?? null);
         self::assertSame('oleg@example.com', $formData['username'] ?? null);
         self::assertSame('Roadsurfer!2026', $formData['password'] ?? null);
+    }
+
+    public function testRealmSettingsManagementSupportsGetCreateUpdateDeleteAttribute(): void
+    {
+        $this->seedAccessToken();
+        $initialProfile = [
+            'attributes' => [
+                [
+                    'name' => 'username',
+                    'displayName' => '${username}',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => [
+                [
+                    'name' => 'user-metadata',
+                    'displayHeader' => 'User metadata',
+                    'displayDescription' => 'Attributes, which refer to user metadata',
+                ],
+            ],
+        ];
+
+        $afterCreate = [
+            'attributes' => [
+                $initialProfile['attributes'][0],
+                [
+                    'name' => 'test_attribute',
+                    'displayName' => 'Attribute for test reasons',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => $initialProfile['groups'],
+        ];
+
+        $afterUpdate = [
+            'attributes' => [
+                $initialProfile['attributes'][0],
+                [
+                    'name' => 'test_attribute',
+                    'displayName' => 'Updated attribute',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => $initialProfile['groups'],
+        ];
+
+        $afterDelete = $initialProfile;
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/users/profile' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($initialProfile, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterCreate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterUpdate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterDelete, JSON_THROW_ON_ERROR),
+                    ],
+                ],
+                'PUT /admin/realms/master/users/profile' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterCreate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterUpdate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterDelete, JSON_THROW_ON_ERROR),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new RealmSettingsManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $fetched = $client->getUserProfile(new GetUserProfileDto(realm: 'master'));
+        self::assertCount(1, $fetched->getAttributes());
+
+        $created = $client->createUserProfileAttribute(
+            new CreateUserProfileAttributeDto(
+                realm: 'master',
+                attribute: new AttributeDto(
+                    name: 'test_attribute',
+                    displayName: 'Attribute for test reasons',
+                    permissions: ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                ),
+            ),
+        );
+        self::assertTrue($created->hasAttribute('test_attribute'));
+
+        $updated = $client->updateUserProfileAttribute(
+            new UpdateUserProfileAttributeDto(
+                realm: 'master',
+                attribute: new AttributeDto(
+                    name: 'test_attribute',
+                    displayName: 'Updated attribute',
+                    permissions: ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                ),
+            ),
+        );
+        self::assertTrue($updated->hasAttribute('test_attribute'));
+
+        $deleted = $client->deleteUserProfileAttribute(
+            new DeleteUserProfileAttributeDto(
+                realm: 'master',
+                attributeName: 'test_attribute',
+            ),
+        );
+        self::assertFalse($deleted->hasAttribute('test_attribute'));
+
+        $requests = $this->server->getRequests();
+        self::assertCount(7, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('GET', $requests[1]['method']);
+        self::assertSame('PUT', $requests[2]['method']);
+        self::assertSame('GET', $requests[3]['method']);
+        self::assertSame('PUT', $requests[4]['method']);
+        self::assertSame('GET', $requests[5]['method']);
+        self::assertSame('PUT', $requests[6]['method']);
+        self::assertSame('/admin/realms/master/users/profile', $requests[6]['uri']);
     }
 
     public function testRoleManagementGetRolesThrowsForNonSuccessStatus(): void

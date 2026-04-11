@@ -7,16 +7,23 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileGroupDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
@@ -431,6 +438,65 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'refreshToken',
                     'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testUserProfileMethodsConsumeQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $profile = new UserProfileDto(
+            attributes: [
+                new AttributeDto(name: 'external-user-id'),
+            ],
+            groups: [
+                new UserProfileGroupDto(name: 'user-metadata'),
+            ],
+        );
+
+        $getDto = new GetUserProfileDto(realm: 'master');
+        $createDto = new CreateUserProfileAttributeDto(
+            realm: 'master',
+            attribute: new AttributeDto(name: 'test_attribute'),
+        );
+        $updateDto = new UpdateUserProfileAttributeDto(
+            realm: 'master',
+            attribute: new AttributeDto(name: 'test_attribute', displayName: 'Updated'),
+        );
+        $deleteDto = new DeleteUserProfileAttributeDto(
+            realm: 'master',
+            attributeName: 'test_attribute',
+        );
+
+        $client->queueResult('getUserProfile', $profile);
+        $client->queueResult('createUserProfileAttribute', $profile);
+        $client->queueResult('updateUserProfileAttribute', $profile);
+        $client->queueResult('deleteUserProfileAttribute', $profile);
+
+        self::assertSame($profile, $client->getUserProfile($getDto));
+        self::assertSame($profile, $client->createUserProfileAttribute($createDto));
+        self::assertSame($profile, $client->updateUserProfileAttribute($updateDto));
+        self::assertSame($profile, $client->deleteUserProfileAttribute($deleteDto));
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'getUserProfile',
+                    'args' => [$getDto],
+                ],
+                [
+                    'method' => 'createUserProfileAttribute',
+                    'args' => [$createDto],
+                ],
+                [
+                    'method' => 'updateUserProfileAttribute',
+                    'args' => [$updateDto],
+                ],
+                [
+                    'method' => 'deleteUserProfileAttribute',
+                    'args' => [$deleteDto],
                 ],
             ],
             $client->getCalls(),

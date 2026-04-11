@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileGroupDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\OidcInteractionHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Http\RealmSettingsManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
@@ -103,6 +108,32 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         self::assertSame($expected, $client->getOpenIdConfiguration('master'));
     }
 
+    public function testGetUserProfileDelegatesToRealmSettingsManagement(): void
+    {
+        $dto = new GetUserProfileDto(realm: 'master');
+        $expected = new UserProfileDto(
+            attributes: [
+                new AttributeDto(name: 'external-user-id'),
+            ],
+            groups: [
+                new UserProfileGroupDto(name: 'user-metadata'),
+            ],
+        );
+
+        $realmSettingsManagement = $this->createMock(RealmSettingsManagementHttpClientInterface::class);
+        $realmSettingsManagement
+            ->expects(self::once())
+            ->method('getUserProfile')
+            ->with($dto)
+            ->willReturn($expected);
+
+        $client = $this->createClient(
+            realmSettingsManagement: $realmSettingsManagement,
+        );
+
+        self::assertSame($expected, $client->getUserProfile($dto));
+    }
+
     public function testRequestTokenByPasswordDelegatesToOidcInteraction(): void
     {
         $dto = new OidcTokenRequestDto(
@@ -139,11 +170,13 @@ final class KeycloakHttpClientFacadeTest extends TestCase
     private function createClient(
         ?UserManagementHttpClientInterface $userManagement = null,
         ?RoleManagementHttpClientInterface $roleManagement = null,
+        ?RealmSettingsManagementHttpClientInterface $realmSettingsManagement = null,
         ?OidcInteractionHttpClientInterface $oidcInteraction = null,
     ): KeycloakHttpClient {
         return new KeycloakHttpClient(
             userManagement: $userManagement ?? $this->createStub(UserManagementHttpClientInterface::class),
             roleManagement: $roleManagement ?? $this->createStub(RoleManagementHttpClientInterface::class),
+            realmSettingsManagement: $realmSettingsManagement ?? $this->createStub(RealmSettingsManagementHttpClientInterface::class),
             oidcInteraction: $oidcInteraction ?? $this->createStub(OidcInteractionHttpClientInterface::class),
         );
     }
