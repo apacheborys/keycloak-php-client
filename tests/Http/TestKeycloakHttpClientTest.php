@@ -21,9 +21,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileGroupDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
@@ -88,6 +88,9 @@ final class TestKeycloakHttpClientTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
+            attributes: [
+                'external-user-id' => 'external-id-create',
+            ],
         );
         $credential = new KeycloakCredential(
             type: KeycloakCredentialType::password(),
@@ -121,6 +124,9 @@ final class TestKeycloakHttpClientTest extends TestCase
                 username: 'user@example.com',
                 email: 'updated@example.com',
                 firstName: 'Updated',
+                attributes: [
+                    'external-user-id' => 'external-id-update',
+                ],
             ),
         );
 

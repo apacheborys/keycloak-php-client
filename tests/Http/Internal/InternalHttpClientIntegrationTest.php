@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
@@ -27,6 +31,7 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final class InternalHttpClientIntegrationTest extends TestCase
@@ -82,6 +87,10 @@ final class InternalHttpClientIntegrationTest extends TestCase
                                     'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
                                     'username' => 'user@example.com',
                                     'createdTimestamp' => 1_700_000_000_000,
+                                    'attributes' => [
+                                        'external-user-id' => ['external-id-789'],
+                                        'locale' => ['en'],
+                                    ],
                                 ],
                             ],
                             JSON_THROW_ON_ERROR
@@ -99,6 +108,13 @@ final class InternalHttpClientIntegrationTest extends TestCase
 
         self::assertCount(1, $users);
         self::assertSame('user@example.com', $users[0]->getUsername());
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-789'],
+                'locale' => ['en'],
+            ],
+            $users[0]->getAttributes(),
+        );
 
         $requests = $this->server->getRequests();
         self::assertCount(1, $requests);
@@ -151,6 +167,106 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('Role for test', $payload['description'] ?? null);
         self::assertFalse((bool) ($payload['composite'] ?? true));
         self::assertFalse((bool) ($payload['clientRole'] ?? true));
+    }
+
+    public function testUserManagementCreateUserSendsAttributesInPayload(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/users' => [
+                    [
+                        'status' => 201,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createUser(
+            new CreateUserDto(
+                profile: new CreateUserProfileDto(
+                    username: 'test-user',
+                    email: 'test@example.com',
+                    emailVerified: false,
+                    enabled: true,
+                    firstName: 'Test',
+                    lastName: 'User',
+                    realm: 'master',
+                    attributes: [
+                        'locale' => '',
+                        'external-user-id' => 'external-id-123',
+                    ],
+                ),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/users', $requests[0]['uri']);
+
+        $payload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(
+            [
+                'locale' => [''],
+                'external-user-id' => ['external-id-123'],
+            ],
+            $payload['attributes'] ?? null,
+        );
+    }
+
+    public function testUserManagementUpdateUserSendsAttributesInPayload(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'PUT /admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e' => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->updateUser(
+            new UpdateUserDto(
+                realm: 'master',
+                userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+                profile: new UpdateUserProfileDto(
+                    username: 'test-user',
+                    attributes: [
+                        'external-user-id' => 'external-id-456',
+                    ],
+                ),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('PUT', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e', $requests[0]['uri']);
+
+        $payload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-456'],
+            ],
+            $payload['attributes'] ?? null,
+        );
     }
 
     public function testOidcRequestTokenByPasswordSendsExpectedFormAndParsesResponse(): void

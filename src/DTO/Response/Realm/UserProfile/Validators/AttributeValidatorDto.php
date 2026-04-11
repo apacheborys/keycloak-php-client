@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators;
+namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators;
 
 use Assert\Assert;
 

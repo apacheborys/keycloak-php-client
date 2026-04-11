@@ -22,6 +22,9 @@ final class UpdateUserDtoTest extends TestCase
                 email: 'oleg.new@example.com',
                 firstName: 'Oleg',
                 emailVerified: true,
+                attributes: [
+                    'external-user-id' => 'external-id-4',
+                ],
             ),
         );
 
@@ -35,6 +38,9 @@ final class UpdateUserDtoTest extends TestCase
                 'email' => 'oleg.new@example.com',
                 'emailVerified' => true,
                 'firstName' => 'Oleg',
+                'attributes' => [
+                    'external-user-id' => ['external-id-4'],
+                ],
             ],
             $dto->toArray(),
         );

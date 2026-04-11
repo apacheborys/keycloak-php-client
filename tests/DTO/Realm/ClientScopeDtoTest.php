@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 

@@ -18,8 +18,14 @@ interface UserManagementHttpClientInterface
      */
     public function getUsers(SearchUsersDto $dto): array;
 
+    /**
+     * Supports custom user attributes through CreateUserDto profile payload.
+     */
     public function createUser(CreateUserDto $dto): void;
 
+    /**
+     * Supports full user attribute updates through UpdateUserDto profile payload.
+     */
     public function updateUser(UpdateUserDto $dto): void;
 
     public function deleteUser(DeleteUserDto $dto): void;

@@ -22,6 +22,10 @@ final class CreateUserProfileDtoTest extends TestCase
             lastName: 'Example',
             realm: 'master',
             roles: [new RoleDto(name: 'admin')],
+            attributes: [
+                'external-user-id' => 'external-id-1',
+                'locale' => ['en', 'de'],
+            ],
         );
 
         self::assertSame(
@@ -32,6 +36,10 @@ final class CreateUserProfileDtoTest extends TestCase
                 'enabled' => true,
                 'firstName' => 'User',
                 'lastName' => 'Example',
+                'attributes' => [
+                    'external-user-id' => ['external-id-1'],
+                    'locale' => ['en', 'de'],
+                ],
             ],
             $dto->toArray(),
         );
@@ -39,6 +47,13 @@ final class CreateUserProfileDtoTest extends TestCase
         self::assertSame('user@example.com', $dto->getEmail());
         self::assertCount(1, $dto->getRoles());
         self::assertSame('admin', $dto->getRoles()[0]->getName());
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-1'],
+                'locale' => ['en', 'de'],
+            ],
+            $dto->getAttributes(),
+        );
     }
 
     public function testInvalidEmailThrows(): void
@@ -53,6 +68,24 @@ final class CreateUserProfileDtoTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
+        );
+    }
+
+    public function testInvalidAttributeValueThrows(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new CreateUserProfileDto(
+            username: 'user@example.com',
+            email: 'user@example.com',
+            emailVerified: true,
+            enabled: true,
+            firstName: 'User',
+            lastName: 'Example',
+            realm: 'master',
+            attributes: [
+                'external-user-id' => [123],
+            ],
         );
     }
 }

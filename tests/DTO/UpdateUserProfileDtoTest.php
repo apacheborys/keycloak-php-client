@@ -19,6 +19,10 @@ final class UpdateUserProfileDtoTest extends TestCase
             firstName: 'Oleg',
             enabled: true,
             roles: [new RoleDto(name: 'admin')],
+            attributes: [
+                'external-user-id' => 'external-id-2',
+                'locale' => ['uk'],
+            ],
         );
 
         self::assertSame('user@example.com', $dto->getUsername());
@@ -28,10 +32,21 @@ final class UpdateUserProfileDtoTest extends TestCase
         self::assertSame('admin', $dto->getRoles()[0]->getName());
         self::assertSame(
             [
+                'external-user-id' => ['external-id-2'],
+                'locale' => ['uk'],
+            ],
+            $dto->getAttributes(),
+        );
+        self::assertSame(
+            [
                 'username' => 'user@example.com',
                 'email' => 'new@example.com',
                 'enabled' => true,
                 'firstName' => 'Oleg',
+                'attributes' => [
+                    'external-user-id' => ['external-id-2'],
+                    'locale' => ['uk'],
+                ],
             ],
             $dto->toArray(),
         );
@@ -44,6 +59,18 @@ final class UpdateUserProfileDtoTest extends TestCase
         new UpdateUserProfileDto(
             username: 'user@example.com',
             email: 'invalid-email',
+        );
+    }
+
+    public function testInvalidAttributeValueThrows(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new UpdateUserProfileDto(
+            username: 'user@example.com',
+            attributes: [
+                'external-user-id' => [true],
+            ],
         );
     }
 }

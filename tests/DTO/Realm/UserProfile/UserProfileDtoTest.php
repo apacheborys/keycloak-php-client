@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\UserProfileGroupDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
 use PHPUnit\Framework\TestCase;
 
 final class UserProfileDtoTest extends TestCase

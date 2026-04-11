@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Assert\Assert;
 
 readonly final class CreateUserProfileAttributeDto

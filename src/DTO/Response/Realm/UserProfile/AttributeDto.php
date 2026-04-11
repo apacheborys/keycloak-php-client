@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile;
+namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators\AttributeValidatorType;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators\AttributeValidatorsDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorsDto;
+use Apacheborys\KeycloakPhpClient\ValueObject\AttributePermission;
 use Assert\Assert;
 
 final readonly class AttributeDto

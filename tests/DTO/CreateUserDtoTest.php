@@ -22,6 +22,9 @@ final class CreateUserDtoTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
+            attributes: [
+                'external-user-id' => 'external-id-3',
+            ],
         );
 
         $credential = new KeycloakCredential(
@@ -43,6 +46,9 @@ final class CreateUserDtoTest extends TestCase
                 'enabled' => true,
                 'firstName' => 'User',
                 'lastName' => 'Example',
+                'attributes' => [
+                    'external-user-id' => ['external-id-3'],
+                ],
                 'credentials' => [
                     [
                         'type' => 'password',

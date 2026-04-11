@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\DTO\Realm;
+namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm;
 
 use Assert\Assert;
 use Ramsey\Uuid\Uuid;

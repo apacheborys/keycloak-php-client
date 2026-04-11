@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile;
+namespace Apacheborys\KeycloakPhpClient\ValueObject;
 
 enum AttributePermission: string
 {

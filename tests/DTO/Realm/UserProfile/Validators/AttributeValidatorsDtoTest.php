@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile\Validators;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators\AttributeValidatorType;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators\AttributeValidatorsDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorsDto;
 use PHPUnit\Framework\TestCase;
 
 final class AttributeValidatorsDtoTest extends TestCase

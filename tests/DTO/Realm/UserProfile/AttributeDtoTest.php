@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile;
 
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\AttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Realm\UserProfile\Validators\AttributeValidatorType;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
