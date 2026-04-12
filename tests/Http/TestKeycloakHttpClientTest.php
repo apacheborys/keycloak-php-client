@@ -7,11 +7,13 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
@@ -24,9 +26,11 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
@@ -296,6 +300,20 @@ final class TestKeycloakHttpClientTest extends TestCase
                 protocol: 'openid-connect',
             ),
         );
+        $createMapperDto = new CreateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'claim.name' => 'external_user_id',
+                    'user.attribute' => 'external-user-id',
+                    'jsonType.label' => 'String',
+                ],
+            ),
+        );
         $updateDto = new UpdateClientScopeDto(
             realm: 'master',
             clientScopeId: $scopeId,
@@ -305,9 +323,30 @@ final class TestKeycloakHttpClientTest extends TestCase
                 protocol: 'openid-connect',
             ),
         );
+        $updateMapperDto = new UpdateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapperId: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                id: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'claim.name' => 'external_user_id_test',
+                    'user.attribute' => 'external-user-id',
+                    'jsonType.label' => 'String',
+                ],
+            ),
+        );
         $deleteDto = new DeleteClientScopeDto(
             realm: 'master',
             clientScopeId: $scopeId,
+        );
+        $deleteMapperDto = new DeleteClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapperId: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
         );
 
         $expected = [
@@ -321,14 +360,20 @@ final class TestKeycloakHttpClientTest extends TestCase
         $client->queueResult('getClientScopes', $expected);
         $client->queueResult('getClientScopeById', $expected[0]);
         $client->queueResult('createClientScope', null);
+        $client->queueResult('createClientScopeProtocolMapper', null);
         $client->queueResult('updateClientScope', null);
+        $client->queueResult('updateClientScopeProtocolMapper', null);
         $client->queueResult('deleteClientScope', null);
+        $client->queueResult('deleteClientScopeProtocolMapper', null);
 
         self::assertSame($expected, $client->getClientScopes($getDto));
         self::assertSame($expected[0], $client->getClientScopeById($getByIdDto));
         $client->createClientScope($createDto);
+        $client->createClientScopeProtocolMapper($createMapperDto);
         $client->updateClientScope($updateDto);
+        $client->updateClientScopeProtocolMapper($updateMapperDto);
         $client->deleteClientScope($deleteDto);
+        $client->deleteClientScopeProtocolMapper($deleteMapperDto);
 
         self::assertSame(
             [
@@ -345,12 +390,24 @@ final class TestKeycloakHttpClientTest extends TestCase
                     'args' => [$createDto],
                 ],
                 [
+                    'method' => 'createClientScopeProtocolMapper',
+                    'args' => [$createMapperDto],
+                ],
+                [
                     'method' => 'updateClientScope',
                     'args' => [$updateDto],
                 ],
                 [
+                    'method' => 'updateClientScopeProtocolMapper',
+                    'args' => [$updateMapperDto],
+                ],
+                [
                     'method' => 'deleteClientScope',
                     'args' => [$deleteDto],
+                ],
+                [
+                    'method' => 'deleteClientScopeProtocolMapper',
+                    'args' => [$deleteMapperDto],
                 ],
             ],
             $client->getCalls(),

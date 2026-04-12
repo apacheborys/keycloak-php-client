@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
@@ -217,6 +220,127 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
 
         throw new RuntimeException(
             message: sprintf('Keycloak delete client scope failed with status %d: %s', $statusCode, $body)
+        );
+    }
+
+    #[\Override]
+    public function createClientScopeProtocolMapper(CreateClientScopeProtocolMapperDto $dto): void
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/client-scopes/'
+                . $dto->getClientScopeId()->toString()
+                . '/protocol-mappers/models'
+        );
+
+        /** @var string $payload */
+        $payload = json_encode(value: $dto->getProtocolMapper()->toArray(), flags: JSON_THROW_ON_ERROR);
+
+        $request = $this->httpCore->createRequest(
+            method: 'POST',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf(
+                'Keycloak create client scope protocol mapper failed with status %d: %s',
+                $statusCode,
+                $body
+            )
+        );
+    }
+
+    #[\Override]
+    public function updateClientScopeProtocolMapper(UpdateClientScopeProtocolMapperDto $dto): void
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/client-scopes/'
+                . $dto->getClientScopeId()->toString()
+                . '/protocol-mappers/models/'
+                . $dto->getProtocolMapperId()->toString()
+        );
+
+        /** @var string $payload */
+        $payload = json_encode(value: $dto->getProtocolMapper()->toArray(), flags: JSON_THROW_ON_ERROR);
+
+        $request = $this->httpCore->createRequest(
+            method: 'PUT',
+            endpoint: $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $token->getRawToken(),
+                'Content-Type' => 'application/json',
+            ],
+            body: $payload,
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf(
+                'Keycloak update client scope protocol mapper failed with status %d: %s',
+                $statusCode,
+                $body
+            )
+        );
+    }
+
+    #[\Override]
+    public function deleteClientScopeProtocolMapper(DeleteClientScopeProtocolMapperDto $dto): void
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/client-scopes/'
+                . $dto->getClientScopeId()->toString()
+                . '/protocol-mappers/models/'
+                . $dto->getProtocolMapperId()->toString()
+        );
+
+        $request = $this->httpCore->createRequest(
+            method: 'DELETE',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        $body = (string) $response->getBody();
+        throw new RuntimeException(
+            message: sprintf(
+                'Keycloak delete client scope protocol mapper failed with status %d: %s',
+                $statusCode,
+                $body
+            )
         );
     }
 

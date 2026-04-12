@@ -6,10 +6,12 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
@@ -18,10 +20,12 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
@@ -528,6 +532,113 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('/admin/realms/master/default-optional-client-scopes/' . $clientScopeId, $requests[6]['uri']);
         self::assertSame('DELETE', $requests[7]['method']);
         self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[7]['uri']);
+    }
+
+    public function testClientScopeManagementCreateUpdateDeleteProtocolMapper(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+        $mapperId = '3b1caa7b-dad7-4f43-9127-15969f303fe8';
+
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models' => [
+                    [
+                        'status' => 201,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createClientScopeProtocolMapper(
+            new CreateClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapper: new ClientScopesProtocolMapperDto(
+                    name: 'External user id attribute',
+                    protocol: 'openid-connect',
+                    protocolMapper: 'oidc-usermodel-attribute-mapper',
+                    config: [
+                        'claim.name' => 'external_user_id',
+                        'jsonType.label' => 'String',
+                        'id.token.claim' => 'true',
+                        'access.token.claim' => 'true',
+                        'userinfo.token.claim' => 'true',
+                        'introspection.token.claim' => 'true',
+                        'user.attribute' => 'external-user-id',
+                    ],
+                ),
+            ),
+        );
+
+        $client->updateClientScopeProtocolMapper(
+            new UpdateClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapperId: Uuid::fromString($mapperId),
+                protocolMapper: new ClientScopesProtocolMapperDto(
+                    id: Uuid::fromString($mapperId),
+                    name: 'External user id attribute',
+                    protocol: 'openid-connect',
+                    protocolMapper: 'oidc-usermodel-attribute-mapper',
+                    config: [
+                        'claim.name' => 'external_user_id_test',
+                        'jsonType.label' => 'String',
+                        'id.token.claim' => 'true',
+                        'access.token.claim' => 'true',
+                        'userinfo.token.claim' => 'true',
+                        'introspection.token.claim' => 'true',
+                        'user.attribute' => 'external-user-id',
+                    ],
+                ),
+            ),
+        );
+
+        $client->deleteClientScopeProtocolMapper(
+            new DeleteClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapperId: Uuid::fromString($mapperId),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(3, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models', $requests[0]['uri']);
+        self::assertSame('PUT', $requests[1]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[1]['uri']);
+        self::assertSame('DELETE', $requests[2]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[2]['uri']);
+
+        $createPayload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('oidc-usermodel-attribute-mapper', $createPayload['protocolMapper'] ?? null);
+        self::assertSame('external-user-id', $createPayload['config']['user.attribute'] ?? null);
+
+        $updatePayload = json_decode($requests[1]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($mapperId, $updatePayload['id'] ?? null);
+        self::assertSame('external_user_id_test', $updatePayload['config']['claim.name'] ?? null);
     }
 
     public function testOidcRequestTokenByPasswordSendsExpectedFormAndParsesResponse(): void

@@ -6,9 +6,11 @@ namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
@@ -22,6 +24,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
@@ -161,6 +164,24 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     public function deleteClientScope(DeleteClientScopeDto $dto): void
     {
         $this->clientScopeManagement->deleteClientScope(dto: $dto);
+    }
+
+    #[Override]
+    public function createClientScopeProtocolMapper(CreateClientScopeProtocolMapperDto $dto): void
+    {
+        $this->clientScopeManagement->createClientScopeProtocolMapper(dto: $dto);
+    }
+
+    #[Override]
+    public function updateClientScopeProtocolMapper(UpdateClientScopeProtocolMapperDto $dto): void
+    {
+        $this->clientScopeManagement->updateClientScopeProtocolMapper(dto: $dto);
+    }
+
+    #[Override]
+    public function deleteClientScopeProtocolMapper(DeleteClientScopeProtocolMapperDto $dto): void
+    {
+        $this->clientScopeManagement->deleteClientScopeProtocolMapper(dto: $dto);
     }
 
     #[Override]

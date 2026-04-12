@@ -6,13 +6,17 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
@@ -107,6 +111,36 @@ final class KeycloakHttpClientFacadeTest extends TestCase
                 protocol: 'openid-connect',
             ),
         );
+        $createMapperDto = new CreateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'claim.name' => 'external_user_id',
+                    'user.attribute' => 'external-user-id',
+                    'jsonType.label' => 'String',
+                ],
+            ),
+        );
+        $updateMapperDto = new UpdateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+            protocolMapperId: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                id: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+            ),
+        );
+        $deleteMapperDto = new DeleteClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+            protocolMapperId: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
+        );
         $expectedById = new ClientScopeDto(
             id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
             name: 'backend-dedicated',
@@ -131,6 +165,18 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             ->with($createDto);
         $clientScopeManagement
             ->expects(self::once())
+            ->method('createClientScopeProtocolMapper')
+            ->with($createMapperDto);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('updateClientScopeProtocolMapper')
+            ->with($updateMapperDto);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('deleteClientScopeProtocolMapper')
+            ->with($deleteMapperDto);
+        $clientScopeManagement
+            ->expects(self::once())
             ->method('getClientScopeById')
             ->with($getByIdDto)
             ->willReturn($expectedById);
@@ -142,6 +188,9 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         self::assertSame($expected, $client->getClientScopes($getDto));
         self::assertSame($expectedById, $client->getClientScopeById($getByIdDto));
         $client->createClientScope($createDto);
+        $client->createClientScopeProtocolMapper($createMapperDto);
+        $client->updateClientScopeProtocolMapper($updateMapperDto);
+        $client->deleteClientScopeProtocolMapper($deleteMapperDto);
     }
 
     public function testGetOpenIdConfigurationDelegatesToOidcInteraction(): void
