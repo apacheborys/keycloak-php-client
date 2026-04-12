@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
@@ -17,6 +20,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClient;
+use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\OidcInteractionHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RealmSettingsManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
@@ -85,6 +89,42 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             roleManagement: $roleManagement,
         );
         $client->createRole($dto);
+    }
+
+    public function testClientScopeMethodsDelegateToClientScopeManagement(): void
+    {
+        $getDto = new GetClientScopesDto(realm: 'master');
+        $createDto = new CreateClientScopeDto(
+            realm: 'master',
+            clientScope: new ClientScopeDto(
+                name: 'test-client-scope',
+                protocol: 'openid-connect',
+            ),
+        );
+        $expected = [
+            new ClientScopeDto(
+                name: 'backend-dedicated',
+                protocol: 'openid-connect',
+            ),
+        ];
+
+        $clientScopeManagement = $this->createMock(ClientScopeManagementHttpClientInterface::class);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('getClientScopes')
+            ->with($getDto)
+            ->willReturn($expected);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('createClientScope')
+            ->with($createDto);
+
+        $client = $this->createClient(
+            clientScopeManagement: $clientScopeManagement,
+        );
+
+        self::assertSame($expected, $client->getClientScopes($getDto));
+        $client->createClientScope($createDto);
     }
 
     public function testGetOpenIdConfigurationDelegatesToOidcInteraction(): void
@@ -170,12 +210,14 @@ final class KeycloakHttpClientFacadeTest extends TestCase
     private function createClient(
         ?UserManagementHttpClientInterface $userManagement = null,
         ?RoleManagementHttpClientInterface $roleManagement = null,
+        ?ClientScopeManagementHttpClientInterface $clientScopeManagement = null,
         ?RealmSettingsManagementHttpClientInterface $realmSettingsManagement = null,
         ?OidcInteractionHttpClientInterface $oidcInteraction = null,
     ): KeycloakHttpClient {
         return new KeycloakHttpClient(
             userManagement: $userManagement ?? $this->createStub(UserManagementHttpClientInterface::class),
             roleManagement: $roleManagement ?? $this->createStub(RoleManagementHttpClientInterface::class),
+            clientScopeManagement: $clientScopeManagement ?? $this->createStub(ClientScopeManagementHttpClientInterface::class),
             realmSettingsManagement: $realmSettingsManagement ?? $this->createStub(RealmSettingsManagementHttpClientInterface::class),
             oidcInteraction: $oidcInteraction ?? $this->createStub(OidcInteractionHttpClientInterface::class),
         );

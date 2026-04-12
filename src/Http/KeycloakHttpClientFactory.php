@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
+use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\RealmSettingsManagementHttpClient;
@@ -55,6 +56,11 @@ final class KeycloakHttpClientFactory
             accessTokenProvider: $accessTokenProvider,
         );
 
+        $clientScopeManagement = new ClientScopeManagementHttpClient(
+            httpCore: $httpCore,
+            accessTokenProvider: $accessTokenProvider,
+        );
+
         $oidcInteraction = new OidcInteractionHttpClient(
             httpCore: $httpCore,
             accessTokenProvider: $accessTokenProvider,
@@ -68,6 +74,7 @@ final class KeycloakHttpClientFactory
         return new KeycloakHttpClient(
             userManagement: $userManagement,
             roleManagement: $roleManagement,
+            clientScopeManagement: $clientScopeManagement,
             realmSettingsManagement: $realmSettingsManagement,
             oidcInteraction: $oidcInteraction,
             baseUrl: $config->getBaseUrl(),

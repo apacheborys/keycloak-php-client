@@ -6,21 +6,26 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
@@ -267,6 +272,74 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'createRole',
                     'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testClientScopeMethodsConsumeQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $scopeId = Uuid::fromString('f480fece-9dc0-41e6-9a6a-ac25137d800e');
+
+        $getDto = new GetClientScopesDto(realm: 'master');
+        $createDto = new CreateClientScopeDto(
+            realm: 'master',
+            clientScope: new ClientScopeDto(
+                name: 'test-client-scope',
+                protocol: 'openid-connect',
+            ),
+        );
+        $updateDto = new UpdateClientScopeDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            clientScope: new ClientScopeDto(
+                id: $scopeId,
+                name: 'test-client-scope-updated',
+                protocol: 'openid-connect',
+            ),
+        );
+        $deleteDto = new DeleteClientScopeDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+        );
+
+        $expected = [
+            new ClientScopeDto(
+                id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+                name: 'backend-dedicated',
+                protocol: 'openid-connect',
+            ),
+        ];
+
+        $client->queueResult('getClientScopes', $expected);
+        $client->queueResult('createClientScope', null);
+        $client->queueResult('updateClientScope', null);
+        $client->queueResult('deleteClientScope', null);
+
+        self::assertSame($expected, $client->getClientScopes($getDto));
+        $client->createClientScope($createDto);
+        $client->updateClientScope($updateDto);
+        $client->deleteClientScope($deleteDto);
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'getClientScopes',
+                    'args' => [$getDto],
+                ],
+                [
+                    'method' => 'createClientScope',
+                    'args' => [$createDto],
+                ],
+                [
+                    'method' => 'updateClientScope',
+                    'args' => [$updateDto],
+                ],
+                [
+                    'method' => 'deleteClientScope',
+                    'args' => [$deleteDto],
                 ],
             ],
             $client->getCalls(),

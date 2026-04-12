@@ -5,18 +5,24 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
@@ -29,6 +35,7 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
+use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -267,6 +274,191 @@ final class InternalHttpClientIntegrationTest extends TestCase
             ],
             $payload['attributes'] ?? null,
         );
+    }
+
+    public function testClientScopeManagementGetClientScopesParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                [
+                                    'id' => '39c0fcbc-db18-4236-8cae-2c074d730f4b',
+                                    'name' => 'backend-dedicated',
+                                    'description' => 'Backend client scope',
+                                    'protocol' => 'openid-connect',
+                                    'attributes' => [
+                                        'include.in.token.scope' => 'true',
+                                        'display.on.consent.screen' => 'true',
+                                    ],
+                                    'protocolMappers' => [],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $scopes = $client->getClientScopes(new GetClientScopesDto(realm: 'master'));
+
+        self::assertCount(1, $scopes);
+        self::assertSame('backend-dedicated', $scopes[0]->getName());
+        self::assertSame(
+            '39c0fcbc-db18-4236-8cae-2c074d730f4b',
+            $scopes[0]->getId()?->toString(),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes', $requests[0]['uri']);
+    }
+
+    public function testClientScopeManagementCreateUpdateDeleteWithRealmAssignment(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = 'f480fece-9dc0-41e6-9a6a-ac25137d800e';
+
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/client-scopes' => [
+                    [
+                        'status' => 201,
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'Location' => $this->server->getBaseUrl() . '/admin/realms/master/client-scopes/' . $clientScopeId,
+                        ],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/default-default-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/default-optional-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/default-default-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 404,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                    [
+                        'status' => 404,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/default-optional-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createClientScope(
+            new CreateClientScopeDto(
+                realm: 'master',
+                clientScope: new ClientScopeDto(
+                    name: 'test-client-scope',
+                    protocol: 'openid-connect',
+                    description: 'This is a test',
+                    attributes: [
+                        'display.on.consent.screen' => 'true',
+                        'consent.screen.text' => '',
+                        'include.in.token.scope' => 'true',
+                    ],
+                ),
+                realmAssignmentType: ClientScopeRealmAssignmentType::DEFAULT,
+            ),
+        );
+
+        $client->updateClientScope(
+            new UpdateClientScopeDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                clientScope: new ClientScopeDto(
+                    id: Uuid::fromString($clientScopeId),
+                    name: 'test-client-scope-updated',
+                    protocol: 'openid-connect',
+                    description: 'This is a test',
+                    attributes: [
+                        'display.on.consent.screen' => 'true',
+                        'consent.screen.text' => '',
+                        'include.in.token.scope' => 'true',
+                    ],
+                ),
+                realmAssignmentType: ClientScopeRealmAssignmentType::OPTIONAL,
+            ),
+        );
+
+        $client->deleteClientScope(
+            new DeleteClientScopeDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(8, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes', $requests[0]['uri']);
+        self::assertSame('PUT', $requests[1]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[1]['uri']);
+        self::assertSame('PUT', $requests[2]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[2]['uri']);
+        self::assertSame('PUT', $requests[3]['method']);
+        self::assertSame('/admin/realms/master/default-optional-client-scopes/' . $clientScopeId, $requests[3]['uri']);
+        self::assertSame('DELETE', $requests[4]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[4]['uri']);
+        self::assertSame('DELETE', $requests[5]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[5]['uri']);
+        self::assertSame('DELETE', $requests[6]['method']);
+        self::assertSame('/admin/realms/master/default-optional-client-scopes/' . $clientScopeId, $requests[6]['uri']);
+        self::assertSame('DELETE', $requests[7]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[7]['uri']);
     }
 
     public function testOidcRequestTokenByPasswordSendsExpectedFormAndParsesResponse(): void

@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 interface KeycloakHttpClientInterface extends
     UserManagementHttpClientInterface,
     RoleManagementHttpClientInterface,
+    ClientScopeManagementHttpClientInterface,
     RealmSettingsManagementHttpClientInterface
 {
     public function getOpenIdConfiguration(string $realm, bool $allowToUseCache = true): OpenIdConfigurationDto;

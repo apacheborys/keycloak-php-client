@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http\Test;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
@@ -24,6 +28,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
 use Override;
@@ -128,6 +133,36 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
 
     #[Override]
     public function unassignRolesFromUser(AssignUserRolesDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    /**
+     * @return list<ClientScopeDto>
+     */
+    #[Override]
+    public function getClientScopes(GetClientScopesDto $dto): array
+    {
+        /** @var array $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    #[Override]
+    public function createClientScope(CreateClientScopeDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function updateClientScope(UpdateClientScopeDto $dto): void
+    {
+        $this->nextResult(method: __FUNCTION__, args: [$dto]);
+    }
+
+    #[Override]
+    public function deleteClientScope(DeleteClientScopeDto $dto): void
     {
         $this->nextResult(method: __FUNCTION__, args: [$dto]);
     }
