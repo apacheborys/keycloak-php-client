@@ -11,6 +11,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
@@ -324,6 +325,74 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertCount(1, $requests);
         self::assertSame('GET', $requests[0]['method']);
         self::assertSame('/admin/realms/master/client-scopes', $requests[0]['uri']);
+    }
+
+    public function testClientScopeManagementGetClientScopeByIdParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                'id' => $clientScopeId,
+                                'name' => 'backend-dedicated',
+                                'description' => 'Backend client scope',
+                                'protocol' => 'openid-connect',
+                                'attributes' => [
+                                    'include.in.token.scope' => 'true',
+                                    'display.on.consent.screen' => 'true',
+                                    'gui.order' => '',
+                                    'consent.screen.text' => '',
+                                ],
+                                'protocolMappers' => [
+                                    [
+                                        'id' => 'd4e57d40-32a6-4c24-9ae1-b704d5ed882f',
+                                        'name' => 'External user id attribute',
+                                        'protocol' => 'openid-connect',
+                                        'protocolMapper' => 'oidc-usermodel-attribute-mapper',
+                                        'consentRequired' => false,
+                                        'config' => [
+                                            'user.attribute' => 'external-user-id',
+                                            'claim.name' => 'external_user_id',
+                                            'jsonType.label' => 'String',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $scope = $client->getClientScopeById(
+            new GetClientScopeByIdDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        self::assertSame('backend-dedicated', $scope->getName());
+        self::assertSame($clientScopeId, $scope->getId()?->toString());
+        self::assertCount(1, $scope->getProtocolMappers());
+        self::assertSame('external_user_id', $scope->getProtocolMappers()[0]->getConfig()['claim.name']);
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[0]['uri']);
     }
 
     public function testClientScopeManagementCreateUpdateDeleteWithRealmAssignment(): void

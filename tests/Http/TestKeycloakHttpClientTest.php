@@ -15,6 +15,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
@@ -284,6 +285,10 @@ final class TestKeycloakHttpClientTest extends TestCase
         $scopeId = Uuid::fromString('f480fece-9dc0-41e6-9a6a-ac25137d800e');
 
         $getDto = new GetClientScopesDto(realm: 'master');
+        $getByIdDto = new GetClientScopeByIdDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+        );
         $createDto = new CreateClientScopeDto(
             realm: 'master',
             clientScope: new ClientScopeDto(
@@ -314,11 +319,13 @@ final class TestKeycloakHttpClientTest extends TestCase
         ];
 
         $client->queueResult('getClientScopes', $expected);
+        $client->queueResult('getClientScopeById', $expected[0]);
         $client->queueResult('createClientScope', null);
         $client->queueResult('updateClientScope', null);
         $client->queueResult('deleteClientScope', null);
 
         self::assertSame($expected, $client->getClientScopes($getDto));
+        self::assertSame($expected[0], $client->getClientScopeById($getByIdDto));
         $client->createClientScope($createDto);
         $client->updateClientScope($updateDto);
         $client->deleteClientScope($deleteDto);
@@ -328,6 +335,10 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'getClientScopes',
                     'args' => [$getDto],
+                ],
+                [
+                    'method' => 'getClientScopeById',
+                    'args' => [$getByIdDto],
                 ],
                 [
                     'method' => 'createClientScope',

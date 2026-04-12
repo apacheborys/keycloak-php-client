@@ -12,6 +12,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
@@ -136,6 +137,12 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     public function getClientScopes(GetClientScopesDto $dto): array
     {
         return $this->clientScopeManagement->getClientScopes(dto: $dto);
+    }
+
+    #[Override]
+    public function getClientScopeById(GetClientScopeByIdDto $dto): ClientScopeDto
+    {
+        return $this->clientScopeManagement->getClientScopeById(dto: $dto);
     }
 
     #[Override]

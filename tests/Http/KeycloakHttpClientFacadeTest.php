@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
@@ -28,6 +29,7 @@ use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
 
 final class KeycloakHttpClientFacadeTest extends TestCase
 {
@@ -94,12 +96,21 @@ final class KeycloakHttpClientFacadeTest extends TestCase
     public function testClientScopeMethodsDelegateToClientScopeManagement(): void
     {
         $getDto = new GetClientScopesDto(realm: 'master');
+        $getByIdDto = new GetClientScopeByIdDto(
+            realm: 'master',
+            clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+        );
         $createDto = new CreateClientScopeDto(
             realm: 'master',
             clientScope: new ClientScopeDto(
                 name: 'test-client-scope',
                 protocol: 'openid-connect',
             ),
+        );
+        $expectedById = new ClientScopeDto(
+            id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+            name: 'backend-dedicated',
+            protocol: 'openid-connect',
         );
         $expected = [
             new ClientScopeDto(
@@ -118,12 +129,18 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             ->expects(self::once())
             ->method('createClientScope')
             ->with($createDto);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('getClientScopeById')
+            ->with($getByIdDto)
+            ->willReturn($expectedById);
 
         $client = $this->createClient(
             clientScopeManagement: $clientScopeManagement,
         );
 
         self::assertSame($expected, $client->getClientScopes($getDto));
+        self::assertSame($expectedById, $client->getClientScopeById($getByIdDto));
         $client->createClientScope($createDto);
     }
 

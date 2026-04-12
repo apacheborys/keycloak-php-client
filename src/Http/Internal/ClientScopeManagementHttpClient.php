@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
@@ -60,6 +61,35 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         }
 
         return $clientScopes;
+    }
+
+    #[\Override]
+    public function getClientScopeById(GetClientScopeByIdDto $dto): ClientScopeDto
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/client-scopes/' . $dto->getClientScopeId()->toString()
+        );
+
+        $request = $this->httpCore->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak get client scope by id failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        return ClientScopeDto::fromArray(
+            data: $this->httpCore->decodeJson(body: $body),
+        );
     }
 
     #[\Override]
