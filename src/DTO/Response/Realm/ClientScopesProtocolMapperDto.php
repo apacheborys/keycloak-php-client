@@ -10,25 +10,25 @@ use Ramsey\Uuid\UuidInterface;
 
 final readonly class ClientScopesProtocolMapperDto
 {
+    private ClientScopesProtocolMapperConfigDto $config;
+
     /**
-     * @param array<string, string> $config
+     * @param ClientScopesProtocolMapperConfigDto|array<string, string> $config
      */
     public function __construct(
         private string $name,
         private string $protocol,
         private string $protocolMapper,
         private bool $consentRequired = false,
-        private array $config = [],
+        ClientScopesProtocolMapperConfigDto|array $config = [],
         private ?UuidInterface $id = null,
     ) {
         Assert::that($this->name)->string()->notBlank();
         Assert::that($this->protocol)->string()->notBlank();
         Assert::that($this->protocolMapper)->string()->notBlank();
-
-        foreach ($this->config as $key => $value) {
-            Assert::that($key)->string()->notBlank();
-            Assert::that($value)->string();
-        }
+        $this->config = $config instanceof ClientScopesProtocolMapperConfigDto
+            ? $config
+            : ClientScopesProtocolMapperConfigDto::fromArray($config);
     }
 
     public function getName(): string
@@ -51,12 +51,17 @@ final readonly class ClientScopesProtocolMapperDto
         return $this->consentRequired;
     }
 
+    public function getConfig(): ClientScopesProtocolMapperConfigDto
+    {
+        return $this->config;
+    }
+
     /**
      * @return array<string, string>
      */
-    public function getConfig(): array
+    public function getConfigAsArray(): array
     {
-        return $this->config;
+        return $this->config->toArray();
     }
 
     public function getId(): ?UuidInterface
@@ -81,7 +86,7 @@ final readonly class ClientScopesProtocolMapperDto
             'protocol' => $this->protocol,
             'protocolMapper' => $this->protocolMapper,
             'consentRequired' => $this->consentRequired,
-            'config' => $this->config,
+            'config' => $this->config->toArray(),
         ];
 
         if ($this->id !== null) {
@@ -125,16 +130,18 @@ final readonly class ClientScopesProtocolMapperDto
             protocol: $data['protocol'],
             protocolMapper: $data['protocolMapper'],
             consentRequired: (bool) ($data['consentRequired'] ?? false),
-            config: self::normalizeStringMap(data: $data['config'] ?? []),
+            config: ClientScopesProtocolMapperConfigDto::fromArray(
+                data: self::normalizeArray(data: $data['config'] ?? []),
+            ),
             id: is_string($data['id'] ?? null) ? Uuid::fromString($data['id']) : null,
         );
     }
 
     /**
      * @param mixed $data
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
-    private static function normalizeStringMap(mixed $data): array
+    private static function normalizeArray(mixed $data): array
     {
         Assert::that($data)->isArray();
         /** @var array<int|string, mixed> $data */
@@ -142,10 +149,8 @@ final readonly class ClientScopesProtocolMapperDto
         $result = [];
         foreach ($data as $key => $value) {
             Assert::that($key)->string()->notBlank();
-            Assert::that($value)->scalar();
             /** @var string $key */
-            /** @var scalar $value */
-            $result[$key] = (string) $value;
+            $result[$key] = $value;
         }
 
         return $result;

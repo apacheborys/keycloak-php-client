@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 interface KeycloakServiceInterface extends
     KeycloakUserManagementServiceInterface,
+    KeycloakUserIdentifierAttributeServiceInterface,
     KeycloakOidcAuthenticationServiceInterface,
     KeycloakJwtVerificationServiceInterface,
     KeycloakRealmServiceInterface

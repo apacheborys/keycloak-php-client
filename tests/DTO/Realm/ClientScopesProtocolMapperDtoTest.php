@@ -33,7 +33,7 @@ final class ClientScopesProtocolMapperDtoTest extends TestCase
         self::assertSame('openid-connect', $dto->getProtocol());
         self::assertSame('oidc-usermodel-attribute-mapper', $dto->getProtocolMapper());
         self::assertFalse($dto->isConsentRequired());
-        self::assertSame('external_user_id', $dto->getConfig()['claim.name'] ?? null);
+        self::assertSame('external_user_id', $dto->getConfig()->get('claim.name'));
 
         self::assertSame(
             [
@@ -66,4 +66,3 @@ final class ClientScopesProtocolMapperDtoTest extends TestCase
         );
     }
 }
-

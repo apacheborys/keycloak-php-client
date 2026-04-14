@@ -391,7 +391,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('backend-dedicated', $scope->getName());
         self::assertSame($clientScopeId, $scope->getId()?->toString());
         self::assertCount(1, $scope->getProtocolMappers());
-        self::assertSame('external_user_id', $scope->getProtocolMappers()[0]->getConfig()['claim.name']);
+        self::assertSame('external_user_id', $scope->getProtocolMappers()[0]->getConfig()->get('claim.name'));
 
         $requests = $this->server->getRequests();
         self::assertCount(1, $requests);
