@@ -20,6 +20,7 @@ final readonly class AttributeValidatorDto implements AttributeValidatorInterfac
         }
     }
 
+    #[\Override]
     public function getType(): AttributeValidatorType
     {
         return $this->type;
@@ -28,6 +29,7 @@ final readonly class AttributeValidatorDto implements AttributeValidatorInterfac
     /**
      * @return array<string, mixed>
      */
+    #[\Override]
     public function getConfig(): array
     {
         return $this->config;
@@ -36,6 +38,7 @@ final readonly class AttributeValidatorDto implements AttributeValidatorInterfac
     /**
      * @return array{type: string, config: array<string, mixed>}
      */
+    #[\Override]
     public function toArray(): array
     {
         return [

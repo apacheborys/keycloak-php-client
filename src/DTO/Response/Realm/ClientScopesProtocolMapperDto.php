@@ -138,7 +138,6 @@ final readonly class ClientScopesProtocolMapperDto
     }
 
     /**
-     * @param mixed $data
      * @return array<string, mixed>
      */
     private static function normalizeArray(mixed $data): array

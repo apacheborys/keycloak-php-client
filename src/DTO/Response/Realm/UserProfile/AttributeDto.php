@@ -167,7 +167,6 @@ final readonly class AttributeDto
     }
 
     /**
-     * @param mixed $data
      * @return array<string, array<string, mixed>>
      */
     private static function normalizeValidations(mixed $data): array
@@ -189,7 +188,6 @@ final readonly class AttributeDto
     }
 
     /**
-     * @param mixed $data
      * @return array{view: list<string>, edit: list<string>}
      */
     private static function normalizePermissions(mixed $data): array
@@ -207,7 +205,6 @@ final readonly class AttributeDto
     }
 
     /**
-     * @param mixed $data
      * @return list<string>
      */
     private static function normalizePermissionList(mixed $data): array
@@ -227,7 +224,6 @@ final readonly class AttributeDto
     }
 
     /**
-     * @param mixed $data
      * @return array<string, string>
      */
     private static function normalizeAnnotations(mixed $data): array
