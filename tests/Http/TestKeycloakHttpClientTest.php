@@ -6,17 +6,34 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
@@ -81,6 +98,9 @@ final class TestKeycloakHttpClientTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
+            attributes: [
+                'external-user-id' => 'external-id-create',
+            ],
         );
         $credential = new KeycloakCredential(
             type: KeycloakCredentialType::password(),
@@ -114,6 +134,9 @@ final class TestKeycloakHttpClientTest extends TestCase
                 username: 'user@example.com',
                 email: 'updated@example.com',
                 firstName: 'Updated',
+                attributes: [
+                    'external-user-id' => 'external-id-update',
+                ],
             ),
         );
 
@@ -254,6 +277,137 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'createRole',
                     'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testClientScopeMethodsConsumeQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $scopeId = Uuid::fromString('f480fece-9dc0-41e6-9a6a-ac25137d800e');
+
+        $getDto = new GetClientScopesDto(realm: 'master');
+        $getByIdDto = new GetClientScopeByIdDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+        );
+        $createDto = new CreateClientScopeDto(
+            realm: 'master',
+            clientScope: new ClientScopeDto(
+                name: 'test-client-scope',
+                protocol: 'openid-connect',
+            ),
+        );
+        $createMapperDto = new CreateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'claim.name' => 'external_user_id',
+                    'user.attribute' => 'external-user-id',
+                    'jsonType.label' => 'String',
+                ],
+            ),
+        );
+        $updateDto = new UpdateClientScopeDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            clientScope: new ClientScopeDto(
+                id: $scopeId,
+                name: 'test-client-scope-updated',
+                protocol: 'openid-connect',
+            ),
+        );
+        $updateMapperDto = new UpdateClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapperId: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+            protocolMapper: new ClientScopesProtocolMapperDto(
+                id: Uuid::fromString('3b1caa7b-dad7-4f43-9127-15969f303fe8'),
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'claim.name' => 'external_user_id_test',
+                    'user.attribute' => 'external-user-id',
+                    'jsonType.label' => 'String',
+                ],
+            ),
+        );
+        $deleteDto = new DeleteClientScopeDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+        );
+        $deleteMapperDto = new DeleteClientScopeProtocolMapperDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+            protocolMapperId: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
+        );
+
+        $expected = [
+            new ClientScopeDto(
+                id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+                name: 'backend-dedicated',
+                protocol: 'openid-connect',
+            ),
+        ];
+
+        $client->queueResult('getClientScopes', $expected);
+        $client->queueResult('getClientScopeById', $expected[0]);
+        $client->queueResult('createClientScope', null);
+        $client->queueResult('createClientScopeProtocolMapper', null);
+        $client->queueResult('updateClientScope', null);
+        $client->queueResult('updateClientScopeProtocolMapper', null);
+        $client->queueResult('deleteClientScope', null);
+        $client->queueResult('deleteClientScopeProtocolMapper', null);
+
+        self::assertSame($expected, $client->getClientScopes($getDto));
+        self::assertSame($expected[0], $client->getClientScopeById($getByIdDto));
+        $client->createClientScope($createDto);
+        $client->createClientScopeProtocolMapper($createMapperDto);
+        $client->updateClientScope($updateDto);
+        $client->updateClientScopeProtocolMapper($updateMapperDto);
+        $client->deleteClientScope($deleteDto);
+        $client->deleteClientScopeProtocolMapper($deleteMapperDto);
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'getClientScopes',
+                    'args' => [$getDto],
+                ],
+                [
+                    'method' => 'getClientScopeById',
+                    'args' => [$getByIdDto],
+                ],
+                [
+                    'method' => 'createClientScope',
+                    'args' => [$createDto],
+                ],
+                [
+                    'method' => 'createClientScopeProtocolMapper',
+                    'args' => [$createMapperDto],
+                ],
+                [
+                    'method' => 'updateClientScope',
+                    'args' => [$updateDto],
+                ],
+                [
+                    'method' => 'updateClientScopeProtocolMapper',
+                    'args' => [$updateMapperDto],
+                ],
+                [
+                    'method' => 'deleteClientScope',
+                    'args' => [$deleteDto],
+                ],
+                [
+                    'method' => 'deleteClientScopeProtocolMapper',
+                    'args' => [$deleteMapperDto],
                 ],
             ],
             $client->getCalls(),
@@ -431,6 +585,65 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'refreshToken',
                     'args' => [$dto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testUserProfileMethodsConsumeQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $profile = new UserProfileDto(
+            attributes: [
+                new AttributeDto(name: 'external-user-id'),
+            ],
+            groups: [
+                new UserProfileGroupDto(name: 'user-metadata'),
+            ],
+        );
+
+        $getDto = new GetUserProfileDto(realm: 'master');
+        $createDto = new CreateUserProfileAttributeDto(
+            realm: 'master',
+            attribute: new AttributeDto(name: 'test_attribute'),
+        );
+        $updateDto = new UpdateUserProfileAttributeDto(
+            realm: 'master',
+            attribute: new AttributeDto(name: 'test_attribute', displayName: 'Updated'),
+        );
+        $deleteDto = new DeleteUserProfileAttributeDto(
+            realm: 'master',
+            attributeName: 'test_attribute',
+        );
+
+        $client->queueResult('getUserProfile', $profile);
+        $client->queueResult('createUserProfileAttribute', $profile);
+        $client->queueResult('updateUserProfileAttribute', $profile);
+        $client->queueResult('deleteUserProfileAttribute', $profile);
+
+        self::assertSame($profile, $client->getUserProfile($getDto));
+        self::assertSame($profile, $client->createUserProfileAttribute($createDto));
+        self::assertSame($profile, $client->updateUserProfileAttribute($updateDto));
+        self::assertSame($profile, $client->deleteUserProfileAttribute($deleteDto));
+
+        self::assertSame(
+            [
+                [
+                    'method' => 'getUserProfile',
+                    'args' => [$getDto],
+                ],
+                [
+                    'method' => 'createUserProfileAttribute',
+                    'args' => [$createDto],
+                ],
+                [
+                    'method' => 'updateUserProfileAttribute',
+                    'args' => [$updateDto],
+                ],
+                [
+                    'method' => 'deleteUserProfileAttribute',
+                    'args' => [$deleteDto],
                 ],
             ],
             $client->getCalls(),

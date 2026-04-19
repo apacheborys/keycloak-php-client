@@ -5,12 +5,33 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
+use Apacheborys\KeycloakPhpClient\Http\Internal\RealmSettingsManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\RoleManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\UserManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Cache\InMemoryCachePool;
@@ -19,8 +40,10 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
+use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final class InternalHttpClientIntegrationTest extends TestCase
@@ -76,6 +99,10 @@ final class InternalHttpClientIntegrationTest extends TestCase
                                     'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
                                     'username' => 'user@example.com',
                                     'createdTimestamp' => 1_700_000_000_000,
+                                    'attributes' => [
+                                        'external-user-id' => ['external-id-789'],
+                                        'locale' => ['en'],
+                                    ],
                                 ],
                             ],
                             JSON_THROW_ON_ERROR
@@ -93,6 +120,13 @@ final class InternalHttpClientIntegrationTest extends TestCase
 
         self::assertCount(1, $users);
         self::assertSame('user@example.com', $users[0]->getUsername());
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-789'],
+                'locale' => ['en'],
+            ],
+            $users[0]->getAttributes(),
+        );
 
         $requests = $this->server->getRequests();
         self::assertCount(1, $requests);
@@ -145,6 +179,466 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('Role for test', $payload['description'] ?? null);
         self::assertFalse((bool) ($payload['composite'] ?? true));
         self::assertFalse((bool) ($payload['clientRole'] ?? true));
+    }
+
+    public function testUserManagementCreateUserSendsAttributesInPayload(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/users' => [
+                    [
+                        'status' => 201,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createUser(
+            new CreateUserDto(
+                profile: new CreateUserProfileDto(
+                    username: 'test-user',
+                    email: 'test@example.com',
+                    emailVerified: false,
+                    enabled: true,
+                    firstName: 'Test',
+                    lastName: 'User',
+                    realm: 'master',
+                    attributes: [
+                        'locale' => '',
+                        'external-user-id' => 'external-id-123',
+                    ],
+                ),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/users', $requests[0]['uri']);
+
+        $payload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(
+            [
+                'locale' => [''],
+                'external-user-id' => ['external-id-123'],
+            ],
+            $payload['attributes'] ?? null,
+        );
+    }
+
+    public function testUserManagementUpdateUserSendsAttributesInPayload(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'PUT /admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e' => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->updateUser(
+            new UpdateUserDto(
+                realm: 'master',
+                userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+                profile: new UpdateUserProfileDto(
+                    username: 'test-user',
+                    attributes: [
+                        'external-user-id' => 'external-id-456',
+                    ],
+                ),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('PUT', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e', $requests[0]['uri']);
+
+        $payload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-456'],
+            ],
+            $payload['attributes'] ?? null,
+        );
+    }
+
+    public function testClientScopeManagementGetClientScopesParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                [
+                                    'id' => '39c0fcbc-db18-4236-8cae-2c074d730f4b',
+                                    'name' => 'backend-dedicated',
+                                    'description' => 'Backend client scope',
+                                    'protocol' => 'openid-connect',
+                                    'attributes' => [
+                                        'include.in.token.scope' => 'true',
+                                        'display.on.consent.screen' => 'true',
+                                    ],
+                                    'protocolMappers' => [],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $scopes = $client->getClientScopes(new GetClientScopesDto(realm: 'master'));
+
+        self::assertCount(1, $scopes);
+        self::assertSame('backend-dedicated', $scopes[0]->getName());
+        self::assertSame(
+            '39c0fcbc-db18-4236-8cae-2c074d730f4b',
+            $scopes[0]->getId()?->toString(),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes', $requests[0]['uri']);
+    }
+
+    public function testClientScopeManagementGetClientScopeByIdParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                'id' => $clientScopeId,
+                                'name' => 'backend-dedicated',
+                                'description' => 'Backend client scope',
+                                'protocol' => 'openid-connect',
+                                'attributes' => [
+                                    'include.in.token.scope' => 'true',
+                                    'display.on.consent.screen' => 'true',
+                                    'gui.order' => '',
+                                    'consent.screen.text' => '',
+                                ],
+                                'protocolMappers' => [
+                                    [
+                                        'id' => 'd4e57d40-32a6-4c24-9ae1-b704d5ed882f',
+                                        'name' => 'External user id attribute',
+                                        'protocol' => 'openid-connect',
+                                        'protocolMapper' => 'oidc-usermodel-attribute-mapper',
+                                        'consentRequired' => false,
+                                        'config' => [
+                                            'user.attribute' => 'external-user-id',
+                                            'claim.name' => 'external_user_id',
+                                            'jsonType.label' => 'String',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $scope = $client->getClientScopeById(
+            new GetClientScopeByIdDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        self::assertSame('backend-dedicated', $scope->getName());
+        self::assertSame($clientScopeId, $scope->getId()?->toString());
+        self::assertCount(1, $scope->getProtocolMappers());
+        self::assertSame('external_user_id', $scope->getProtocolMappers()[0]->getConfig()->get('claim.name'));
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[0]['uri']);
+    }
+
+    public function testClientScopeManagementCreateUpdateDeleteWithRealmAssignment(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = 'f480fece-9dc0-41e6-9a6a-ac25137d800e';
+
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/client-scopes' => [
+                    [
+                        'status' => 201,
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'Location' => $this->server->getBaseUrl() . '/admin/realms/master/client-scopes/' . $clientScopeId,
+                        ],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/default-default-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/default-optional-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/default-default-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 404,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                    [
+                        'status' => 404,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/default-optional-client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/client-scopes/' . $clientScopeId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createClientScope(
+            new CreateClientScopeDto(
+                realm: 'master',
+                clientScope: new ClientScopeDto(
+                    name: 'test-client-scope',
+                    protocol: 'openid-connect',
+                    description: 'This is a test',
+                    attributes: [
+                        'display.on.consent.screen' => 'true',
+                        'consent.screen.text' => '',
+                        'include.in.token.scope' => 'true',
+                    ],
+                ),
+                realmAssignmentType: ClientScopeRealmAssignmentType::DEFAULT,
+            ),
+        );
+
+        $client->updateClientScope(
+            new UpdateClientScopeDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                clientScope: new ClientScopeDto(
+                    id: Uuid::fromString($clientScopeId),
+                    name: 'test-client-scope-updated',
+                    protocol: 'openid-connect',
+                    description: 'This is a test',
+                    attributes: [
+                        'display.on.consent.screen' => 'true',
+                        'consent.screen.text' => '',
+                        'include.in.token.scope' => 'true',
+                    ],
+                ),
+                realmAssignmentType: ClientScopeRealmAssignmentType::OPTIONAL,
+            ),
+        );
+
+        $client->deleteClientScope(
+            new DeleteClientScopeDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(8, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes', $requests[0]['uri']);
+        self::assertSame('PUT', $requests[1]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[1]['uri']);
+        self::assertSame('PUT', $requests[2]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[2]['uri']);
+        self::assertSame('PUT', $requests[3]['method']);
+        self::assertSame('/admin/realms/master/default-optional-client-scopes/' . $clientScopeId, $requests[3]['uri']);
+        self::assertSame('DELETE', $requests[4]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[4]['uri']);
+        self::assertSame('DELETE', $requests[5]['method']);
+        self::assertSame('/admin/realms/master/default-default-client-scopes/' . $clientScopeId, $requests[5]['uri']);
+        self::assertSame('DELETE', $requests[6]['method']);
+        self::assertSame('/admin/realms/master/default-optional-client-scopes/' . $clientScopeId, $requests[6]['uri']);
+        self::assertSame('DELETE', $requests[7]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[7]['uri']);
+    }
+
+    public function testClientScopeManagementCreateUpdateDeleteProtocolMapper(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+        $mapperId = '3b1caa7b-dad7-4f43-9127-15969f303fe8';
+
+        $this->server->setScenario(
+            [
+                'POST /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models' => [
+                    [
+                        'status' => 201,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'PUT /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+                'DELETE /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                    [
+                        'status' => 204,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => '',
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $client->createClientScopeProtocolMapper(
+            new CreateClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapper: new ClientScopesProtocolMapperDto(
+                    name: 'External user id attribute',
+                    protocol: 'openid-connect',
+                    protocolMapper: 'oidc-usermodel-attribute-mapper',
+                    config: [
+                        'claim.name' => 'external_user_id',
+                        'jsonType.label' => 'String',
+                        'id.token.claim' => 'true',
+                        'access.token.claim' => 'true',
+                        'userinfo.token.claim' => 'true',
+                        'introspection.token.claim' => 'true',
+                        'user.attribute' => 'external-user-id',
+                    ],
+                ),
+            ),
+        );
+
+        $client->updateClientScopeProtocolMapper(
+            new UpdateClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapperId: Uuid::fromString($mapperId),
+                protocolMapper: new ClientScopesProtocolMapperDto(
+                    id: Uuid::fromString($mapperId),
+                    name: 'External user id attribute',
+                    protocol: 'openid-connect',
+                    protocolMapper: 'oidc-usermodel-attribute-mapper',
+                    config: [
+                        'claim.name' => 'external_user_id_test',
+                        'jsonType.label' => 'String',
+                        'id.token.claim' => 'true',
+                        'access.token.claim' => 'true',
+                        'userinfo.token.claim' => 'true',
+                        'introspection.token.claim' => 'true',
+                        'user.attribute' => 'external-user-id',
+                    ],
+                ),
+            ),
+        );
+
+        $client->deleteClientScopeProtocolMapper(
+            new DeleteClientScopeProtocolMapperDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+                protocolMapperId: Uuid::fromString($mapperId),
+            ),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(3, $requests);
+        self::assertSame('POST', $requests[0]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models', $requests[0]['uri']);
+        self::assertSame('PUT', $requests[1]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[1]['uri']);
+        self::assertSame('DELETE', $requests[2]['method']);
+        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[2]['uri']);
+
+        $createPayload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('oidc-usermodel-attribute-mapper', $createPayload['protocolMapper'] ?? null);
+        self::assertSame('external-user-id', $createPayload['config']['user.attribute'] ?? null);
+
+        $updatePayload = json_decode($requests[1]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($mapperId, $updatePayload['id'] ?? null);
+        self::assertSame('external_user_id_test', $updatePayload['config']['claim.name'] ?? null);
     }
 
     public function testOidcRequestTokenByPasswordSendsExpectedFormAndParsesResponse(): void
@@ -208,6 +702,157 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('secret', $formData['client_secret'] ?? null);
         self::assertSame('oleg@example.com', $formData['username'] ?? null);
         self::assertSame('Roadsurfer!2026', $formData['password'] ?? null);
+    }
+
+    public function testRealmSettingsManagementSupportsGetCreateUpdateDeleteAttribute(): void
+    {
+        $this->seedAccessToken();
+        $initialProfile = [
+            'attributes' => [
+                [
+                    'name' => 'username',
+                    'displayName' => '${username}',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => [
+                [
+                    'name' => 'user-metadata',
+                    'displayHeader' => 'User metadata',
+                    'displayDescription' => 'Attributes, which refer to user metadata',
+                ],
+            ],
+        ];
+
+        $afterCreate = [
+            'attributes' => [
+                $initialProfile['attributes'][0],
+                [
+                    'name' => 'test_attribute',
+                    'displayName' => 'Attribute for test reasons',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => $initialProfile['groups'],
+        ];
+
+        $afterUpdate = [
+            'attributes' => [
+                $initialProfile['attributes'][0],
+                [
+                    'name' => 'test_attribute',
+                    'displayName' => 'Updated attribute',
+                    'validations' => [],
+                    'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    'multivalued' => false,
+                    'annotations' => [],
+                ],
+            ],
+            'groups' => $initialProfile['groups'],
+        ];
+
+        $afterDelete = $initialProfile;
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/users/profile' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($initialProfile, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($initialProfile, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterCreate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterUpdate, JSON_THROW_ON_ERROR),
+                    ],
+                ],
+                'PUT /admin/realms/master/users/profile' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterCreate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterUpdate, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($afterDelete, JSON_THROW_ON_ERROR),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new RealmSettingsManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $fetched = $client->getUserProfile(new GetUserProfileDto(realm: 'master'));
+        self::assertCount(1, $fetched->getAttributes());
+
+        $created = $client->createUserProfileAttribute(
+            new CreateUserProfileAttributeDto(
+                realm: 'master',
+                attribute: new AttributeDto(
+                    name: 'test_attribute',
+                    displayName: 'Attribute for test reasons',
+                    permissions: ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                ),
+            ),
+        );
+        self::assertTrue($created->hasAttribute('test_attribute'));
+
+        $updated = $client->updateUserProfileAttribute(
+            new UpdateUserProfileAttributeDto(
+                realm: 'master',
+                attribute: new AttributeDto(
+                    name: 'test_attribute',
+                    displayName: 'Updated attribute',
+                    permissions: ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                ),
+            ),
+        );
+        self::assertTrue($updated->hasAttribute('test_attribute'));
+
+        $deleted = $client->deleteUserProfileAttribute(
+            new DeleteUserProfileAttributeDto(
+                realm: 'master',
+                attributeName: 'test_attribute',
+            ),
+        );
+        self::assertFalse($deleted->hasAttribute('test_attribute'));
+
+        $requests = $this->server->getRequests();
+        self::assertCount(7, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame('GET', $requests[1]['method']);
+        self::assertSame('PUT', $requests[2]['method']);
+        self::assertSame('GET', $requests[3]['method']);
+        self::assertSame('PUT', $requests[4]['method']);
+        self::assertSame('GET', $requests[5]['method']);
+        self::assertSame('PUT', $requests[6]['method']);
+        self::assertSame('/admin/realms/master/users/profile', $requests[6]['uri']);
     }
 
     public function testRoleManagementGetRolesThrowsForNonSuccessStatus(): void

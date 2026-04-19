@@ -21,6 +21,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
      * @param list<KeycloakCredentialType> $disableableCredentialTypes
      * @param list<KeycloakRequiredAction> $requiredActions
      * @param list<string> $roles
+     * @param array<string, list<string>> $attributes
      */
     public function __construct(
         private UuidInterface $id,
@@ -37,6 +38,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         private int $notBefore,
         private KeycloakUserAccess $access,
         private array $roles = [],
+        private array $attributes = [],
     ) {
     }
 
@@ -83,6 +85,14 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     public function getRoles(): array
     {
         return $this->roles;
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public function getAttributes(): array
+    {
+        return $this->attributes;
     }
 
     #[Override]
@@ -155,6 +165,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             'notBefore' => $this->notBefore,
             'access' => $this->access->jsonSerialize(),
             'realmRoles' => $this->roles,
+            'attributes' => $this->attributes,
         ];
     }
 
@@ -187,6 +198,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         $disableableCredentialTypes = self::buildCredentialTypes(data: $data['disableableCredentialTypes'] ?? []);
         $requiredActions = self::buildRequiredActions(data: $data['requiredActions'] ?? []);
         $roles = self::buildRoles(data: $data);
+        $attributes = self::buildAttributes(data: $data['attributes'] ?? []);
 
         return new self(
             id: Uuid::fromString(uuid: $data['id']),
@@ -202,7 +214,8 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             requiredActions: $requiredActions,
             notBefore: self::intOrDefault(data: $data, key: 'notBefore', default: 0),
             access: $access,
-            roles: $roles
+            roles: $roles,
+            attributes: $attributes,
         );
     }
 
@@ -319,6 +332,54 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
         $roles = self::stringList(data: $data['realmRoles'] ?? $data['roles'] ?? []);
 
         return array_values(array_unique($roles));
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private static function buildAttributes(mixed $data): array
+    {
+        if ($data === null) {
+            return [];
+        }
+
+        Assert::that($data)->isArray();
+        /** @var array<int|string, mixed> $data */
+
+        $attributes = [];
+        foreach ($data as $attributeName => $attributeValues) {
+            Assert::that($attributeName)->string()->notBlank();
+            /** @var string $attributeName */
+            $attributes[$attributeName] = self::normalizeAttributeValues(attributeValues: $attributeValues);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizeAttributeValues(mixed $attributeValues): array
+    {
+        if ($attributeValues === null) {
+            return [];
+        }
+
+        if (is_string($attributeValues)) {
+            return [$attributeValues];
+        }
+
+        Assert::that($attributeValues)->isArray();
+        /** @var array<int, mixed> $attributeValues */
+
+        $result = [];
+        foreach ($attributeValues as $attributeValue) {
+            Assert::that($attributeValue)->string();
+            /** @var string $attributeValue */
+            $result[] = $attributeValue;
+        }
+
+        return array_values($result);
     }
 
     /**

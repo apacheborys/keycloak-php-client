@@ -38,6 +38,12 @@ final readonly class KeycloakServiceFactory
             isRoleCreationAllowed: $isRoleCreationAllowed,
         );
 
+        $userIdentifierAttributeService = new KeycloakUserIdentifierAttributeService(
+            httpClient: $httpClient,
+            mapperResolver: $mapperResolver,
+            logger: $logger,
+        );
+
         $oidcAuthenticationService = new KeycloakOidcAuthenticationService(
             httpClient: $httpClient,
             mapperResolver: $mapperResolver,
@@ -54,6 +60,7 @@ final readonly class KeycloakServiceFactory
             userManagementService: $userManagementService,
             userLookupService: $userManagementService,
             roleManagementService: $roleManagementService,
+            userIdentifierAttributeService: $userIdentifierAttributeService,
             oidcAuthenticationService: $oidcAuthenticationService,
             jwtVerificationService: $jwtVerificationService,
             realmService: $realmService,

@@ -39,7 +39,8 @@ readonly final class UpdateUserDto
      *     emailVerified?: bool,
      *     enabled?: bool,
      *     firstName?: string,
-     *     lastName?: string
+     *     lastName?: string,
+     *     attributes?: array<string, list<string>>
      * }
      */
     public function toArray(): array

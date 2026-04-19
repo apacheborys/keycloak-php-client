@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
@@ -20,6 +21,7 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         private KeycloakUserManagementServiceInterface $userManagementService,
         private KeycloakUserLookupServiceInterface $userLookupService,
         private KeycloakRoleManagementServiceInterface $roleManagementService,
+        private KeycloakUserIdentifierAttributeServiceInterface $userIdentifierAttributeService,
         private KeycloakOidcAuthenticationServiceInterface $oidcAuthenticationService,
         private KeycloakJwtVerificationServiceInterface $jwtVerificationService,
         private KeycloakRealmServiceInterface $realmService,
@@ -75,6 +77,17 @@ final readonly class KeycloakService implements KeycloakServiceInterface
     public function deleteUser(KeycloakUserInterface $user): void
     {
         $this->userManagementService->deleteUser(user: $user);
+    }
+
+    #[Override]
+    public function ensureUserIdentifierAttribute(
+        KeycloakUserInterface $localUser,
+        EnsureUserIdentifierAttributeDto $dto
+    ): void {
+        $this->userIdentifierAttributeService->ensureUserIdentifierAttribute(
+            localUser: $localUser,
+            dto: $dto,
+        );
     }
 
     /**

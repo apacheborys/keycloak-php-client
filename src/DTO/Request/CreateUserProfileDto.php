@@ -11,6 +11,7 @@ readonly final class CreateUserProfileDto
 {
     /**
      * @param list<RoleDto> $roles
+     * @param array<string, string|list<string>> $attributes
      */
     public function __construct(
         private string $username,
@@ -21,6 +22,7 @@ readonly final class CreateUserProfileDto
         private string $lastName,
         private string $realm,
         private array $roles = [],
+        private array $attributes = [],
     ) {
         Assert::that($username)->notEmpty();
         Assert::that($email)->notEmpty()->email();
@@ -31,6 +33,8 @@ readonly final class CreateUserProfileDto
         foreach ($this->roles as $role) {
             Assert::that($role)->isInstanceOf(RoleDto::class);
         }
+
+        self::assertAttributesMap(attributes: $this->attributes);
     }
 
     public function getRealm(): string
@@ -41,6 +45,14 @@ readonly final class CreateUserProfileDto
     public function getEmail(): string
     {
         return $this->email;
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public function getAttributes(): array
+    {
+        return self::normalizeAttributesMap(attributes: $this->attributes);
     }
 
     /**
@@ -58,12 +70,13 @@ readonly final class CreateUserProfileDto
      *     emailVerified: bool,
      *     enabled: bool,
      *     firstName: string,
-     *     lastName: string
+     *     lastName: string,
+     *     attributes?: array<string, list<string>>
      * }
      */
     public function toArray(): array
     {
-        return [
+        $result = [
             'username' => $this->username,
             'email' => $this->email,
             'emailVerified' => $this->emailVerified,
@@ -71,5 +84,52 @@ readonly final class CreateUserProfileDto
             'firstName' => $this->firstName,
             'lastName' => $this->lastName,
         ];
+
+        $attributes = $this->getAttributes();
+        if ($attributes !== []) {
+            $result['attributes'] = $attributes;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, string|list<string>> $attributes
+     */
+    private static function assertAttributesMap(array $attributes): void
+    {
+        foreach ($attributes as $attributeName => $attributeValue) {
+            Assert::that($attributeName)->string()->notEmpty();
+
+            if (is_string($attributeValue)) {
+                continue;
+            }
+
+            Assert::that($attributeValue)->isArray();
+            foreach ($attributeValue as $singleValue) {
+                Assert::that($singleValue)->string();
+            }
+        }
+    }
+
+    /**
+     * @param array<string, string|list<string>> $attributes
+     * @return array<string, list<string>>
+     */
+    private static function normalizeAttributesMap(array $attributes): array
+    {
+        $normalized = [];
+
+        foreach ($attributes as $attributeName => $attributeValue) {
+            if (is_string($attributeValue)) {
+                $normalized[$attributeName] = [$attributeValue];
+                continue;
+            }
+
+            /** @var list<string> $attributeValue */
+            $normalized[$attributeName] = array_values($attributeValue);
+        }
+
+        return $normalized;
     }
 }

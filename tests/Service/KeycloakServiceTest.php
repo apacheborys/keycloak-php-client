@@ -8,6 +8,7 @@ use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
@@ -15,6 +16,8 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
@@ -431,6 +434,42 @@ final class KeycloakServiceTest extends TestCase
         self::assertSame('deleteUser', $calls[0]['method']);
         self::assertSame('master', $calls[0]['args'][0]->getRealm());
         self::assertSame($user->getId(), $calls[0]['args'][0]->getUserId()->toString());
+    }
+
+    public function testEnsureUserIdentifierAttributeDelegatesToUnderlyingServices(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = $this->createService($httpClient, $mapper);
+        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+
+        $httpClient->queueResult(
+            'getUserProfile',
+            new UserProfileDto(
+                attributes: [
+                    new AttributeDto(
+                        name: 'external-user-id',
+                        displayName: 'External user id',
+                    ),
+                ],
+            ),
+        );
+        $httpClient->queueResult('getClientScopes', []);
+
+        $this->expectException(LogicException::class);
+
+        $service->ensureUserIdentifierAttribute(
+            localUser: $user,
+            dto: new EnsureUserIdentifierAttributeDto(
+                attributeName: 'external-user-id',
+                displayName: 'External user id',
+                createIfMissing: false,
+                exposeInJwt: true,
+            ),
+        );
     }
 
     public function testGetAvailableRealmsDelegatesToHttpClient(): void

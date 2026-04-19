@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClient;
+use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Http\RealmSettingsManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
@@ -58,6 +60,8 @@ final class OidcInteractionHttpClientCacheTest extends TestCase
         $this->client = new KeycloakHttpClient(
             userManagement: $this->createStub(UserManagementHttpClientInterface::class),
             roleManagement: $this->createStub(RoleManagementHttpClientInterface::class),
+            clientScopeManagement: $this->createStub(ClientScopeManagementHttpClientInterface::class),
+            realmSettingsManagement: $this->createStub(RealmSettingsManagementHttpClientInterface::class),
             oidcInteraction: $oidcInteraction,
             baseUrl: $this->server->getBaseUrl(),
             clientId: 'backend',
