@@ -11,10 +11,12 @@ final readonly class UserProfileDto
     /**
      * @param list<AttributeDto> $attributes
      * @param list<UserProfileGroupDto> $groups
+     * @param array<string, mixed> $extra
      */
     public function __construct(
         private array $attributes = [],
         private array $groups = [],
+        private array $extra = [],
     ) {
         foreach ($this->attributes as $attribute) {
             Assert::that($attribute)->isInstanceOf(AttributeDto::class);
@@ -22,6 +24,11 @@ final readonly class UserProfileDto
 
         foreach ($this->groups as $group) {
             Assert::that($group)->isInstanceOf(UserProfileGroupDto::class);
+        }
+
+        foreach ($this->extra as $key => $value) {
+            Assert::that($key)->string()->notBlank();
+            $_ = $value;
         }
     }
 
@@ -39,6 +46,14 @@ final readonly class UserProfileDto
     public function getGroups(): array
     {
         return $this->groups;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getExtra(): array
+    {
+        return $this->extra;
     }
 
     public function hasAttribute(string $attributeName): bool
@@ -60,6 +75,7 @@ final readonly class UserProfileDto
         return new self(
             attributes: $attributes,
             groups: $this->groups,
+            extra: $this->extra,
         );
     }
 
@@ -70,7 +86,7 @@ final readonly class UserProfileDto
 
         foreach ($this->attributes as $item) {
             if ($item->getName() === $attribute->getName()) {
-                $attributes[] = $attribute;
+                $attributes[] = $attribute->withPreservedUnknownFieldsFrom(attribute: $item);
                 $updated = true;
                 continue;
             }
@@ -85,6 +101,7 @@ final readonly class UserProfileDto
         return new self(
             attributes: $attributes,
             groups: $this->groups,
+            extra: $this->extra,
         );
     }
 
@@ -109,38 +126,26 @@ final readonly class UserProfileDto
         return new self(
             attributes: $attributes,
             groups: $this->groups,
+            extra: $this->extra,
         );
     }
 
     /**
-     * @return array{
-     *     attributes: list<array{
-     *         name: string,
-     *         displayName?: string,
-     *         validations: array<string, array<string, mixed>>,
-     *         permissions: array{view: list<string>, edit: list<string>},
-     *         multivalued: bool,
-     *         annotations: array<string, string>
-     *     }>,
-     *     groups: list<array{
-     *         name: string,
-     *         displayHeader?: string,
-     *         displayDescription?: string
-     *     }>
-     * }
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
-        return [
-            'attributes' => array_map(
-                static fn (AttributeDto $attribute): array => $attribute->toArray(),
-                $this->attributes,
-            ),
-            'groups' => array_map(
-                static fn (UserProfileGroupDto $group): array => $group->toArray(),
-                $this->groups,
-            ),
-        ];
+        $data = $this->extra;
+        $data['attributes'] = array_map(
+            static fn (AttributeDto $attribute): array => $attribute->toArray(),
+            $this->attributes,
+        );
+        $data['groups'] = array_map(
+            static fn (UserProfileGroupDto $group): array => $group->toArray(),
+            $this->groups,
+        );
+
+        return $data;
     }
 
     /**
@@ -173,6 +178,21 @@ final readonly class UserProfileDto
         return new self(
             attributes: $attributes,
             groups: $groups,
+            extra: self::extractExtra(data: $data),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private static function extractExtra(array $data): array
+    {
+        unset(
+            $data['attributes'],
+            $data['groups'],
+        );
+
+        return $data;
     }
 }
