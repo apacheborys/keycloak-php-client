@@ -16,6 +16,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
@@ -33,6 +34,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
 use Override;
@@ -157,6 +159,18 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     public function getClientScopeById(GetClientScopeByIdDto $dto): ClientScopeDto
     {
         /** @var ClientScopeDto $result */
+        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
+
+        return $result;
+    }
+
+    /**
+     * @return list<ClientScopesProtocolMapperDto>
+     */
+    #[Override]
+    public function getClientScopeProtocolMappers(GetClientScopeProtocolMappersDto $dto): array
+    {
+        /** @var array $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;

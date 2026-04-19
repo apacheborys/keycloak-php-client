@@ -6,7 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validator
 
 interface AttributeValidatorInterface
 {
-    public function getType(): AttributeValidatorType;
+    public function getType(): string;
 
     /**
      * @return array<string, mixed>

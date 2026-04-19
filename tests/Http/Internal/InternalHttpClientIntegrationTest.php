@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
@@ -399,6 +400,66 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[0]['uri']);
     }
 
+    public function testClientScopeManagementGetClientScopeProtocolMappersParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                [
+                                    'id' => 'd4e57d40-32a6-4c24-9ae1-b704d5ed882f',
+                                    'name' => 'External user id attribute',
+                                    'protocol' => 'openid-connect',
+                                    'protocolMapper' => 'oidc-usermodel-attribute-mapper',
+                                    'consentRequired' => false,
+                                    'config' => [
+                                        'user.attribute' => 'external-user-id',
+                                        'claim.name' => 'external_user_id',
+                                        'jsonType.label' => 'String',
+                                    ],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $protocolMappers = $client->getClientScopeProtocolMappers(
+            new GetClientScopeProtocolMappersDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        self::assertCount(1, $protocolMappers);
+        self::assertSame(
+            'external_user_id',
+            $protocolMappers[0]->getConfig()->get('claim.name'),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame(
+            '/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models',
+            $requests[0]['uri'],
+        );
+    }
+
     public function testClientScopeManagementCreateUpdateDeleteWithRealmAssignment(): void
     {
         $this->seedAccessToken();
@@ -708,8 +769,11 @@ final class InternalHttpClientIntegrationTest extends TestCase
     {
         $this->seedAccessToken();
         $initialProfile = [
+            'unmanagedAttributePolicy' => 'ENABLED',
             'attributes' => [
                 [
+                    'group' => 'user-metadata',
+                    'required' => ['roles' => ['admin']],
                     'name' => 'username',
                     'displayName' => '${username}',
                     'validations' => [],
@@ -720,9 +784,13 @@ final class InternalHttpClientIntegrationTest extends TestCase
             ],
             'groups' => [
                 [
+                    'customGroupProperty' => ['enabled' => true],
                     'name' => 'user-metadata',
                     'displayHeader' => 'User metadata',
                     'displayDescription' => 'Attributes, which refer to user metadata',
+                    'annotations' => [
+                        'collapsed' => false,
+                    ],
                 ],
             ],
         ];
@@ -731,6 +799,8 @@ final class InternalHttpClientIntegrationTest extends TestCase
             'attributes' => [
                 $initialProfile['attributes'][0],
                 [
+                    'required' => ['roles' => ['admin']],
+                    'selector' => ['scopes' => ['openid']],
                     'name' => 'test_attribute',
                     'displayName' => 'Attribute for test reasons',
                     'validations' => [],
@@ -740,12 +810,15 @@ final class InternalHttpClientIntegrationTest extends TestCase
                 ],
             ],
             'groups' => $initialProfile['groups'],
+            'unmanagedAttributePolicy' => $initialProfile['unmanagedAttributePolicy'],
         ];
 
         $afterUpdate = [
             'attributes' => [
                 $initialProfile['attributes'][0],
                 [
+                    'required' => ['roles' => ['admin']],
+                    'selector' => ['scopes' => ['openid']],
                     'name' => 'test_attribute',
                     'displayName' => 'Updated attribute',
                     'validations' => [],
@@ -755,6 +828,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
                 ],
             ],
             'groups' => $initialProfile['groups'],
+            'unmanagedAttributePolicy' => $initialProfile['unmanagedAttributePolicy'],
         ];
 
         $afterDelete = $initialProfile;
@@ -853,6 +927,24 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('GET', $requests[5]['method']);
         self::assertSame('PUT', $requests[6]['method']);
         self::assertSame('/admin/realms/master/users/profile', $requests[6]['uri']);
+
+        $createPayload = json_decode($requests[2]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('ENABLED', $createPayload['unmanagedAttributePolicy'] ?? null);
+        self::assertSame('user-metadata', $createPayload['attributes'][0]['group'] ?? null);
+        self::assertSame(['roles' => ['admin']], $createPayload['attributes'][0]['required'] ?? null);
+        self::assertSame(['enabled' => true], $createPayload['groups'][0]['customGroupProperty'] ?? null);
+        self::assertSame(['collapsed' => false], $createPayload['groups'][0]['annotations'] ?? null);
+
+        $updatePayload = json_decode($requests[4]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('ENABLED', $updatePayload['unmanagedAttributePolicy'] ?? null);
+        self::assertSame(['roles' => ['admin']], $updatePayload['attributes'][1]['required'] ?? null);
+        self::assertSame(['scopes' => ['openid']], $updatePayload['attributes'][1]['selector'] ?? null);
+        self::assertSame('Updated attribute', $updatePayload['attributes'][1]['displayName'] ?? null);
+
+        $deletePayload = json_decode($requests[6]['body'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('ENABLED', $deletePayload['unmanagedAttributePolicy'] ?? null);
+        self::assertSame(['roles' => ['admin']], $deletePayload['attributes'][0]['required'] ?? null);
+        self::assertSame(['collapsed' => false], $deletePayload['groups'][0]['annotations'] ?? null);
     }
 
     public function testRoleManagementGetRolesThrowsForNonSuccessStatus(): void

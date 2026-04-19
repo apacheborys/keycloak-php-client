@@ -6,14 +6,14 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorsDto;
-use Apacheborys\KeycloakPhpClient\ValueObject\AttributePermission;
 use Assert\Assert;
 
 final readonly class AttributeDto
 {
     /**
      * @param array{view: list<string>, edit: list<string>} $permissions
-     * @param array<string, string> $annotations
+     * @param array<string, mixed> $annotations
+     * @param array<string, mixed> $extra
      */
     public function __construct(
         private string $name,
@@ -22,6 +22,7 @@ final readonly class AttributeDto
         private bool $multivalued = false,
         private array $annotations = [],
         private ?AttributeValidatorsDto $validators = null,
+        private array $extra = [],
     ) {
         Assert::that($this->name)->string()->notBlank();
 
@@ -36,17 +37,20 @@ final readonly class AttributeDto
 
         foreach ($this->permissions['view'] as $permission) {
             Assert::that($permission)->string()->notBlank();
-            Assert::that(AttributePermission::tryFrom($permission))->notNull();
         }
 
         foreach ($this->permissions['edit'] as $permission) {
             Assert::that($permission)->string()->notBlank();
-            Assert::that(AttributePermission::tryFrom($permission))->notNull();
         }
 
         foreach ($this->annotations as $key => $value) {
             Assert::that($key)->string()->notBlank();
-            Assert::that($value)->string();
+            $_ = $value;
+        }
+
+        foreach ($this->extra as $key => $value) {
+            Assert::that($key)->string()->notBlank();
+            $_ = $value;
         }
     }
 
@@ -74,7 +78,7 @@ final readonly class AttributeDto
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public function getAnnotations(): array
     {
@@ -84,6 +88,14 @@ final readonly class AttributeDto
     public function getValidators(): ?AttributeValidatorsDto
     {
         return $this->validators;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getExtra(): array
+    {
+        return $this->extra;
     }
 
     /**
@@ -108,30 +120,40 @@ final readonly class AttributeDto
     }
 
     /**
-     * @return array{
-     *     name: string,
-     *     displayName?: string,
-     *     validations: array<string, array<string, mixed>>,
-     *     permissions: array{view: list<string>, edit: list<string>},
-     *     multivalued: bool,
-     *     annotations: array<string, string>
-     * }
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
-        $data = [
-            'name' => $this->name,
-            'validations' => $this->getValidations(),
-            'permissions' => $this->permissions,
-            'multivalued' => $this->multivalued,
-            'annotations' => $this->annotations,
-        ];
+        $data = $this->extra;
+        $data['name'] = $this->name;
+        $data['validations'] = $this->getValidations();
+        $data['permissions'] = $this->permissions;
+        $data['multivalued'] = $this->multivalued;
+        $data['annotations'] = $this->annotations;
 
         if ($this->displayName !== null) {
             $data['displayName'] = $this->displayName;
+        } else {
+            unset($data['displayName']);
         }
 
         return $data;
+    }
+
+    public function withPreservedUnknownFieldsFrom(self $attribute): self
+    {
+        return new self(
+            name: $this->name,
+            displayName: $this->displayName,
+            permissions: $this->permissions,
+            multivalued: $this->multivalued,
+            annotations: $this->annotations,
+            validators: self::mergeValidators(
+                current: $attribute->validators,
+                updated: $this->validators,
+            ),
+            extra: array_replace($attribute->extra, $this->extra),
+        );
     }
 
     /**
@@ -142,27 +164,21 @@ final readonly class AttributeDto
         Assert::that($data)->keyExists('name');
         Assert::that($data['name'])->string()->notBlank();
 
-        /** @var array{
-         *     name: string,
-         *     displayName?: mixed,
-         *     validations?: mixed,
-         *     permissions?: mixed,
-         *     multivalued?: mixed,
-         *     annotations?: mixed
-         * } $data
-         */
+        /** @var string $name */
+        $name = $data['name'];
 
         $validations = self::normalizeValidations(data: $data['validations'] ?? []);
         $permissions = self::normalizePermissions(data: $data['permissions'] ?? ['view' => [], 'edit' => []]);
         $annotations = self::normalizeAnnotations(data: $data['annotations'] ?? []);
 
         return new self(
-            name: $data['name'],
+            name: $name,
             displayName: is_string($data['displayName'] ?? null) ? $data['displayName'] : null,
             permissions: $permissions,
             multivalued: (bool) ($data['multivalued'] ?? false),
             annotations: $annotations,
-            validators: AttributeValidatorsDto::fromKeycloakArray($validations),
+            validators: $validations === [] ? null : AttributeValidatorsDto::fromKeycloakArray($validations),
+            extra: self::extractExtra(data: $data),
         );
     }
 
@@ -216,7 +232,6 @@ final readonly class AttributeDto
         foreach ($data as $permission) {
             Assert::that($permission)->string()->notBlank();
             /** @var string $permission */
-            Assert::that(AttributePermission::tryFrom($permission))->notNull();
             $permissions[] = $permission;
         }
 
@@ -224,7 +239,7 @@ final readonly class AttributeDto
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private static function normalizeAnnotations(mixed $data): array
     {
@@ -234,13 +249,45 @@ final readonly class AttributeDto
         $annotations = [];
         foreach ($data as $key => $value) {
             Assert::that($key)->string()->notBlank();
-            Assert::that($value)->scalar();
-
             /** @var string $key */
-            /** @var scalar $value */
-            $annotations[$key] = (string) $value;
+            $annotations[$key] = $value;
         }
 
         return $annotations;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private static function extractExtra(array $data): array
+    {
+        unset(
+            $data['name'],
+            $data['displayName'],
+            $data['validations'],
+            $data['permissions'],
+            $data['multivalued'],
+            $data['annotations'],
+        );
+
+        return $data;
+    }
+
+    private static function mergeValidators(
+        ?AttributeValidatorsDto $current,
+        ?AttributeValidatorsDto $updated,
+    ): ?AttributeValidatorsDto {
+        if ($current === null) {
+            return $updated;
+        }
+
+        if ($updated === null) {
+            return $current;
+        }
+
+        return AttributeValidatorsDto::fromKeycloakArray(
+            array_replace($current->toKeycloakArray(), $updated->toKeycloakArray()),
+        );
     }
 }

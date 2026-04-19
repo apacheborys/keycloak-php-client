@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
@@ -98,8 +99,14 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
             );
         }
 
+        $protocolMappers = $this->httpClient->getClientScopeProtocolMappers(
+            dto: new GetClientScopeProtocolMappersDto(
+                realm: $realm,
+                clientScopeId: $clientScopeId,
+            ),
+        );
         $existingMapper = $this->findUserAttributeMapper(
-            clientScope: $clientScope,
+            protocolMappers: $protocolMappers,
             attributeName: $dto->getAttributeName(),
         );
 
@@ -183,11 +190,14 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
         );
     }
 
+    /**
+     * @param list<ClientScopesProtocolMapperDto> $protocolMappers
+     */
     private function findUserAttributeMapper(
-        ClientScopeDto $clientScope,
+        array $protocolMappers,
         string $attributeName
     ): ?ClientScopesProtocolMapperDto {
-        foreach ($clientScope->getProtocolMappers() as $mapper) {
+        foreach ($protocolMappers as $mapper) {
             if ($mapper->getProtocolMapper() !== 'oidc-usermodel-attribute-mapper') {
                 continue;
             }

@@ -15,8 +15,10 @@ final class UserProfileDtoTest extends TestCase
     {
         $dto = UserProfileDto::fromArray(
             [
+                'unmanagedAttributePolicy' => 'ENABLED',
                 'attributes' => [
                     [
+                        'group' => 'user-metadata',
                         'name' => 'username',
                         'displayName' => '${username}',
                         'validations' => [],
@@ -30,6 +32,9 @@ final class UserProfileDtoTest extends TestCase
                         'name' => 'user-metadata',
                         'displayHeader' => 'User metadata',
                         'displayDescription' => 'Attributes, which refer to user metadata',
+                        'annotations' => [
+                            'collapsed' => false,
+                        ],
                     ],
                 ],
             ],
@@ -38,6 +43,7 @@ final class UserProfileDtoTest extends TestCase
         self::assertCount(1, $dto->getAttributes());
         self::assertCount(1, $dto->getGroups());
         self::assertTrue($dto->hasAttribute('username'));
+        self::assertSame(['unmanagedAttributePolicy' => 'ENABLED'], $dto->getExtra());
 
         $created = $dto->withAppendedAttribute(
             new AttributeDto(
@@ -47,7 +53,51 @@ final class UserProfileDtoTest extends TestCase
         );
         self::assertTrue($created->hasAttribute('external-user-id'));
 
-        $updated = $created->withUpdatedAttribute(
+        $createdFromServer = UserProfileDto::fromArray(
+            [
+                'unmanagedAttributePolicy' => 'ENABLED',
+                'attributes' => [
+                    [
+                        'group' => 'user-metadata',
+                        'name' => 'username',
+                        'displayName' => '${username}',
+                        'validations' => [],
+                        'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                        'multivalued' => false,
+                        'annotations' => [],
+                    ],
+                    [
+                        'required' => [
+                            'roles' => ['admin'],
+                        ],
+                        'selector' => [
+                            'scopes' => ['openid'],
+                        ],
+                        'name' => 'external-user-id',
+                        'validations' => [
+                            'custom-validator' => [
+                                'enabled' => true,
+                            ],
+                        ],
+                        'permissions' => ['view' => ['admin'], 'edit' => ['admin']],
+                        'multivalued' => false,
+                        'annotations' => [],
+                    ],
+                ],
+                'groups' => [
+                    [
+                        'name' => 'user-metadata',
+                        'displayHeader' => 'User metadata',
+                        'displayDescription' => 'Attributes, which refer to user metadata',
+                        'annotations' => [
+                            'collapsed' => false,
+                        ],
+                    ],
+                ],
+            ],
+        );
+
+        $updated = $createdFromServer->withUpdatedAttribute(
             new AttributeDto(
                 name: 'external-user-id',
                 displayName: 'External user id',
@@ -55,14 +105,37 @@ final class UserProfileDtoTest extends TestCase
             ),
         );
         self::assertTrue($updated->hasAttribute('external-user-id'));
+        self::assertSame(
+            [
+                'required' => [
+                    'roles' => ['admin'],
+                ],
+                'selector' => [
+                    'scopes' => ['openid'],
+                ],
+                'name' => 'external-user-id',
+                'validations' => [
+                    'custom-validator' => [
+                        'enabled' => true,
+                    ],
+                ],
+                'permissions' => ['view' => ['admin'], 'edit' => ['admin']],
+                'multivalued' => false,
+                'annotations' => [],
+                'displayName' => 'External user id',
+            ],
+            $updated->getAttributes()[1]->toArray(),
+        );
 
         $deleted = $updated->withoutAttribute('external-user-id');
         self::assertFalse($deleted->hasAttribute('external-user-id'));
 
         self::assertSame(
             [
+                'unmanagedAttributePolicy' => 'ENABLED',
                 'attributes' => [
                     [
+                        'group' => 'user-metadata',
                         'name' => 'username',
                         'validations' => [],
                         'permissions' => ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
@@ -76,6 +149,9 @@ final class UserProfileDtoTest extends TestCase
                         'name' => 'user-metadata',
                         'displayHeader' => 'User metadata',
                         'displayDescription' => 'Attributes, which refer to user metadata',
+                        'annotations' => [
+                            'collapsed' => false,
+                        ],
                     ],
                 ],
             ],
@@ -94,4 +170,3 @@ final class UserProfileDtoTest extends TestCase
         self::assertCount(1, $dto->getGroups());
     }
 }
-

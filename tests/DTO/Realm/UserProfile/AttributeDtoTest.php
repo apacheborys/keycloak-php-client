@@ -15,6 +15,14 @@ final class AttributeDtoTest extends TestCase
     {
         $dto = AttributeDto::fromArray(
             [
+                'group' => 'user-metadata',
+                'required' => [
+                    'roles' => ['admin'],
+                ],
+                'selector' => [
+                    'scopes' => ['openid'],
+                ],
+                'defaultValue' => 'generated',
                 'name' => 'external-user-id',
                 'displayName' => 'External user id',
                 'validations' => [
@@ -22,24 +30,33 @@ final class AttributeDtoTest extends TestCase
                         'min' => '3',
                         'max' => '255',
                     ],
+                    'custom-validator' => [
+                        'enabled' => true,
+                    ],
                 ],
                 'permissions' => [
-                    'view' => ['admin', 'user'],
-                    'edit' => ['admin', 'user'],
+                    'view' => ['admin', 'manager'],
+                    'edit' => ['admin', 'manager'],
                 ],
                 'multivalued' => false,
                 'annotations' => [
                     'inputType' => 'text',
+                    'ui' => [
+                        'section' => 'metadata',
+                    ],
+                    'required' => true,
                 ],
             ],
         );
 
         self::assertSame('external-user-id', $dto->getName());
         self::assertSame('External user id', $dto->getDisplayName());
-        self::assertSame(['admin', 'user'], $dto->getPermissions()['view']);
-        self::assertSame(['admin', 'user'], $dto->getPermissions()['edit']);
+        self::assertSame(['admin', 'manager'], $dto->getPermissions()['view']);
+        self::assertSame(['admin', 'manager'], $dto->getPermissions()['edit']);
         self::assertFalse($dto->isMultivalued());
         self::assertSame('text', $dto->getAnnotations()['inputType'] ?? null);
+        self::assertSame(['section' => 'metadata'], $dto->getAnnotations()['ui'] ?? null);
+        self::assertTrue((bool) ($dto->getAnnotations()['required'] ?? false));
         self::assertTrue($dto->hasValidator(AttributeValidatorType::LENGTH));
         self::assertSame(
             [
@@ -48,23 +65,57 @@ final class AttributeDtoTest extends TestCase
             ],
             $dto->getValidations()['length'] ?? null,
         );
+        self::assertSame(
+            [
+                'enabled' => true,
+            ],
+            $dto->getValidations()['custom-validator'] ?? null,
+        );
+        self::assertSame(
+            [
+                'group' => 'user-metadata',
+                'required' => [
+                    'roles' => ['admin'],
+                ],
+                'selector' => [
+                    'scopes' => ['openid'],
+                ],
+                'defaultValue' => 'generated',
+            ],
+            $dto->getExtra(),
+        );
 
         self::assertSame(
             [
+                'group' => 'user-metadata',
+                'required' => [
+                    'roles' => ['admin'],
+                ],
+                'selector' => [
+                    'scopes' => ['openid'],
+                ],
+                'defaultValue' => 'generated',
                 'name' => 'external-user-id',
                 'validations' => [
                     'length' => [
                         'min' => '3',
                         'max' => '255',
                     ],
+                    'custom-validator' => [
+                        'enabled' => true,
+                    ],
                 ],
                 'permissions' => [
-                    'view' => ['admin', 'user'],
-                    'edit' => ['admin', 'user'],
+                    'view' => ['admin', 'manager'],
+                    'edit' => ['admin', 'manager'],
                 ],
                 'multivalued' => false,
                 'annotations' => [
                     'inputType' => 'text',
+                    'ui' => [
+                        'section' => 'metadata',
+                    ],
+                    'required' => true,
                 ],
                 'displayName' => 'External user id',
             ],
@@ -79,7 +130,7 @@ final class AttributeDtoTest extends TestCase
         new AttributeDto(name: '');
     }
 
-    public function testInvalidPermissionValueThrows(): void
+    public function testInvalidPermissionValueTypeThrows(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
@@ -88,23 +139,56 @@ final class AttributeDtoTest extends TestCase
                 'name' => 'external-user-id',
                 'permissions' => [
                     'view' => ['admin'],
-                    'edit' => ['manager'],
+                    'edit' => [null],
                 ],
             ],
         );
     }
 
-    public function testUnknownValidatorTypeThrows(): void
+    public function testWithPreservedUnknownFieldsFromKeepsExistingUnknownData(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-
-        AttributeDto::fromArray(
+        $current = AttributeDto::fromArray(
             [
                 'name' => 'external-user-id',
+                'permissions' => [
+                    'view' => ['admin'],
+                    'edit' => ['admin'],
+                ],
+                'required' => [
+                    'roles' => ['admin'],
+                ],
                 'validations' => [
-                    'unknown-validator' => [],
+                    'custom-validator' => [
+                        'flag' => true,
+                    ],
                 ],
             ],
+        );
+
+        $updated = (new AttributeDto(
+            name: 'external-user-id',
+            displayName: 'External user id',
+            permissions: [
+                'view' => ['admin'],
+                'edit' => ['admin'],
+            ],
+        ))->withPreservedUnknownFieldsFrom($current);
+
+        self::assertSame(
+            [
+                'required' => [
+                    'roles' => ['admin'],
+                ],
+            ],
+            $updated->getExtra(),
+        );
+        self::assertSame(
+            [
+                'custom-validator' => [
+                    'flag' => true,
+                ],
+            ],
+            $updated->getValidations(),
         );
     }
 }

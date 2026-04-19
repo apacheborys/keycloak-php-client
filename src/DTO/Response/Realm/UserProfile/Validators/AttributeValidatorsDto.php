@@ -33,7 +33,7 @@ final readonly class AttributeValidatorsDto
     {
         $result = [];
         foreach ($this->validators as $validator) {
-            $result[$validator->getType()->value] = $validator->getConfig();
+            $result[$validator->getType()] = $validator->getConfig();
         }
 
         return $result;
@@ -42,7 +42,7 @@ final readonly class AttributeValidatorsDto
     public function has(AttributeValidatorType $type): bool
     {
         foreach ($this->validators as $validator) {
-            if ($validator->getType() === $type) {
+            if ($validator->getType() === $type->value) {
                 return true;
             }
         }
@@ -53,7 +53,7 @@ final readonly class AttributeValidatorsDto
     public function get(AttributeValidatorType $type): ?AttributeValidatorInterface
     {
         foreach ($this->validators as $validator) {
-            if ($validator->getType() === $type) {
+            if ($validator->getType() === $type->value) {
                 return $validator;
             }
         }
