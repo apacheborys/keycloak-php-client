@@ -13,7 +13,6 @@ final readonly class AttributeDto
     /**
      * @param array{view: list<string>, edit: list<string>} $permissions
      * @param array<string, mixed> $annotations
-     * @param array<string, array<string, mixed>> $extraValidations
      * @param array<string, mixed> $extra
      */
     public function __construct(
@@ -23,7 +22,6 @@ final readonly class AttributeDto
         private bool $multivalued = false,
         private array $annotations = [],
         private ?AttributeValidatorsDto $validators = null,
-        private array $extraValidations = [],
         private array $extra = [],
     ) {
         Assert::that($this->name)->string()->notBlank();
@@ -48,11 +46,6 @@ final readonly class AttributeDto
         foreach ($this->annotations as $key => $value) {
             Assert::that($key)->string()->notBlank();
             $_ = $value;
-        }
-
-        foreach ($this->extraValidations as $validator => $config) {
-            Assert::that($validator)->string()->notBlank();
-            Assert::that($config)->isArray();
         }
 
         foreach ($this->extra as $key => $value) {
@@ -110,16 +103,11 @@ final readonly class AttributeDto
      */
     public function getValidations(): array
     {
-        $validations = [];
-        if ($this->validators !== null) {
-            $validations = $this->validators->toKeycloakArray();
+        if ($this->validators === null) {
+            return [];
         }
 
-        foreach ($this->extraValidations as $validator => $config) {
-            $validations[$validator] = $config;
-        }
-
-        return $validations;
+        return $this->validators->toKeycloakArray();
     }
 
     public function hasValidator(AttributeValidatorType $type): bool
@@ -160,8 +148,10 @@ final readonly class AttributeDto
             permissions: $this->permissions,
             multivalued: $this->multivalued,
             annotations: $this->annotations,
-            validators: $this->validators,
-            extraValidations: array_replace($attribute->extraValidations, $this->extraValidations),
+            validators: self::mergeValidators(
+                current: $attribute->validators,
+                updated: $this->validators,
+            ),
             extra: array_replace($attribute->extra, $this->extra),
         );
     }
@@ -178,7 +168,6 @@ final readonly class AttributeDto
         $name = $data['name'];
 
         $validations = self::normalizeValidations(data: $data['validations'] ?? []);
-        [$knownValidations, $extraValidations] = self::splitKnownAndExtraValidations(validations: $validations);
         $permissions = self::normalizePermissions(data: $data['permissions'] ?? ['view' => [], 'edit' => []]);
         $annotations = self::normalizeAnnotations(data: $data['annotations'] ?? []);
 
@@ -188,8 +177,7 @@ final readonly class AttributeDto
             permissions: $permissions,
             multivalued: (bool) ($data['multivalued'] ?? false),
             annotations: $annotations,
-            validators: $knownValidations === [] ? null : AttributeValidatorsDto::fromKeycloakArray($knownValidations),
-            extraValidations: $extraValidations,
+            validators: $validations === [] ? null : AttributeValidatorsDto::fromKeycloakArray($validations),
             extra: self::extractExtra(data: $data),
         );
     }
@@ -269,30 +257,6 @@ final readonly class AttributeDto
     }
 
     /**
-     * @param array<string, array<string, mixed>> $validations
-     * @return array{
-     *     0: array<string, array<string, mixed>>,
-     *     1: array<string, array<string, mixed>>
-     * }
-     */
-    private static function splitKnownAndExtraValidations(array $validations): array
-    {
-        $knownValidations = [];
-        $extraValidations = [];
-
-        foreach ($validations as $validator => $config) {
-            if (AttributeValidatorType::tryFrom($validator) instanceof AttributeValidatorType) {
-                $knownValidations[$validator] = $config;
-                continue;
-            }
-
-            $extraValidations[$validator] = $config;
-        }
-
-        return [$knownValidations, $extraValidations];
-    }
-
-    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
@@ -308,5 +272,22 @@ final readonly class AttributeDto
         );
 
         return $data;
+    }
+
+    private static function mergeValidators(
+        ?AttributeValidatorsDto $current,
+        ?AttributeValidatorsDto $updated,
+    ): ?AttributeValidatorsDto {
+        if ($current === null) {
+            return $updated;
+        }
+
+        if ($updated === null) {
+            return $current;
+        }
+
+        return AttributeValidatorsDto::fromKeycloakArray(
+            array_replace($current->toKeycloakArray(), $updated->toKeycloakArray()),
+        );
     }
 }

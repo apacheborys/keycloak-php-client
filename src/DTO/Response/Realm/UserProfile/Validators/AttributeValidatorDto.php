@@ -8,22 +8,33 @@ use Assert\Assert;
 
 final readonly class AttributeValidatorDto implements AttributeValidatorInterface
 {
+    private string $type;
+
     /**
      * @param array<string, mixed> $config
+     * @param AttributeValidatorType|string $type
      */
     public function __construct(
-        private AttributeValidatorType $type,
+        AttributeValidatorType|string $type,
         private array $config = [],
     ) {
+        $this->type = $type instanceof AttributeValidatorType ? $type->value : $type;
+
+        Assert::that($this->type)->string()->notBlank();
         foreach ($this->config as $key => $_value) {
             Assert::that($key)->string()->notBlank();
         }
     }
 
     #[\Override]
-    public function getType(): AttributeValidatorType
+    public function getType(): string
     {
         return $this->type;
+    }
+
+    public function getKnownType(): ?AttributeValidatorType
+    {
+        return AttributeValidatorType::tryFrom($this->type);
     }
 
     /**
@@ -42,7 +53,7 @@ final readonly class AttributeValidatorDto implements AttributeValidatorInterfac
     public function toArray(): array
     {
         return [
-            'type' => $this->type->value,
+            'type' => $this->type,
             'config' => $this->config,
         ];
     }
@@ -52,13 +63,8 @@ final readonly class AttributeValidatorDto implements AttributeValidatorInterfac
      */
     public static function fromTypeAndConfig(string $type, array $config): self
     {
-        $enumType = AttributeValidatorType::tryFrom($type);
-        if (!$enumType instanceof AttributeValidatorType) {
-            throw new \InvalidArgumentException(sprintf('Unsupported Keycloak attribute validator: %s', $type));
-        }
-
         return new self(
-            type: $enumType,
+            type: $type,
             config: $config,
         );
     }
