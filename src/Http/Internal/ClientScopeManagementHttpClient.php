@@ -124,7 +124,11 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
 
         if ($statusCode < 200 || $statusCode >= 300) {
             throw new RuntimeException(
-                message: sprintf('Keycloak get client scope protocol mappers failed with status %d: %s', $statusCode, $body)
+                message: sprintf(
+                    'Keycloak get client scope protocol mappers failed with status %d: %s',
+                    $statusCode,
+                    $body,
+                )
             );
         }
 
