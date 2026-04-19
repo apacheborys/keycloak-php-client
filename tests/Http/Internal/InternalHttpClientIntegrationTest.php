@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
@@ -397,6 +398,66 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertCount(1, $requests);
         self::assertSame('GET', $requests[0]['method']);
         self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId, $requests[0]['uri']);
+    }
+
+    public function testClientScopeManagementGetClientScopeProtocolMappersParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $clientScopeId = '39c0fcbc-db18-4236-8cae-2c074d730f4b';
+
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                [
+                                    'id' => 'd4e57d40-32a6-4c24-9ae1-b704d5ed882f',
+                                    'name' => 'External user id attribute',
+                                    'protocol' => 'openid-connect',
+                                    'protocolMapper' => 'oidc-usermodel-attribute-mapper',
+                                    'consentRequired' => false,
+                                    'config' => [
+                                        'user.attribute' => 'external-user-id',
+                                        'claim.name' => 'external_user_id',
+                                        'jsonType.label' => 'String',
+                                    ],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new ClientScopeManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+
+        $protocolMappers = $client->getClientScopeProtocolMappers(
+            new GetClientScopeProtocolMappersDto(
+                realm: 'master',
+                clientScopeId: Uuid::fromString($clientScopeId),
+            ),
+        );
+
+        self::assertCount(1, $protocolMappers);
+        self::assertSame(
+            'external_user_id',
+            $protocolMappers[0]->getConfig()->get('claim.name'),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame(
+            '/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models',
+            $requests[0]['uri'],
+        );
     }
 
     public function testClientScopeManagementCreateUpdateDeleteWithRealmAssignment(): void

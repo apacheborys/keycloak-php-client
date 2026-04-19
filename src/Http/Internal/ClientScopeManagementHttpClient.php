@@ -9,10 +9,12 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
 use Assert\Assert;
@@ -93,6 +95,50 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         return ClientScopeDto::fromArray(
             data: $this->httpCore->decodeJson(body: $body),
         );
+    }
+
+    /**
+     * @return list<ClientScopesProtocolMapperDto>
+     */
+    #[\Override]
+    public function getClientScopeProtocolMappers(GetClientScopeProtocolMappersDto $dto): array
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/client-scopes/'
+                . $dto->getClientScopeId()->toString()
+                . '/protocol-mappers/models'
+        );
+
+        $request = $this->httpCore->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak get client scope protocol mappers failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = $this->httpCore->decodeJson(body: $body);
+
+        /** @var array<int, mixed> $data */
+        $protocolMappers = [];
+        foreach ($data as $item) {
+            Assert::that($item)->isArray();
+            /** @var array<string, mixed> $item */
+            $protocolMappers[] = ClientScopesProtocolMapperDto::fromArray(data: $item);
+        }
+
+        return $protocolMappers;
     }
 
     #[\Override]

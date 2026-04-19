@@ -124,6 +124,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
             ),
         );
         $httpClient->queueResult('getClientScopes', [$clientScope]);
+        $httpClient->queueResult('getClientScopeProtocolMappers', []);
         $httpClient->queueResult('createClientScopeProtocolMapper', null);
 
         $service->ensureUserIdentifierAttribute(
@@ -137,12 +138,12 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         );
 
         self::assertSame(
-            ['getUserProfile', 'getClientScopes', 'createClientScopeProtocolMapper'],
+            ['getUserProfile', 'getClientScopes', 'getClientScopeProtocolMappers', 'createClientScopeProtocolMapper'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
 
         /** @var CreateClientScopeProtocolMapperDto $createMapperDto */
-        $createMapperDto = $httpClient->getCalls()[2]['args'][0];
+        $createMapperDto = $httpClient->getCalls()[3]['args'][0];
         self::assertSame('master', $createMapperDto->getRealm());
         self::assertSame('external-user-id', $createMapperDto->getProtocolMapper()->getConfig()->get('user.attribute'));
         self::assertSame('external_user_id', $createMapperDto->getProtocolMapper()->getConfig()->get('claim.name'));
@@ -185,6 +186,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
             ),
         );
         $httpClient->queueResult('getClientScopes', [$clientScope]);
+        $httpClient->queueResult('getClientScopeProtocolMappers', [$existingMapper]);
         $httpClient->queueResult('updateClientScopeProtocolMapper', null);
 
         $service->ensureUserIdentifierAttribute(
@@ -199,12 +201,12 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         );
 
         self::assertSame(
-            ['getUserProfile', 'getClientScopes', 'updateClientScopeProtocolMapper'],
+            ['getUserProfile', 'getClientScopes', 'getClientScopeProtocolMappers', 'updateClientScopeProtocolMapper'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
 
         /** @var UpdateClientScopeProtocolMapperDto $updateMapperDto */
-        $updateMapperDto = $httpClient->getCalls()[2]['args'][0];
+        $updateMapperDto = $httpClient->getCalls()[3]['args'][0];
         self::assertSame(
             'd4e57d40-32a6-4c24-9ae1-b704d5ed882f',
             $updateMapperDto->getProtocolMapperId()->toString(),
@@ -212,6 +214,62 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         self::assertSame(
             'external_user_id_custom',
             $updateMapperDto->getProtocolMapper()->getConfig()->get('claim.name'),
+        );
+    }
+
+    public function testEnsureUserIdentifierAttributeUsesDedicatedProtocolMapperReadInsteadOfEmbeddedScopeMappers(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
+        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
+        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+
+        $existingMapper = new ClientScopesProtocolMapperDto(
+            id: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
+            name: 'External user id attribute',
+            protocol: 'openid-connect',
+            protocolMapper: 'oidc-usermodel-attribute-mapper',
+            consentRequired: false,
+            config: [
+                'user.attribute' => 'external-user-id',
+                'claim.name' => 'external_user_id',
+            ],
+        );
+        $clientScope = new ClientScopeDto(
+            id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+            name: 'profile',
+            protocol: 'openid-connect',
+            protocolMappers: [],
+        );
+
+        $httpClient->queueResult(
+            'getUserProfile',
+            new UserProfileDto(
+                attributes: [
+                    new AttributeDto(
+                        name: 'external-user-id',
+                        displayName: 'External user id',
+                    ),
+                ],
+            ),
+        );
+        $httpClient->queueResult('getClientScopes', [$clientScope]);
+        $httpClient->queueResult('getClientScopeProtocolMappers', [$existingMapper]);
+        $httpClient->queueResult('updateClientScopeProtocolMapper', null);
+
+        $service->ensureUserIdentifierAttribute(
+            localUser: $user,
+            dto: new EnsureUserIdentifierAttributeDto(
+                attributeName: 'external-user-id',
+                displayName: 'External user id',
+                createIfMissing: false,
+                exposeInJwt: true,
+            ),
+        );
+
+        self::assertSame(
+            ['getUserProfile', 'getClientScopes', 'getClientScopeProtocolMappers', 'updateClientScopeProtocolMapper'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
     }
 

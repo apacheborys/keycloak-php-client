@@ -18,6 +18,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
@@ -293,6 +294,10 @@ final class TestKeycloakHttpClientTest extends TestCase
             realm: 'master',
             clientScopeId: $scopeId,
         );
+        $getProtocolMappersDto = new GetClientScopeProtocolMappersDto(
+            realm: 'master',
+            clientScopeId: $scopeId,
+        );
         $createDto = new CreateClientScopeDto(
             realm: 'master',
             clientScope: new ClientScopeDto(
@@ -356,9 +361,22 @@ final class TestKeycloakHttpClientTest extends TestCase
                 protocol: 'openid-connect',
             ),
         ];
+        $expectedProtocolMappers = [
+            new ClientScopesProtocolMapperDto(
+                id: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'user.attribute' => 'external-user-id',
+                    'claim.name' => 'external_user_id',
+                ],
+            ),
+        ];
 
         $client->queueResult('getClientScopes', $expected);
         $client->queueResult('getClientScopeById', $expected[0]);
+        $client->queueResult('getClientScopeProtocolMappers', $expectedProtocolMappers);
         $client->queueResult('createClientScope', null);
         $client->queueResult('createClientScopeProtocolMapper', null);
         $client->queueResult('updateClientScope', null);
@@ -368,6 +386,7 @@ final class TestKeycloakHttpClientTest extends TestCase
 
         self::assertSame($expected, $client->getClientScopes($getDto));
         self::assertSame($expected[0], $client->getClientScopeById($getByIdDto));
+        self::assertSame($expectedProtocolMappers, $client->getClientScopeProtocolMappers($getProtocolMappersDto));
         $client->createClientScope($createDto);
         $client->createClientScopeProtocolMapper($createMapperDto);
         $client->updateClientScope($updateDto);
@@ -384,6 +403,10 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'getClientScopeById',
                     'args' => [$getByIdDto],
+                ],
+                [
+                    'method' => 'getClientScopeProtocolMappers',
+                    'args' => [$getProtocolMappersDto],
                 ],
                 [
                     'method' => 'createClientScope',

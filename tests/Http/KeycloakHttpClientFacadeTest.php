@@ -9,6 +9,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
@@ -104,6 +105,10 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             realm: 'master',
             clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
         );
+        $getProtocolMappersDto = new GetClientScopeProtocolMappersDto(
+            realm: 'master',
+            clientScopeId: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
+        );
         $createDto = new CreateClientScopeDto(
             realm: 'master',
             clientScope: new ClientScopeDto(
@@ -152,6 +157,16 @@ final class KeycloakHttpClientFacadeTest extends TestCase
                 protocol: 'openid-connect',
             ),
         ];
+        $expectedProtocolMappers = [
+            new ClientScopesProtocolMapperDto(
+                name: 'External user id attribute',
+                protocol: 'openid-connect',
+                protocolMapper: 'oidc-usermodel-attribute-mapper',
+                config: [
+                    'user.attribute' => 'external-user-id',
+                ],
+            ),
+        ];
 
         $clientScopeManagement = $this->createMock(ClientScopeManagementHttpClientInterface::class);
         $clientScopeManagement
@@ -180,6 +195,11 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             ->method('getClientScopeById')
             ->with($getByIdDto)
             ->willReturn($expectedById);
+        $clientScopeManagement
+            ->expects(self::once())
+            ->method('getClientScopeProtocolMappers')
+            ->with($getProtocolMappersDto)
+            ->willReturn($expectedProtocolMappers);
 
         $client = $this->createClient(
             clientScopeManagement: $clientScopeManagement,
@@ -187,6 +207,7 @@ final class KeycloakHttpClientFacadeTest extends TestCase
 
         self::assertSame($expected, $client->getClientScopes($getDto));
         self::assertSame($expectedById, $client->getClientScopeById($getByIdDto));
+        self::assertSame($expectedProtocolMappers, $client->getClientScopeProtocolMappers($getProtocolMappersDto));
         $client->createClientScope($createDto);
         $client->createClientScopeProtocolMapper($createMapperDto);
         $client->updateClientScopeProtocolMapper($updateMapperDto);
