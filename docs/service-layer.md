@@ -10,6 +10,21 @@
 - JWT verification;
 - realm listing.
 
+Use the service layer when your application wants a business operation instead of a single REST call. If you already know the exact Keycloak endpoint shape you want to control, prefer the HTTP layer directly.
+
+## Service Composition
+
+```mermaid
+flowchart TD
+    Facade["KeycloakService"]
+    Facade --> User["KeycloakUserManagementService"]
+    Facade --> Role["KeycloakRoleManagementService"]
+    Facade --> Identifier["KeycloakUserIdentifierAttributeService"]
+    Facade --> Oidc["KeycloakOidcAuthenticationService"]
+    Facade --> Jwt["KeycloakJwtVerificationService"]
+    Facade --> Realm["KeycloakRealmService"]
+```
+
 ## Responsibilities
 
 ### `createUser`
@@ -37,6 +52,14 @@ Handled by `KeycloakUserIdentifierAttributeService`:
 - optionally creates missing attribute;
 - optionally creates/updates protocol mapper in client scope for JWT exposure.
 
+This method is designed for application bootstrap or migration-like initialization. It lets the application declare:
+
+- which user-profile attribute must exist in the target realm;
+- whether the attribute may be auto-created;
+- whether the same value must be exposed as a JWT claim.
+
+The method intentionally hides the multi-step orchestration required to make this safe and predictable.
+
 ### `loginUser` and `refreshToken`
 
 - delegated to `KeycloakOidcAuthenticationService`.
@@ -45,3 +68,9 @@ Handled by `KeycloakUserIdentifierAttributeService`:
 
 - delegated to `KeycloakJwtVerificationService`.
 
+## Service Boundary Notes
+
+- Services are the right place for defaults such as the identifier-attribute payload and default JWT claim name.
+- Services may perform multiple HTTP calls to complete one operation.
+- Services should prefer stable Keycloak contracts over incidental response shape.
+- Services are allowed to throw workflow-level exceptions such as "required attribute is missing and auto-create is disabled".

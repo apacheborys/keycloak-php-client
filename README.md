@@ -35,6 +35,13 @@ Recommended composition flow:
 2. Build service facade via `KeycloakServiceFactory`.
 3. Use `KeycloakServiceInterface` in your application code.
 
+Core design ideas:
+
+- the HTTP layer maps directly to Keycloak Admin REST and OIDC endpoints;
+- the service layer owns multi-step workflows and application-facing orchestration;
+- realm user-profile mutations are handled as lossless document updates, so unknown Keycloak fields are preserved;
+- protocol mapper upsert relies on dedicated mapper endpoints instead of optional embedded fields inside client-scope list responses.
+
 ## Quick Start (HTTP Client)
 
 ```php
@@ -95,7 +102,13 @@ Behavior:
 
 - if the user-profile attribute is missing and `createIfMissing=false` -> throws exception;
 - if missing and `createIfMissing=true` -> creates attribute in realm user profile;
-- if `exposeInJwt=true` -> creates or updates protocol mapper in selected client scope.
+- if `exposeInJwt=true` -> resolves the target client scope and creates or updates protocol mapper in selected client scope.
+
+This workflow is intended for bootstrap or migration-like initialization of application-specific identifier attributes:
+
+- the application can ensure that a realm contains the attribute it depends on;
+- the same identifier can be exposed as a JWT claim to avoid extra lookups to Keycloak or another repository on hot paths;
+- the implementation keeps the supported surface intentionally small while preserving unknown upstream Keycloak fields.
 
 ## Documentation
 
