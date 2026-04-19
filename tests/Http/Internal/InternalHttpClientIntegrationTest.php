@@ -770,17 +770,17 @@ final class InternalHttpClientIntegrationTest extends TestCase
                     [
                         'status' => 200,
                         'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($initialProfile, JSON_THROW_ON_ERROR),
+                    ],
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
                         'body' => json_encode($afterCreate, JSON_THROW_ON_ERROR),
                     ],
                     [
                         'status' => 200,
                         'headers' => ['Content-Type' => 'application/json'],
                         'body' => json_encode($afterUpdate, JSON_THROW_ON_ERROR),
-                    ],
-                    [
-                        'status' => 200,
-                        'headers' => ['Content-Type' => 'application/json'],
-                        'body' => json_encode($afterDelete, JSON_THROW_ON_ERROR),
                     ],
                 ],
                 'PUT /admin/realms/master/users/profile' => [

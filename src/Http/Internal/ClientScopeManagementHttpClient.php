@@ -135,7 +135,7 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
             locationHeader: $response->getHeaderLine('Location'),
         );
 
-        $this->synchronizeRealmAssignment(
+        $this->applyInitialRealmAssignment(
             realm: $dto->getRealm(),
             clientScopeId: $clientScopeId,
             assignmentType: $assignmentType,
@@ -365,6 +365,24 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
 
         $this->assignToRealmOptionalClientScopes(realm: $realm, clientScopeId: $clientScopeId);
         $this->removeFromRealmDefaultClientScopes(realm: $realm, clientScopeId: $clientScopeId);
+    }
+
+    private function applyInitialRealmAssignment(
+        string $realm,
+        UuidInterface $clientScopeId,
+        ClientScopeRealmAssignmentType $assignmentType,
+    ): void {
+        if ($assignmentType === ClientScopeRealmAssignmentType::DEFAULT) {
+            $this->assignToRealmDefaultClientScopes(realm: $realm, clientScopeId: $clientScopeId);
+
+            return;
+        }
+
+        if ($assignmentType !== ClientScopeRealmAssignmentType::OPTIONAL) {
+            return;
+        }
+
+        $this->assignToRealmOptionalClientScopes(realm: $realm, clientScopeId: $clientScopeId);
     }
 
     private function assignToRealmDefaultClientScopes(string $realm, UuidInterface $clientScopeId): void
