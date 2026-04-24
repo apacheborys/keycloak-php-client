@@ -11,6 +11,31 @@ use Ramsey\Uuid\UuidInterface;
 
 final readonly class JwtPayload
 {
+    /**
+     * Claims that already have dedicated typed accessors on this entity.
+     *
+     * @var list<string>
+     */
+    private const array MAPPED_CLAIMS = [
+        'exp',
+        'iat',
+        'jti',
+        'iss',
+        'aud',
+        'sub',
+        'typ',
+        'azp',
+        'acr',
+        'realm_access',
+        'resource_access',
+        'scope',
+        'email_verified',
+        'clientHost',
+        'preferred_username',
+        'clientAddress',
+        'client_id',
+    ];
+
     public function __construct(
         /**
          * Expiration time (seconds since Unix epoch)
@@ -62,8 +87,18 @@ final readonly class JwtPayload
         private string $clientHost,
         private string $preferredUsername,
         private string $clientAddress,
-        private string $clientId
+        private string $clientId,
+        /**
+         * Raw claims as they were decoded from JWT payload.
+         *
+         * @var array<string, mixed>
+         */
+        private array $claims = [],
     ) {
+        foreach ($this->claims as $key => $value) {
+            Assert::that($key)->string()->notBlank();
+            $_ = $value;
+        }
     }
 
     public function getExp(): DateTimeImmutable
@@ -160,6 +195,37 @@ final readonly class JwtPayload
         return $this->clientId;
     }
 
+    public function hasClaim(string $key): bool
+    {
+        return array_key_exists($key, $this->claims);
+    }
+
+    public function getClaim(string $key): mixed
+    {
+        return $this->claims[$key] ?? null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getClaims(): array
+    {
+        return $this->claims;
+    }
+
+    /**
+     * Claims that do not yet have dedicated typed getters on this entity.
+     *
+     * @return array<string, mixed>
+     */
+    public function getAdditionalClaims(): array
+    {
+        return array_diff_key(
+            $this->claims,
+            array_flip(self::MAPPED_CLAIMS),
+        );
+    }
+
     public static function fromArray(array $data): self
     {
         Assert::that($data)->keyExists('exp');
@@ -246,6 +312,7 @@ final readonly class JwtPayload
             preferredUsername: $preferredUsername,
             clientAddress: $clientAddress,
             clientId: $clientId,
+            claims: $data,
         );
     }
 
