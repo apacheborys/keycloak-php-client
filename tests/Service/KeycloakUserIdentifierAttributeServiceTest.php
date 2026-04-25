@@ -7,19 +7,13 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Service;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
-use Apacheborys\KeycloakPhpClient\Service\Internal\LocalUserMapperResolver;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakUserIdentifierAttributeService;
-use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestMapper;
-use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestUser;
-use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -29,15 +23,13 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
     public function testEnsureUserIdentifierAttributeThrowsWhenMissingAndAutoCreateDisabled(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $httpClient->queueResult('getUserProfile', new UserProfileDto());
 
         try {
             $service->ensureUserIdentifierAttribute(
-                localUser: $user,
+                realm: 'master',
                 dto: new EnsureUserIdentifierAttributeDto(
                     attributeName: 'external-user-id',
                     displayName: 'External user id',
@@ -59,9 +51,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
     public function testEnsureUserIdentifierAttributeCreatesMissingAttributeWhenAllowed(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $httpClient->queueResult('getUserProfile', new UserProfileDto());
         $httpClient->queueResult(
@@ -77,7 +67,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         );
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',
@@ -101,9 +91,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
     public function testEnsureUserIdentifierAttributeCreatesProtocolMapperWhenExposeEnabled(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $clientScope = new ClientScopeDto(
             id: Uuid::fromString('39c0fcbc-db18-4236-8cae-2c074d730f4b'),
@@ -128,7 +116,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         $httpClient->queueResult('createClientScopeProtocolMapper', null);
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',
@@ -152,9 +140,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
     public function testEnsureUserIdentifierAttributeUpdatesProtocolMapperWhenAlreadyExists(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $existingMapper = new ClientScopesProtocolMapperDto(
             id: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
@@ -190,7 +176,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         $httpClient->queueResult('updateClientScopeProtocolMapper', null);
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',
@@ -217,12 +203,10 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         );
     }
 
-    public function testEnsureUserIdentifierAttributeUsesDedicatedProtocolMapperReadInsteadOfEmbeddedScopeMappers(): void
+    public function testEnsureUserIdentifierAttributeUsesDedicatedMapperRead(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $existingMapper = new ClientScopesProtocolMapperDto(
             id: Uuid::fromString('d4e57d40-32a6-4c24-9ae1-b704d5ed882f'),
@@ -258,7 +242,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         $httpClient->queueResult('updateClientScopeProtocolMapper', null);
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',
@@ -276,9 +260,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
     public function testEnsureUserIdentifierAttributeThrowsWhenClientScopeIsMissing(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mapper = new ServiceTestMapper($this->buildProfileDto(), $this->buildTokenRequestDto());
-        $service = $this->createService(httpClient: $httpClient, mapper: $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $service = $this->createService(httpClient: $httpClient);
 
         $httpClient->queueResult(
             'getUserProfile',
@@ -297,7 +279,7 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         $this->expectExceptionMessage('Client scope "profile" was not found');
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',
@@ -307,38 +289,10 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         );
     }
 
-    private function createService(
-        TestKeycloakHttpClient $httpClient,
-        ServiceTestMapper $mapper
-    ): KeycloakUserIdentifierAttributeService {
+    private function createService(TestKeycloakHttpClient $httpClient): KeycloakUserIdentifierAttributeService
+    {
         return new KeycloakUserIdentifierAttributeService(
             httpClient: $httpClient,
-            mapperResolver: new LocalUserMapperResolver([$mapper]),
-        );
-    }
-
-    private function buildProfileDto(): CreateUserProfileDto
-    {
-        return new CreateUserProfileDto(
-            username: 'user@example.com',
-            email: 'user@example.com',
-            emailVerified: true,
-            enabled: true,
-            firstName: 'User',
-            lastName: 'Example',
-            realm: 'master',
-        );
-    }
-
-    private function buildTokenRequestDto(): OidcTokenRequestDto
-    {
-        return new OidcTokenRequestDto(
-            realm: 'master',
-            clientId: 'backend',
-            clientSecret: 'secret',
-            username: 'user@example.com',
-            password: 'secret',
-            grantType: OidcGrantType::PASSWORD,
         );
     }
 }

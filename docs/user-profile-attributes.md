@@ -37,7 +37,7 @@ The service does not try to become a generic Keycloak schema editor. It manages 
 
 `KeycloakUserIdentifierAttributeService::ensureUserIdentifierAttribute()`:
 
-1. Resolve mapper and realm for local user.
+1. Use the provided realm.
 2. Read current user profile.
 3. If attribute is missing:
    - throw exception when `createIfMissing=false`;
@@ -56,7 +56,7 @@ sequenceDiagram
     participant Scope as ClientScopeManagementHttpClient
     participant KC as Keycloak
 
-    App->>Service: ensureUserIdentifierAttribute(dto)
+    App->>Service: ensureUserIdentifierAttribute(realm, dto)
     Service->>Realm: getUserProfile()
     Realm->>KC: GET /admin/realms/{realm}/users/profile
     KC-->>Realm: UPConfig

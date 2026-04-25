@@ -86,7 +86,7 @@ $isValid = $service->verifyJwt($tokenResponse->getAccessToken()->getRawToken());
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 
 $service->ensureUserIdentifierAttribute(
-    localUser: $localUser,
+    realm: 'master',
     dto: new EnsureUserIdentifierAttributeDto(
         attributeName: 'external-user-id',
         displayName: 'External user id',

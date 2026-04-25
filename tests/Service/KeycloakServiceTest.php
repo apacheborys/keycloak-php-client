@@ -444,7 +444,6 @@ final class KeycloakServiceTest extends TestCase
             $this->buildTokenRequestDto()
         );
         $service = $this->createService($httpClient, $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
 
         $httpClient->queueResult(
             'getUserProfile',
@@ -462,7 +461,7 @@ final class KeycloakServiceTest extends TestCase
         $this->expectException(LogicException::class);
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',

@@ -81,11 +81,11 @@ final readonly class KeycloakService implements KeycloakServiceInterface
 
     #[Override]
     public function ensureUserIdentifierAttribute(
-        KeycloakUserInterface $localUser,
+        string $realm,
         EnsureUserIdentifierAttributeDto $dto
     ): void {
         $this->userIdentifierAttributeService->ensureUserIdentifierAttribute(
-            localUser: $localUser,
+            realm: $realm,
             dto: $dto,
         );
     }
