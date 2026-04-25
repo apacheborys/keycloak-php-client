@@ -86,6 +86,10 @@ final class KeycloakUserIdentifierAttributeServiceTest extends TestCase
         self::assertSame('master', $createAttributeDto->getRealm());
         self::assertSame('external-user-id', $createAttributeDto->getAttribute()->getName());
         self::assertSame('External user id', $createAttributeDto->getAttribute()->getDisplayName());
+        self::assertSame(
+            ['admin', 'user'],
+            $createAttributeDto->getAttribute()->getRequired()?->getRoles(),
+        );
     }
 
     public function testEnsureUserIdentifierAttributeCreatesProtocolMapperWhenExposeEnabled(): void

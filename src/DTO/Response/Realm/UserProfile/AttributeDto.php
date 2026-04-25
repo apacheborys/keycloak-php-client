@@ -21,6 +21,7 @@ final readonly class AttributeDto
         private array $permissions = ['view' => [], 'edit' => []],
         private bool $multivalued = false,
         private array $annotations = [],
+        private ?AttributeRequiredDto $required = null,
         private ?AttributeValidatorsDto $validators = null,
         private array $extra = [],
     ) {
@@ -90,6 +91,16 @@ final readonly class AttributeDto
         return $this->validators;
     }
 
+    public function getRequired(): ?AttributeRequiredDto
+    {
+        return $this->required;
+    }
+
+    public function isRequired(): bool
+    {
+        return $this->required !== null;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -130,6 +141,11 @@ final readonly class AttributeDto
         $data['permissions'] = $this->permissions;
         $data['multivalued'] = $this->multivalued;
         $data['annotations'] = $this->annotations;
+        if ($this->required !== null) {
+            $data['required'] = $this->required->toArray();
+        } else {
+            unset($data['required']);
+        }
 
         if ($this->displayName !== null) {
             $data['displayName'] = $this->displayName;
@@ -148,6 +164,10 @@ final readonly class AttributeDto
             permissions: $this->permissions,
             multivalued: $this->multivalued,
             annotations: $this->annotations,
+            required: self::mergeRequired(
+                current: $attribute->required,
+                updated: $this->required,
+            ),
             validators: self::mergeValidators(
                 current: $attribute->validators,
                 updated: $this->validators,
@@ -170,6 +190,7 @@ final readonly class AttributeDto
         $validations = self::normalizeValidations(data: $data['validations'] ?? []);
         $permissions = self::normalizePermissions(data: $data['permissions'] ?? ['view' => [], 'edit' => []]);
         $annotations = self::normalizeAnnotations(data: $data['annotations'] ?? []);
+        $required = self::normalizeRequired(data: $data);
 
         return new self(
             name: $name,
@@ -177,6 +198,7 @@ final readonly class AttributeDto
             permissions: $permissions,
             multivalued: (bool) ($data['multivalued'] ?? false),
             annotations: $annotations,
+            required: $required,
             validators: $validations === [] ? null : AttributeValidatorsDto::fromKeycloakArray($validations),
             extra: self::extractExtra(data: $data),
         );
@@ -269,9 +291,26 @@ final readonly class AttributeDto
             $data['permissions'],
             $data['multivalued'],
             $data['annotations'],
+            $data['required'],
         );
 
         return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private static function normalizeRequired(array $data): ?AttributeRequiredDto
+    {
+        if (!array_key_exists('required', $data) || $data['required'] === null) {
+            return null;
+        }
+
+        Assert::that($data['required'])->isArray();
+        /** @var array<string, mixed> $required */
+        $required = $data['required'];
+
+        return AttributeRequiredDto::fromArray($required);
     }
 
     private static function mergeValidators(
@@ -289,5 +328,20 @@ final readonly class AttributeDto
         return AttributeValidatorsDto::fromKeycloakArray(
             array_replace($current->toKeycloakArray(), $updated->toKeycloakArray()),
         );
+    }
+
+    private static function mergeRequired(
+        ?AttributeRequiredDto $current,
+        ?AttributeRequiredDto $updated,
+    ): ?AttributeRequiredDto {
+        if ($current === null) {
+            return $updated;
+        }
+
+        if ($updated === null) {
+            return $current;
+        }
+
+        return $updated->withPreservedUnknownFieldsFrom(required: $current);
     }
 }

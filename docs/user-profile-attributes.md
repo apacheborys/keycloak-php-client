@@ -24,6 +24,17 @@ Some applications need one or more stable identifiers that:
 - `jwtClaimName` (default: kebab-case to snake_case conversion)
 - `protocolMapperName` (default: `<displayName> attribute`)
 
+## Attribute Model Notes
+
+`AttributeDto` now has first-class support for Keycloak `required` rules through `AttributeRequiredDto`.
+
+Supported typed fields:
+
+- `roles`
+- `scopes`
+
+Unknown fields inside `required` are still preserved and round-tripped.
+
 ## What The Service Manages
 
 The workflow coordinates two different Keycloak concerns:
@@ -120,8 +131,20 @@ When auto-creating attribute, default payload includes:
 
 - `permissions.view`: `admin`, `user`
 - `permissions.edit`: `admin`, `user`
+- `required.roles`: `admin`, `user`
 - `annotations.inputType`: `text`
 - `multivalued`: `false`
+
+Example shape of `required`:
+
+```json
+{
+  "required": {
+    "roles": ["admin", "user"],
+    "scopes": ["openid"]
+  }
+}
+```
 
 ## Design Guarantees
 

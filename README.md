@@ -104,6 +104,8 @@ Behavior:
 - if missing and `createIfMissing=true` -> creates attribute in realm user profile;
 - if `exposeInJwt=true` -> resolves the target client scope and creates or updates protocol mapper in selected client scope.
 
+For auto-created identifier attributes, the default user-profile payload also marks the attribute as required for `admin` and `user`.
+
 This workflow is intended for bootstrap or migration-like initialization of application-specific identifier attributes:
 
 - the application can ensure that a realm contains the attribute it depends on;

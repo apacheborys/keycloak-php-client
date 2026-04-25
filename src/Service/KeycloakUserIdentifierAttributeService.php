@@ -14,6 +14,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\ValueObject\AttributePermission;
 use LogicException;
@@ -155,6 +156,9 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
                 'edit' => [AttributePermission::ADMIN->value, AttributePermission::USER->value],
             ],
             multivalued: false,
+            required: new AttributeRequiredDto(
+                roles: [AttributePermission::ADMIN->value, AttributePermission::USER->value],
+            ),
             annotations: [
                 'inputType' => 'text',
             ],
