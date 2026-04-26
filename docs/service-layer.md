@@ -45,6 +45,12 @@ flowchart TD
 - reads the Keycloak user id from `KeycloakUserInterface::getKeycloakId()`;
 - fetches the current Keycloak representation through the dedicated user-by-id endpoint.
 
+### `searchUsers`
+
+- delegates user repository search to `KeycloakUserManagementService`;
+- accepts `SearchUsersDto` as a query object with realm, filters and pagination;
+- returns the current Keycloak user representations matching the query.
+
 ### `deleteUser`
 
 - delegates deletion workflow to `KeycloakUserManagementService`.
@@ -79,4 +85,5 @@ The method intentionally hides the multi-step orchestration required to make thi
 - Services are the right place for defaults such as the identifier-attribute payload and default JWT claim name.
 - Services may perform multiple HTTP calls to complete one operation.
 - Services should prefer stable Keycloak contracts over incidental response shape.
+- `SearchUsersDto` is acceptable at the service boundary because it models a repository query, not a raw transport payload.
 - Services are allowed to throw workflow-level exceptions such as "required attribute is missing and auto-create is disabled".

@@ -10,6 +10,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
@@ -461,6 +462,38 @@ final class KeycloakServiceTest extends TestCase
         self::assertSame(['getUserById'], array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()));
         self::assertSame('master', $httpClient->getCalls()[0]['args'][0]->getRealm());
         self::assertSame($user->getKeycloakId(), $httpClient->getCalls()[0]['args'][0]->getUserId()->toString());
+    }
+
+    public function testSearchUsersDelegatesToUserManagementService(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = $this->createService($httpClient, $mapper);
+        $dto = new SearchUsersDto(
+            realm: 'master',
+            email: 'user@example.com',
+            exact: true,
+        );
+        $expectedUsers = [
+            KeycloakUser::fromArray(
+                [
+                    'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                    'username' => 'user@example.com',
+                    'createdTimestamp' => 1_700_000_000_000,
+                ]
+            ),
+        ];
+
+        $httpClient->queueResult('getUsers', $expectedUsers);
+
+        $result = $service->searchUsers($dto);
+
+        self::assertSame($expectedUsers, $result);
+        self::assertSame(['getUsers'], array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()));
+        self::assertSame($dto, $httpClient->getCalls()[0]['args'][0]);
     }
 
     public function testFindUserByIdDelegatesToUserManagementService(): void

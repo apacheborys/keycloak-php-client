@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -42,6 +43,15 @@ final readonly class KeycloakService implements KeycloakServiceInterface
             realm: $realm,
             userId: Uuid::fromString($createdUser->getKeycloakId()),
         );
+    }
+
+    /**
+     * @return list<KeycloakUser>
+     */
+    #[Override]
+    public function searchUsers(SearchUsersDto $dto): array
+    {
+        return $this->userManagementService->searchUsers(dto: $dto);
     }
 
     #[Override]

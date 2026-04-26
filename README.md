@@ -67,6 +67,7 @@ $httpClient = $httpFactory->create(
 ## Quick Start (Service Layer)
 
 ```php
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 
 $serviceFactory = new KeycloakServiceFactory();
@@ -79,6 +80,13 @@ $service = $serviceFactory->create(
 $tokenResponse = $service->loginUser($localUser, 'PlainPassword123!');
 $isValid = $service->verifyJwt($tokenResponse->getAccessToken()->getRawToken());
 $freshKeycloakUser = $service->findUser($localUser);
+$matchedUsers = $service->searchUsers(
+    new SearchUsersDto(
+        realm: 'master',
+        email: 'user@example.com',
+        exact: true,
+    ),
+);
 ```
 
 ## Local User Contract
@@ -92,6 +100,8 @@ This identifier is used by:
 - `findUser(...)`
 
 `findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
+
+For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
 
 ## User Identifier Attribute Quick Example
 

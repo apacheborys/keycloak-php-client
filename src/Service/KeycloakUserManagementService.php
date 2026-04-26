@@ -98,6 +98,17 @@ final readonly class KeycloakUserManagementService implements
         return $createdUser;
     }
 
+    /**
+     * `SearchUsersDto` is treated here as a query object rather than a raw transport payload.
+     *
+     * @return list<KeycloakUser>
+     */
+    #[Override]
+    public function searchUsers(SearchUsersDto $dto): array
+    {
+        return $this->httpClient->getUsers(dto: $dto);
+    }
+
     #[Override]
     public function findUser(KeycloakUserInterface $localUser): KeycloakUser
     {
@@ -228,8 +239,7 @@ final readonly class KeycloakUserManagementService implements
             exact: true,
         );
 
-        /** @var list<KeycloakUser> $users */
-        $users = $this->httpClient->getUsers(dto: $searchDto);
+        $users = $this->searchUsers(dto: $searchDto);
 
         if (count($users) === 1) {
             return $users[0];
