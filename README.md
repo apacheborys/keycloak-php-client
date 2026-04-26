@@ -78,7 +78,20 @@ $service = $serviceFactory->create(
 
 $tokenResponse = $service->loginUser($localUser, 'PlainPassword123!');
 $isValid = $service->verifyJwt($tokenResponse->getAccessToken()->getRawToken());
+$freshKeycloakUser = $service->findUser($localUser);
 ```
+
+## Local User Contract
+
+When your application passes a local user object into the service layer, `KeycloakUserInterface::getKeycloakId()` must return the Keycloak user identifier for that realm.
+
+This identifier is used by:
+
+- `updateUser(...)`
+- `deleteUser(...)`
+- `findUser(...)`
+
+`findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
 
 ## User Identifier Attribute Quick Example
 

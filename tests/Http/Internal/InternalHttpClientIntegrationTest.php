@@ -17,6 +17,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -135,6 +136,62 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('GET', $requests[0]['method']);
         self::assertSame(
             '/admin/realms/master/users?email=user%40example.com&first=0&max=20&exact=false',
+            $requests[0]['uri']
+        );
+        self::assertSame('Keycloak PHP Client', $requests[0]['headers']['user-agent'] ?? '');
+        self::assertStringStartsWith('Bearer ', $requests[0]['headers']['authorization'] ?? '');
+    }
+
+    public function testUserManagementGetUserByIdSendsExpectedRequestAndParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                                'username' => 'user@example.com',
+                                'createdTimestamp' => 1_700_000_000_000,
+                                'attributes' => [
+                                    'external-user-id' => ['external-id-789'],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+        $user = $client->getUserById(
+            new GetUserByIdDto(
+                realm: 'master',
+                userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+            ),
+        );
+
+        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $user->getKeycloakId());
+        self::assertSame('user@example.com', $user->getUsername());
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-789'],
+            ],
+            $user->getAttributes(),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame(
+            '/admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e',
             $requests[0]['uri']
         );
         self::assertSame('Keycloak PHP Client', $requests[0]['headers']['user-agent'] ?? '');

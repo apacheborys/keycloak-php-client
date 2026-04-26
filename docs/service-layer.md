@@ -39,6 +39,12 @@ flowchart TD
 - synchronizes role assignments/unassignments;
 - fetches final user representation by id.
 
+### `findUser`
+
+- resolves realm from mapper;
+- reads the Keycloak user id from `KeycloakUserInterface::getKeycloakId()`;
+- fetches the current Keycloak representation through the dedicated user-by-id endpoint.
+
 ### `deleteUser`
 
 - delegates deletion workflow to `KeycloakUserManagementService`.
@@ -47,7 +53,7 @@ flowchart TD
 
 Handled by `KeycloakUserIdentifierAttributeService`:
 
-- resolves realm from mapper;
+- uses the explicit realm provided by the caller;
 - checks realm user-profile attribute existence;
 - optionally creates missing attribute;
 - optionally creates/updates protocol mapper in client scope for JWT exposure.

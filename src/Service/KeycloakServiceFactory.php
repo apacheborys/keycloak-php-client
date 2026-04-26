@@ -57,7 +57,6 @@ final readonly class KeycloakServiceFactory
 
         return new KeycloakService(
             userManagementService: $userManagementService,
-            userLookupService: $userManagementService,
             roleManagementService: $roleManagementService,
             userIdentifierAttributeService: $userIdentifierAttributeService,
             oidcAuthenticationService: $oidcAuthenticationService,

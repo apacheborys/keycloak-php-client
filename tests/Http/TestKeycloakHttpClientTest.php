@@ -19,6 +19,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
@@ -40,6 +41,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
@@ -119,6 +121,35 @@ final class TestKeycloakHttpClientTest extends TestCase
                 [
                     'method' => 'createUser',
                     'args' => [$createUserDto],
+                ],
+            ],
+            $client->getCalls(),
+        );
+    }
+
+    public function testGetUserByIdConsumesQueue(): void
+    {
+        $client = new TestKeycloakHttpClient();
+        $dto = new GetUserByIdDto(
+            realm: 'master',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+        );
+        $expectedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+
+        $client->queueResult('getUserById', $expectedUser);
+
+        self::assertSame($expectedUser, $client->getUserById($dto));
+        self::assertSame(
+            [
+                [
+                    'method' => 'getUserById',
+                    'args' => [$dto],
                 ],
             ],
             $client->getCalls(),

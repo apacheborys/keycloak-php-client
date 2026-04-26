@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
@@ -17,6 +18,8 @@ interface UserManagementHttpClientInterface
      * @return list<KeycloakUser>
      */
     public function getUsers(SearchUsersDto $dto): array;
+
+    public function getUserById(GetUserByIdDto $dto): KeycloakUser;
 
     /**
      * Supports custom user attributes through CreateUserDto profile payload.

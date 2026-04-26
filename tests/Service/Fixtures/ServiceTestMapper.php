@@ -65,7 +65,7 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     ): DeleteUserDto {
         return new DeleteUserDto(
             realm: $this->realmForDeletion,
-            userId: Uuid::fromString($localUser->getId()),
+            userId: Uuid::fromString($localUser->getKeycloakId()),
         );
     }
 
@@ -85,7 +85,7 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 
         return new UpdateUserDto(
             realm: $this->realmForDeletion,
-            userId: Uuid::fromString($newUserVersion->getId()),
+            userId: Uuid::fromString($newUserVersion->getKeycloakId()),
             profile: new UpdateUserProfileDto(
                 username: $newUserVersion->getUsername(),
                 email: $newUserVersion->getEmail(),

@@ -18,6 +18,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
@@ -69,6 +70,12 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     public function getUsers(SearchUsersDto $dto): array
     {
         return $this->userManagement->getUsers(dto: $dto);
+    }
+
+    #[Override]
+    public function getUserById(GetUserByIdDto $dto): KeycloakUser
+    {
+        return $this->userManagement->getUserById(dto: $dto);
     }
 
     #[Override]
