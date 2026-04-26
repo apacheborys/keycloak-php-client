@@ -8,6 +8,13 @@
 - Internal HTTP integration-like tests with mock server (`tests/Http/Internal/*`)
 - OIDC behavior checks (`tests/Oidc/*`)
 
+Why the test suite is layered this way:
+
+- DTO tests protect parsing and serialization contracts;
+- service tests protect orchestration and branching decisions;
+- HTTP facade tests protect delegation wiring;
+- internal HTTP integration-like tests protect request shape and endpoint mapping without needing a live Keycloak instance.
+
 ## Commands
 
 Run all checks:
@@ -31,3 +38,7 @@ Direct PHPUnit run (with deprecation output):
 ./vendor/bin/phpunit --display-phpunit-deprecations
 ```
 
+Notes:
+
+- some internal HTTP tests may be skipped when the local mock server is unavailable in the current environment;
+- in constrained environments, `phpstan` may need an explicit memory limit, for example `php -d memory_limit=512M vendor/bin/phpstan analyse -c phpstan.neon --debug`.

@@ -14,6 +14,34 @@ composer require apacheborys/keycloak-php-client
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    App["Application"]
+    Config["KeycloakClientConfig"]
+    HttpFactory["KeycloakHttpClientFactory"]
+    ServiceFactory["KeycloakServiceFactory"]
+    HttpFacade["KeycloakHttpClientInterface"]
+    ServiceFacade["KeycloakServiceInterface"]
+    Mapper["LocalKeycloakUserBridgeMapperInterface[]"]
+    Resolver["LocalUserMapperResolver"]
+    Keycloak["Keycloak Admin REST / OIDC"]
+
+    App --> HttpFactory
+    App --> ServiceFactory
+    App --> HttpFacade
+    App --> ServiceFacade
+
+    Config --> HttpFactory
+    HttpFactory --> HttpFacade
+    HttpFacade --> Keycloak
+
+    Mapper --> ServiceFactory
+    ServiceFactory --> Resolver
+    ServiceFactory --> ServiceFacade
+    ServiceFacade --> HttpFacade
+    ServiceFacade --> Resolver
+```
+
 - `KeycloakClientConfig` - immutable connection/config value object for Keycloak client credentials.
 - `KeycloakHttpClientFactory` - builds `KeycloakHttpClientInterface` from PSR-18/PSR-17 dependencies.
 - `KeycloakHttpClient` - low-level HTTP facade over Keycloak Admin/OIDC endpoints.
@@ -41,6 +69,14 @@ Core design ideas:
 - the service layer owns multi-step workflows and application-facing orchestration;
 - realm user-profile mutations are handled as lossless document updates, so unknown Keycloak fields are preserved;
 - protocol mapper upsert relies on dedicated mapper endpoints instead of optional embedded fields inside client-scope list responses.
+
+Applied patterns:
+
+- Factory: `KeycloakHttpClientFactory`, `KeycloakServiceFactory`
+- Facade: `KeycloakHttpClientInterface`, `KeycloakServiceInterface`
+- Strategy + Resolver: `LocalKeycloakUserBridgeMapperInterface`, `LocalUserMapperResolver`
+- Query Object: `SearchUsersDto`
+- Lossless document model: `UserProfileDto`, `AttributeDto`, `UserProfileGroupDto`
 
 ## Quick Start (HTTP Client)
 
@@ -102,6 +138,20 @@ This identifier is used by:
 `findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
 
 For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
+
+## Choosing The API Level
+
+Use `KeycloakServiceInterface` when:
+
+- the operation is application-oriented rather than endpoint-oriented;
+- mapper resolution, orchestration or defaults are part of the problem;
+- you want the library to own branching decisions such as create-vs-update.
+
+Use `KeycloakHttpClientInterface` when:
+
+- you already know the exact Keycloak endpoint contract you want to call;
+- you need low-level DTO control;
+- you want to compose your own workflow outside of the library.
 
 ## User Identifier Attribute Quick Example
 

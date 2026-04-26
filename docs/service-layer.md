@@ -10,6 +10,11 @@
 - JWT verification;
 - realm listing.
 
+In practice, the facade mixes two kinds of operations:
+
+- orchestration methods such as `createUser`, `updateUser`, `ensureUserIdentifierAttribute`;
+- convenience pass-through methods such as `searchUsers`, `findUserById`, `loginUser`.
+
 Use the service layer when your application wants a business operation instead of a single REST call. If you already know the exact Keycloak endpoint shape you want to control, prefer the HTTP layer directly.
 
 ## Service Composition
@@ -24,6 +29,13 @@ flowchart TD
     Facade --> Jwt["KeycloakJwtVerificationService"]
     Facade --> Realm["KeycloakRealmService"]
 ```
+
+## Method Selection Guide
+
+- Use `findUser(localUser)` when your application already has a local user object and wants mapper-based realm resolution.
+- Use `findUserById(realm, userId)` when your application already knows both the realm and the Keycloak user id.
+- Use `searchUsers(SearchUsersDto)` when your application needs repository-style lookup with filters and pagination.
+- Use `createUser` or `updateUser` when mapper-driven transformation from local user shape to Keycloak payload is part of the use case.
 
 ## Responsibilities
 
@@ -44,6 +56,12 @@ flowchart TD
 - resolves realm from mapper;
 - reads the Keycloak user id from `KeycloakUserInterface::getKeycloakId()`;
 - fetches the current Keycloak representation through the dedicated user-by-id endpoint.
+
+### `findUserById`
+
+- performs direct user lookup by explicit realm and Keycloak user id;
+- skips mapper resolution because the caller already provides the required lookup coordinates;
+- is useful for workflows that persist Keycloak ids externally.
 
 ### `searchUsers`
 
@@ -87,3 +105,30 @@ The method intentionally hides the multi-step orchestration required to make thi
 - Services should prefer stable Keycloak contracts over incidental response shape.
 - `SearchUsersDto` is acceptable at the service boundary because it models a repository query, not a raw transport payload.
 - Services are allowed to throw workflow-level exceptions such as "required attribute is missing and auto-create is disabled".
+
+## Service Patterns
+
+```mermaid
+flowchart LR
+    Facade["KeycloakService"]
+    UserSvc["User Management"]
+    RoleSvc["Role Management"]
+    IdentifierSvc["Identifier Attribute"]
+    Resolver["LocalUserMapperResolver"]
+    Http["KeycloakHttpClient"]
+
+    Facade --> UserSvc
+    Facade --> RoleSvc
+    Facade --> IdentifierSvc
+    UserSvc --> Resolver
+    RoleSvc --> Resolver
+    UserSvc --> Http
+    RoleSvc --> Http
+    IdentifierSvc --> Http
+```
+
+Interpretation:
+
+- orchestration lives in focused services rather than in the facade itself;
+- mapper resolution is a dependency of user- and role-oriented workflows, not of the HTTP layer;
+- the facade stays small and coordinates service composition rather than re-implementing workflow logic.
