@@ -1,5 +1,7 @@
 # HTTP Layer
 
+This document describes the transport foundation used by the service layer. It is primarily useful for contributors and for teams building custom services on top of the library internals.
+
 ## Facade Contract
 
 `KeycloakHttpClientInterface` composes these contracts:
@@ -28,11 +30,22 @@ flowchart LR
     Facade --> Oidc["OIDC helper methods"]
 ```
 
+## Transport Philosophy
+
+The HTTP layer is intentionally narrow:
+
+- one method should correspond to one Keycloak operation or closely related endpoint contract;
+- DTOs at this layer are transport-facing and map closely to request or response shapes;
+- the layer should not resolve mappers, infer business defaults or decide workflow branches.
+
+This keeps transport code predictable and easy to reason about as the infrastructure beneath the service layer.
+
 ## Specialized Clients
 
 ### User management
 
 - create/update/delete/search users;
+- get user by id;
 - reset password;
 - realm creation.
 
@@ -59,16 +72,31 @@ flowchart LR
 - refresh token flow;
 - OpenID configuration and JWK retrieval.
 
-## When To Use Direct HTTP Access
+## Endpoint Grouping
 
-Prefer the HTTP layer when:
+```mermaid
+flowchart TB
+    User["UserManagementHttpClient"] --> UserEndpoints["/users\n/users/{id}\n/users/{id}/reset-password"]
+    Role["RoleManagementHttpClient"] --> RoleEndpoints["/roles\n/users/{id}/role-mappings"]
+    Scope["ClientScopeManagementHttpClient"] --> ScopeEndpoints["/client-scopes\n/protocol-mappers/models"]
+    Realm["RealmSettingsManagementHttpClient"] --> RealmEndpoints["/users/profile"]
+    Oidc["OidcInteractionHttpClient"] --> OidcEndpoints["/protocol/openid-connect/*"]
+```
 
-- you need low-level control over DTO payloads;
-- you want to compose your own workflow on top of Keycloak endpoints;
-- you do not want service-layer defaults or orchestration.
+## Error Semantics
 
-Prefer the service layer when:
+At this layer, errors are surfaced as transport-oriented failures:
 
-- the operation is inherently multi-step;
-- you want application-oriented intent instead of endpoint-oriented code;
-- you want the library to handle lookup, branching, and upsert logic for you.
+- non-2xx responses become exceptions;
+- request/response DTO mismatch is treated as a client-side contract problem;
+- retry, fallback or create-vs-update branching belongs in the service layer, not here.
+
+## Boundary Position
+
+For normal application integration, this layer is not the recommended entry point.
+
+Recommended usage:
+
+- application code depends on `KeycloakServiceInterface`;
+- the service layer depends on `KeycloakHttpClientInterface`;
+- custom transport-aware extensions should usually be expressed as custom services, not as direct application calls to transport clients.

@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -19,11 +20,11 @@ use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
 use LogicException;
 use Override;
 use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final readonly class KeycloakUserManagementService implements
-    KeycloakUserManagementServiceInterface,
-    KeycloakUserLookupServiceInterface
+    KeycloakUserManagementServiceInterface
 {
     public function __construct(
         private KeycloakHttpClientInterface $httpClient,
@@ -97,21 +98,44 @@ final readonly class KeycloakUserManagementService implements
         return $createdUser;
     }
 
+    /**
+     * `SearchUsersDto` is treated here as a query object rather than a raw transport payload.
+     *
+     * @return list<KeycloakUser>
+     */
+    #[Override]
+    public function searchUsers(SearchUsersDto $dto): array
+    {
+        return $this->httpClient->getUsers(dto: $dto);
+    }
+
+    #[Override]
+    public function findUser(KeycloakUserInterface $localUser): KeycloakUser
+    {
+        $mapper = $this->mapperResolver->resolveForUser(localUser: $localUser);
+        $realm = $mapper->getRealm(localUser: $localUser);
+
+        return $this->findUserById(
+            realm: $realm,
+            userId: Uuid::fromString($localUser->getKeycloakId()),
+        );
+    }
+
     #[Override]
     public function updateUser(
         KeycloakUserInterface $oldUserVersion,
         KeycloakUserInterface $newUserVersion
     ): KeycloakUser {
-        if ($oldUserVersion->getId() !== $newUserVersion->getId()) {
+        if ($oldUserVersion->getKeycloakId() !== $newUserVersion->getKeycloakId()) {
             $this->debug(
-                message: 'Update user failed: old and new user identifiers are different.',
+                message: 'Update user failed: old and new Keycloak user identifiers are different.',
                 context: [
-                    'old_user_id' => $oldUserVersion->getId(),
-                    'new_user_id' => $newUserVersion->getId(),
+                    'old_keycloak_user_id' => $oldUserVersion->getKeycloakId(),
+                    'new_keycloak_user_id' => $newUserVersion->getKeycloakId(),
                 ],
             );
 
-            throw new LogicException('Old and new user versions must reference the same user id.');
+            throw new LogicException('Old and new user versions must reference the same Keycloak user id.');
         }
 
         $mapper = $this->mapperResolver->resolveForUserPair(
@@ -124,8 +148,8 @@ final readonly class KeycloakUserManagementService implements
             $this->debug(
                 message: 'Update user failed: old and new user versions are mapped to different realms.',
                 context: [
-                    'old_user_id' => $oldUserVersion->getId(),
-                    'new_user_id' => $newUserVersion->getId(),
+                    'old_keycloak_user_id' => $oldUserVersion->getKeycloakId(),
+                    'new_keycloak_user_id' => $newUserVersion->getKeycloakId(),
                     'old_realm' => $oldRealm,
                     'new_realm' => $newRealm,
                 ],
@@ -150,7 +174,7 @@ final readonly class KeycloakUserManagementService implements
             operation: 'updateUser',
         );
         $this->assertMappedUserIdMatches(
-            expectedUserId: $oldUserVersion->getId(),
+            expectedUserId: $oldUserVersion->getKeycloakId(),
             mappedUserId: $dto->getUserId(),
             operation: 'updateUser',
         );
@@ -160,7 +184,6 @@ final readonly class KeycloakUserManagementService implements
         return $this->findUserById(
             realm: $oldRealm,
             userId: $dto->getUserId(),
-            email: $dto->getProfile()->getEmail(),
         );
     }
 
@@ -174,43 +197,74 @@ final readonly class KeycloakUserManagementService implements
     }
 
     #[Override]
-    public function findUserById(string $realm, UuidInterface $userId, ?string $email = null): KeycloakUser
+    public function findUserById(string $realm, UuidInterface $userId): KeycloakUser
+    {
+        try {
+            return $this->httpClient->getUserById(
+                dto: new GetUserByIdDto(
+                    realm: $realm,
+                    userId: $userId,
+                ),
+            );
+        } catch (LogicException $exception) {
+            $this->debug(
+                message: 'User lookup failed: user was not found by identifier.',
+                context: [
+                    'realm' => $realm,
+                    'expected_user_id' => $userId->toString(),
+                ],
+            );
+
+            throw $exception;
+        } catch (\Throwable $exception) {
+            $this->debug(
+                message: 'User lookup failed: user request by identifier returned an error.',
+                context: [
+                    'realm' => $realm,
+                    'expected_user_id' => $userId->toString(),
+                    'exception_class' => $exception::class,
+                    'exception_message' => $exception->getMessage(),
+                ],
+            );
+
+            throw $exception;
+        }
+    }
+
+    private function findSingleUserByEmail(string $realm, string $email, string $operation): KeycloakUser
     {
         $searchDto = new SearchUsersDto(
             realm: $realm,
             email: $email,
-            exact: $email !== null,
+            exact: true,
         );
 
-        /** @var list<KeycloakUser> $users */
-        $users = $this->httpClient->getUsers(dto: $searchDto);
+        $users = $this->searchUsers(dto: $searchDto);
 
-        foreach ($users as $user) {
-            if ($user->getId() === $userId->toString()) {
-                return $user;
-            }
+        if (count($users) === 1) {
+            return $users[0];
         }
 
         $this->debug(
-            message: 'User lookup failed: user was not found by identifier.',
+            message: 'User lookup failed: user email search did not return exactly one result.',
             context: [
                 'realm' => $realm,
-                'expected_user_id' => $userId->toString(),
-                'email_filter' => $email,
-                'found_user_ids' => array_values(
-                    array_map(
-                        static fn (KeycloakUser $user): string => $user->getId(),
-                        $users,
-                    )
-                ),
+                'operation' => $operation,
+                'email' => $email,
+                'found_user_ids' => array_values(array_map(
+                    static fn (KeycloakUser $user): string => $user->getKeycloakId(),
+                    $users,
+                )),
             ],
         );
 
         throw new LogicException(
             message: sprintf(
-                'User with id "%s" was not found in realm "%s".',
-                $userId->toString(),
+                'Expected exactly one user with email "%s" in realm "%s" during %s, got %d.',
+                $email,
                 $realm,
+                $operation,
+                count($users),
             )
         );
     }
@@ -250,17 +304,17 @@ final readonly class KeycloakUserManagementService implements
         }
 
         $this->debug(
-            message: 'Mapper returned user id different from local user id.',
+            message: 'Mapper returned Keycloak user id different from local user identifier.',
             context: [
                 'operation' => $operation,
-                'expected_user_id' => $expectedUserId,
-                'mapped_user_id' => $mappedUserId->toString(),
+                'expected_keycloak_user_id' => $expectedUserId,
+                'mapped_keycloak_user_id' => $mappedUserId->toString(),
             ],
         );
 
         throw new LogicException(
             message: sprintf(
-                'Mapper user id mismatch during %s. Expected "%s", got "%s".',
+                'Mapper Keycloak user id mismatch during %s. Expected "%s", got "%s".',
                 $operation,
                 $expectedUserId,
                 $mappedUserId->toString(),
@@ -352,33 +406,6 @@ final readonly class KeycloakUserManagementService implements
         }
 
         return $hashSalt;
-    }
-
-    private function findSingleUserByEmail(string $realm, string $email, string $operation): KeycloakUser
-    {
-        $searchDto = new SearchUsersDto(
-            realm: $realm,
-            email: $email,
-        );
-
-        /** @var list<KeycloakUser> $result */
-        $result = $this->httpClient->getUsers(dto: $searchDto);
-
-        if (count(value: $result) === 1) {
-            return $result[0];
-        }
-
-        $this->debug(
-            message: 'User lookup by email failed: expected exactly one user.',
-            context: [
-                'operation' => $operation,
-                'email' => $email,
-                'realm' => $realm,
-                'matched_users_count' => count(value: $result),
-            ],
-        );
-
-        throw new LogicException(message: "Can't find just created user with email " . $email);
     }
 
     /**

@@ -17,6 +17,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
@@ -28,6 +29,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
@@ -134,6 +136,62 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('GET', $requests[0]['method']);
         self::assertSame(
             '/admin/realms/master/users?email=user%40example.com&first=0&max=20&exact=false',
+            $requests[0]['uri']
+        );
+        self::assertSame('Keycloak PHP Client', $requests[0]['headers']['user-agent'] ?? '');
+        self::assertStringStartsWith('Bearer ', $requests[0]['headers']['authorization'] ?? '');
+    }
+
+    public function testUserManagementGetUserByIdSendsExpectedRequestAndParsesResponse(): void
+    {
+        $this->seedAccessToken();
+        $this->server->setScenario(
+            [
+                'GET /admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e' => [
+                    [
+                        'status' => 200,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode(
+                            [
+                                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                                'username' => 'user@example.com',
+                                'createdTimestamp' => 1_700_000_000_000,
+                                'attributes' => [
+                                    'external-user-id' => ['external-id-789'],
+                                ],
+                            ],
+                            JSON_THROW_ON_ERROR
+                        ),
+                    ],
+                ],
+            ],
+        );
+
+        $client = new UserManagementHttpClient(
+            httpCore: $this->httpCore,
+            accessTokenProvider: $this->accessTokenProvider,
+        );
+        $user = $client->getUserById(
+            new GetUserByIdDto(
+                realm: 'master',
+                userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+            ),
+        );
+
+        self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $user->getKeycloakId());
+        self::assertSame('user@example.com', $user->getUsername());
+        self::assertSame(
+            [
+                'external-user-id' => ['external-id-789'],
+            ],
+            $user->getAttributes(),
+        );
+
+        $requests = $this->server->getRequests();
+        self::assertCount(1, $requests);
+        self::assertSame('GET', $requests[0]['method']);
+        self::assertSame(
+            '/admin/realms/master/users/92a372d5-c338-4e77-a1b3-08771241036e',
             $requests[0]['uri']
         );
         self::assertSame('Keycloak PHP Client', $requests[0]['headers']['user-agent'] ?? '');
@@ -472,7 +530,9 @@ final class InternalHttpClientIntegrationTest extends TestCase
                         'status' => 201,
                         'headers' => [
                             'Content-Type' => 'application/json',
-                            'Location' => $this->server->getBaseUrl() . '/admin/realms/master/client-scopes/' . $clientScopeId,
+                            'Location' => $this->server->getBaseUrl()
+                                . '/admin/realms/master/client-scopes/'
+                                . $clientScopeId,
                         ],
                         'body' => '',
                     ],
@@ -610,14 +670,20 @@ final class InternalHttpClientIntegrationTest extends TestCase
                         'body' => '',
                     ],
                 ],
-                'PUT /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                'PUT /admin/realms/master/client-scopes/'
+                    . $clientScopeId
+                    . '/protocol-mappers/models/'
+                    . $mapperId => [
                     [
                         'status' => 204,
                         'headers' => ['Content-Type' => 'application/json'],
                         'body' => '',
                     ],
                 ],
-                'DELETE /admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId => [
+                'DELETE /admin/realms/master/client-scopes/'
+                    . $clientScopeId
+                    . '/protocol-mappers/models/'
+                    . $mapperId => [
                     [
                         'status' => 204,
                         'headers' => ['Content-Type' => 'application/json'],
@@ -687,11 +753,20 @@ final class InternalHttpClientIntegrationTest extends TestCase
         $requests = $this->server->getRequests();
         self::assertCount(3, $requests);
         self::assertSame('POST', $requests[0]['method']);
-        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models', $requests[0]['uri']);
+        self::assertSame(
+            '/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models',
+            $requests[0]['uri'],
+        );
         self::assertSame('PUT', $requests[1]['method']);
-        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[1]['uri']);
+        self::assertSame(
+            '/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId,
+            $requests[1]['uri'],
+        );
         self::assertSame('DELETE', $requests[2]['method']);
-        self::assertSame('/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId, $requests[2]['uri']);
+        self::assertSame(
+            '/admin/realms/master/client-scopes/' . $clientScopeId . '/protocol-mappers/models/' . $mapperId,
+            $requests[2]['uri'],
+        );
 
         $createPayload = json_decode($requests[0]['body'], true, flags: JSON_THROW_ON_ERROR);
         self::assertSame('oidc-usermodel-attribute-mapper', $createPayload['protocolMapper'] ?? null);
@@ -799,7 +874,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
             'attributes' => [
                 $initialProfile['attributes'][0],
                 [
-                    'required' => ['roles' => ['admin']],
+                    'required' => ['roles' => ['admin', 'user']],
                     'selector' => ['scopes' => ['openid']],
                     'name' => 'test_attribute',
                     'displayName' => 'Attribute for test reasons',
@@ -817,7 +892,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
             'attributes' => [
                 $initialProfile['attributes'][0],
                 [
-                    'required' => ['roles' => ['admin']],
+                    'required' => ['roles' => ['admin', 'user']],
                     'selector' => ['scopes' => ['openid']],
                     'name' => 'test_attribute',
                     'displayName' => 'Updated attribute',
@@ -892,6 +967,9 @@ final class InternalHttpClientIntegrationTest extends TestCase
                     name: 'test_attribute',
                     displayName: 'Attribute for test reasons',
                     permissions: ['view' => ['admin', 'user'], 'edit' => ['admin', 'user']],
+                    required: new AttributeRequiredDto(
+                        roles: ['admin', 'user'],
+                    ),
                 ),
             ),
         );
@@ -932,12 +1010,13 @@ final class InternalHttpClientIntegrationTest extends TestCase
         self::assertSame('ENABLED', $createPayload['unmanagedAttributePolicy'] ?? null);
         self::assertSame('user-metadata', $createPayload['attributes'][0]['group'] ?? null);
         self::assertSame(['roles' => ['admin']], $createPayload['attributes'][0]['required'] ?? null);
+        self::assertSame(['roles' => ['admin', 'user']], $createPayload['attributes'][1]['required'] ?? null);
         self::assertSame(['enabled' => true], $createPayload['groups'][0]['customGroupProperty'] ?? null);
         self::assertSame(['collapsed' => false], $createPayload['groups'][0]['annotations'] ?? null);
 
         $updatePayload = json_decode($requests[4]['body'], true, flags: JSON_THROW_ON_ERROR);
         self::assertSame('ENABLED', $updatePayload['unmanagedAttributePolicy'] ?? null);
-        self::assertSame(['roles' => ['admin']], $updatePayload['attributes'][1]['required'] ?? null);
+        self::assertSame(['roles' => ['admin', 'user']], $updatePayload['attributes'][1]['required'] ?? null);
         self::assertSame(['scopes' => ['openid']], $updatePayload['attributes'][1]['selector'] ?? null);
         self::assertSame('Updated attribute', $updatePayload['attributes'][1]['displayName'] ?? null);
 

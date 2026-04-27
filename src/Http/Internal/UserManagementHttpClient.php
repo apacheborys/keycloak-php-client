@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
@@ -60,6 +61,36 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         }
 
         return $users;
+    }
+
+    #[\Override]
+    public function getUserById(GetUserByIdDto $dto): KeycloakUser
+    {
+        $token = $this->accessTokenProvider->getAccessToken();
+        $endpoint = $this->httpCore->buildEndpoint(
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
+        );
+        $request = $this->httpCore->createRequest(
+            method: 'GET',
+            endpoint: $endpoint,
+            headers: ['Authorization' => 'Bearer ' . $token->getRawToken()],
+        );
+
+        $response = $this->httpCore->sendRequest(request: $request);
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException(
+                message: sprintf('Keycloak get user by id failed with status %d: %s', $statusCode, $body)
+            );
+        }
+
+        $data = $this->httpCore->decodeJson(body: $body);
+        Assert::that($data)->isArray();
+
+        /** @var array<string, mixed> $data */
+        return KeycloakUser::fromArray(data: $data);
     }
 
     #[\Override]
@@ -167,7 +198,11 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
     {
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUser()->getId() . '/reset-password'
+            path: '/admin/realms/'
+                . $dto->getRealm()
+                . '/users/'
+                . $dto->getUser()->getKeycloakId()
+                . '/reset-password'
         );
 
         /** @var string $payload */

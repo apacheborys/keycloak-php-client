@@ -40,7 +40,6 @@ final readonly class KeycloakServiceFactory
 
         $userIdentifierAttributeService = new KeycloakUserIdentifierAttributeService(
             httpClient: $httpClient,
-            mapperResolver: $mapperResolver,
             logger: $logger,
         );
 
@@ -58,7 +57,6 @@ final readonly class KeycloakServiceFactory
 
         return new KeycloakService(
             userManagementService: $userManagementService,
-            userLookupService: $userManagementService,
             roleManagementService: $roleManagementService,
             userIdentifierAttributeService: $userIdentifierAttributeService,
             oidcAuthenticationService: $oidcAuthenticationService,

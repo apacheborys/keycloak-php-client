@@ -11,6 +11,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteClientScopeProtocolMapperDto
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
@@ -61,6 +62,34 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         );
 
         self::assertSame([$expectedUser], $client->getUsers($dto));
+    }
+
+    public function testGetUserByIdDelegatesToUserManagement(): void
+    {
+        $dto = new GetUserByIdDto(
+            realm: 'master',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+        );
+        $expectedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+
+        $userManagement = $this->createMock(UserManagementHttpClientInterface::class);
+        $userManagement
+            ->expects(self::once())
+            ->method('getUserById')
+            ->with($dto)
+            ->willReturn($expectedUser);
+
+        $client = $this->createClient(
+            userManagement: $userManagement,
+        );
+
+        self::assertSame($expectedUser, $client->getUserById($dto));
     }
 
     public function testGetRolesDelegatesToRoleManagement(): void

@@ -43,7 +43,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     }
 
     #[Override]
-    public function getId(): string
+    public function getKeycloakId(): string
     {
         return $this->id->toString();
     }

@@ -70,7 +70,7 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         $this->httpClient->assignRolesToUser(
             dto: new AssignUserRolesDto(
                 realm: $realm,
-                userId: Uuid::fromString($createdUser->getId()),
+                userId: Uuid::fromString($createdUser->getKeycloakId()),
                 roles: $rolesToAssign,
             ),
         );
@@ -81,16 +81,16 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         KeycloakUserInterface $oldUserVersion,
         KeycloakUserInterface $newUserVersion
     ): void {
-        if ($oldUserVersion->getId() !== $newUserVersion->getId()) {
+        if ($oldUserVersion->getKeycloakId() !== $newUserVersion->getKeycloakId()) {
             $this->debug(
-                message: 'Role synchronization failed: old and new user identifiers are different.',
+                message: 'Role synchronization failed: old and new Keycloak user identifiers are different.',
                 context: [
-                    'old_user_id' => $oldUserVersion->getId(),
-                    'new_user_id' => $newUserVersion->getId(),
+                    'old_keycloak_user_id' => $oldUserVersion->getKeycloakId(),
+                    'new_keycloak_user_id' => $newUserVersion->getKeycloakId(),
                 ],
             );
 
-            throw new LogicException('Old and new user versions must reference the same user id.');
+            throw new LogicException('Old and new user versions must reference the same Keycloak user id.');
         }
 
         $mapper = $this->mapperResolver->resolveForUserPair(
@@ -104,8 +104,8 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             $this->debug(
                 message: 'Role synchronization failed: old and new user versions are mapped to different realms.',
                 context: [
-                    'old_user_id' => $oldUserVersion->getId(),
-                    'new_user_id' => $newUserVersion->getId(),
+                    'old_keycloak_user_id' => $oldUserVersion->getKeycloakId(),
+                    'new_keycloak_user_id' => $newUserVersion->getKeycloakId(),
                     'old_realm' => $oldRealm,
                     'new_realm' => $newRealm,
                 ],
@@ -130,7 +130,7 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             operation: 'synchronizeRolesOnUserUpdate',
         );
         $this->assertMappedUserIdMatches(
-            expectedUserId: $oldUserVersion->getId(),
+            expectedUserId: $oldUserVersion->getKeycloakId(),
             mappedUserId: $dto->getUserId(),
             operation: 'synchronizeRolesOnUserUpdate',
         );
@@ -244,17 +244,17 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         }
 
         $this->debug(
-            message: 'Mapper returned user id different from local user id.',
+            message: 'Mapper returned Keycloak user id different from local user identifier.',
             context: [
                 'operation' => $operation,
-                'expected_user_id' => $expectedUserId,
-                'mapped_user_id' => $mappedUserId->toString(),
+                'expected_keycloak_user_id' => $expectedUserId,
+                'mapped_keycloak_user_id' => $mappedUserId->toString(),
             ],
         );
 
         throw new LogicException(
             message: sprintf(
-                'Mapper user id mismatch during %s. Expected "%s", got "%s".',
+                'Mapper Keycloak user id mismatch during %s. Expected "%s", got "%s".',
                 $operation,
                 $expectedUserId,
                 $mappedUserId->toString(),

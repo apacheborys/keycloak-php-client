@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
@@ -14,12 +15,12 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Service\Internal\LocalUserMapperResolver;
 use Override;
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final readonly class KeycloakService implements KeycloakServiceInterface
 {
     public function __construct(
         private KeycloakUserManagementServiceInterface $userManagementService,
-        private KeycloakUserLookupServiceInterface $userLookupService,
         private KeycloakRoleManagementServiceInterface $roleManagementService,
         private KeycloakUserIdentifierAttributeServiceInterface $userIdentifierAttributeService,
         private KeycloakOidcAuthenticationServiceInterface $oidcAuthenticationService,
@@ -38,11 +39,31 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         $mapper = $this->mapperResolver->resolveForUser(localUser: $localUser);
         $realm = $mapper->getRealm(localUser: $localUser);
 
-        return $this->userLookupService->findUserById(
+        return $this->userManagementService->findUserById(
             realm: $realm,
-            userId: Uuid::fromString($createdUser->getId()),
-            email: $localUser->getEmail(),
+            userId: Uuid::fromString($createdUser->getKeycloakId()),
         );
+    }
+
+    /**
+     * @return list<KeycloakUser>
+     */
+    #[Override]
+    public function searchUsers(SearchUsersDto $dto): array
+    {
+        return $this->userManagementService->searchUsers(dto: $dto);
+    }
+
+    #[Override]
+    public function findUser(KeycloakUserInterface $localUser): KeycloakUser
+    {
+        return $this->userManagementService->findUser(localUser: $localUser);
+    }
+
+    #[Override]
+    public function findUserById(string $realm, UuidInterface $userId): KeycloakUser
+    {
+        return $this->userManagementService->findUserById(realm: $realm, userId: $userId);
     }
 
     #[Override]
@@ -66,10 +87,9 @@ final readonly class KeycloakService implements KeycloakServiceInterface
         );
         $realm = $mapper->getRealm(localUser: $newUserVersion);
 
-        return $this->userLookupService->findUserById(
+        return $this->userManagementService->findUserById(
             realm: $realm,
-            userId: Uuid::fromString($updatedUser->getId()),
-            email: $newUserVersion->getEmail(),
+            userId: Uuid::fromString($updatedUser->getKeycloakId()),
         );
     }
 
@@ -81,11 +101,11 @@ final readonly class KeycloakService implements KeycloakServiceInterface
 
     #[Override]
     public function ensureUserIdentifierAttribute(
-        KeycloakUserInterface $localUser,
+        string $realm,
         EnsureUserIdentifierAttributeDto $dto
     ): void {
         $this->userIdentifierAttributeService->ensureUserIdentifierAttribute(
-            localUser: $localUser,
+            realm: $realm,
             dto: $dto,
         );
     }

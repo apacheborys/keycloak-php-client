@@ -4,35 +4,88 @@
 
 The library is designed around a few explicit goals:
 
-- keep Keycloak Admin REST and OIDC access available through a thin HTTP facade;
+- keep Keycloak Admin REST and OIDC access available through a focused transport foundation;
 - keep multi-step workflows outside of the low-level HTTP layer;
-- expose a pragmatic API for common application workflows without pretending to model the entire Keycloak domain;
+- expose a pragmatic service API for common application workflows without pretending to model the entire Keycloak domain;
 - stay extensible when Keycloak returns fields or configurations the library does not manage directly.
+
+## Non-Goals
+
+The library intentionally does not try to:
+
+- model the entire Keycloak Admin REST schema as a complete domain model;
+- hide every Keycloak concept behind application-specific abstractions;
+- make application code orchestrate Keycloak endpoint flows directly.
+
+## Architectural Overview
+
+This overview intentionally shows only runtime boundaries. Detailed composition is documented in the sections below and in the service/HTTP layer pages.
+
+```mermaid
+flowchart LR
+    App["Application code"]
+    ServiceFacade["KeycloakServiceInterface<br/>application-facing facade"]
+    ServiceGraph["Focused services<br/>user / role / identifier attribute / OIDC / JWT / realm"]
+    HttpFacade["KeycloakHttpClientInterface<br/>transport facade"]
+    HttpGraph["Focused HTTP clients<br/>user / role / client scope / realm settings / OIDC"]
+    KC["Keycloak<br/>Admin REST + OIDC"]
+
+    App --> ServiceFacade
+    ServiceFacade --> ServiceGraph
+    ServiceGraph --> HttpFacade
+    HttpFacade --> HttpGraph
+    HttpGraph --> KC
+
+    ServiceFactory["KeycloakServiceFactory"] -.-> ServiceFacade
+    HttpFactory["KeycloakHttpClientFactory"] -.-> HttpFacade
+    Mapper["Local user mappers<br/>+ LocalUserMapperResolver"] -.-> ServiceGraph
+    Config["KeycloakClientConfig"] -.-> HttpFactory
+```
+
+Solid arrows show the main runtime call path. Dotted arrows show wiring or supporting dependencies.
 
 ## Layer Model
 
 ```mermaid
-flowchart LR
-    App["Application Code"]
-    Service["KeycloakServiceInterface"]
-    Http["KeycloakHttpClientInterface"]
+flowchart TB
+    subgraph Application["Application boundary"]
+        App["Your code"]
+        Mapper["Local user mapper(s)"]
+    end
 
-    App --> Service
-    App --> Http
+    subgraph Services["Service layer"]
+        Facade["KeycloakService"]
+        User["User management"]
+        Role["Role management"]
+        Identifier["Identifier attributes"]
+        Auth["OIDC authentication"]
+        Jwt["JWT verification"]
+        Realm["Realm listing"]
+    end
 
-    Service --> UserSvc["KeycloakUserManagementService"]
-    Service --> RoleSvc["KeycloakRoleManagementService"]
-    Service --> IdentifierSvc["KeycloakUserIdentifierAttributeService"]
-    Service --> OidcSvc["KeycloakOidcAuthenticationService"]
-    Service --> JwtSvc["KeycloakJwtVerificationService"]
-    Service --> RealmSvc["KeycloakRealmService"]
+    subgraph Transport["HTTP layer"]
+        HttpFacade["KeycloakHttpClient"]
+        UserHttp["Users"]
+        RoleHttp["Roles"]
+        ScopeHttp["Client scopes"]
+        RealmHttp["Realm settings"]
+        OidcHttp["OIDC"]
+    end
 
-    Http --> UserHttp["UserManagementHttpClient"]
-    Http --> RoleHttp["RoleManagementHttpClient"]
-    Http --> ScopeHttp["ClientScopeManagementHttpClient"]
-    Http --> RealmHttp["RealmSettingsManagementHttpClient"]
-    Http --> OidcHttp["OidcInteractionHttpClient"]
-
+    App --> Facade
+    Mapper -.-> Facade
+    Facade --> User
+    Facade --> Role
+    Facade --> Identifier
+    Facade --> Auth
+    Facade --> Jwt
+    Facade --> Realm
+    Facade --> HttpFacade
+    HttpFacade --> UserHttp
+    HttpFacade --> RoleHttp
+    HttpFacade --> ScopeHttp
+    HttpFacade --> RealmHttp
+    HttpFacade --> OidcHttp
     UserHttp --> KC["Keycloak"]
     RoleHttp --> KC
     ScopeHttp --> KC
@@ -46,6 +99,8 @@ The library is split into two main layers:
 
 - HTTP layer (`src/Http/*`) for direct Keycloak REST/OIDC interaction.
 - Service layer (`src/Service/*`) for orchestration and business workflows.
+
+For application code, the service layer is the intended runtime boundary. The HTTP layer exists underneath it as transport infrastructure and as an extension point for custom service composition.
 
 ## Entry Points
 
@@ -104,7 +159,7 @@ The service layer owns orchestration and application-facing intent:
 
 ### Thin transport, richer orchestration
 
-`KeycloakHttpClient` is intentionally a thin facade over focused transport clients. The service layer is the place where workflows become meaningful to application code.
+`KeycloakHttpClient` is intentionally a thin facade over focused transport clients. The service layer is the place where workflows become meaningful to application code, and it is the boundary application code should depend on.
 
 ### Open-door document handling
 
@@ -113,3 +168,50 @@ Some Keycloak APIs behave like document APIs, especially realm user-profile conf
 ### Dedicated source of truth over incidental response shape
 
 When a feature has a specialized endpoint, prefer that endpoint over optional embedded fields from another representation. The protocol-mapper lookup flow follows this rule by reading mapper models from `/protocol-mappers/models` instead of relying on `protocolMappers` being embedded in `ClientScopeRepresentation`.
+
+## Patterns In Use
+
+```mermaid
+flowchart LR
+    Factory["Factory\nKeycloakHttpClientFactory\nKeycloakServiceFactory"]
+    Facade["Facade\nKeycloakHttpClientInterface\nKeycloakServiceInterface"]
+    Strategy["Strategy + Resolver\nLocalKeycloakUserBridgeMapperInterface\nLocalUserMapperResolver"]
+    Query["Query Object\nSearchUsersDto"]
+    Document["Lossless Document Model\nUserProfileDto + AttributeDto + extra fields"]
+    Truth["Dedicated Source Of Truth\nprotocol-mappers/models lookup"]
+
+    Factory --> Facade
+    Strategy --> Facade
+    Query --> Facade
+    Document --> Truth
+```
+
+Pattern notes:
+
+- Factories keep wiring and dependency composition out of application code.
+- Facades keep the public surface compact while allowing the internals to stay specialized.
+- `KeycloakServiceInterface` is the application-facing facade; `KeycloakHttpClientInterface` is an infrastructural facade used below it.
+- Mapper strategy objects isolate application-specific realm and profile mapping rules from transport logic.
+- `SearchUsersDto` is treated as a query object because it captures search intent, not a raw REST payload.
+- The lossless document model preserves unknown Keycloak fields during read-modify-write cycles.
+- Dedicated lookup endpoints are preferred whenever response shape from aggregate endpoints is optional or unstable.
+
+## Typical Flow
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Service as KeycloakService
+    participant Resolver as LocalUserMapperResolver
+    participant Http as KeycloakHttpClient
+    participant KC as Keycloak
+
+    App->>Service: createUser(localUser, password)
+    Service->>Resolver: resolveForUser(localUser)
+    Resolver-->>Service: mapper
+    Service->>Http: createUser(...)
+    Http->>KC: POST /admin/realms/{realm}/users
+    Service->>Http: getUserById(...)
+    Http->>KC: GET /admin/realms/{realm}/users/{id}
+    Service-->>App: KeycloakUser
+```

@@ -10,6 +10,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
@@ -74,14 +75,14 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', []);
         $httpClient->queueResult('createUser', null);
         $httpClient->queueResult('getUsers', [$createdUser]);
-        $httpClient->queueResult('getUsers', [$createdUser]);
+        $httpClient->queueResult('getUserById', $createdUser);
         $httpClient->queueResult('resetPassword', null);
 
         $result = $service->createUser($user, new PasswordDto(plainPassword: 'secret'));
 
         self::assertSame($createdUser, $result);
         self::assertSame(
-            ['getRoles', 'createUser', 'getUsers', 'resetPassword', 'getRoles', 'getUsers'],
+            ['getRoles', 'createUser', 'getUsers', 'resetPassword', 'getRoles', 'getUserById'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
     }
@@ -105,12 +106,12 @@ final class KeycloakServiceTest extends TestCase
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             email: 'old@example.com',
             firstName: 'Old',
         );
         $newUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             email: 'new@example.com',
             firstName: 'New',
         );
@@ -126,14 +127,14 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', []);
         $httpClient->queueResult('getRoles', []);
         $httpClient->queueResult('updateUser', null);
-        $httpClient->queueResult('getUsers', [$updatedUser]);
-        $httpClient->queueResult('getUsers', [$updatedUser]);
+        $httpClient->queueResult('getUserById', $updatedUser);
+        $httpClient->queueResult('getUserById', $updatedUser);
 
         $result = $service->updateUser($oldUserVersion, $newUserVersion);
 
         self::assertSame($updatedUser, $result);
         self::assertSame(
-            ['getRoles', 'updateUser', 'getUsers', 'getRoles', 'getUsers'],
+            ['getRoles', 'updateUser', 'getUserById', 'getRoles', 'getUserById'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
         self::assertSame($mappedUpdateDto, $httpClient->getCalls()[1]['args'][0]);
@@ -190,7 +191,7 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', [$existingRole, $missingRole]);
         $httpClient->queueResult('createUser', null);
         $httpClient->queueResult('getUsers', [$createdUser]);
-        $httpClient->queueResult('getUsers', [$createdUser]);
+        $httpClient->queueResult('getUserById', $createdUser);
         $httpClient->queueResult('resetPassword', null);
         $httpClient->queueResult('createRole', null);
         $httpClient->queueResult('assignRolesToUser', null);
@@ -208,7 +209,7 @@ final class KeycloakServiceTest extends TestCase
                 'createRole',
                 'getRoles',
                 'assignRolesToUser',
-                'getUsers',
+                'getUserById',
             ],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
@@ -278,11 +279,11 @@ final class KeycloakServiceTest extends TestCase
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: ['role-old'],
         );
         $newUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: ['role-new'],
         );
         $updatedUser = KeycloakUser::fromArray(
@@ -311,8 +312,8 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', [$roleOld, $roleNew]);
         $httpClient->queueResult('getRoles', [$roleOld, $roleNew]);
         $httpClient->queueResult('updateUser', null);
-        $httpClient->queueResult('getUsers', [$updatedUser]);
-        $httpClient->queueResult('getUsers', [$updatedUser]);
+        $httpClient->queueResult('getUserById', $updatedUser);
+        $httpClient->queueResult('getUserById', $updatedUser);
         $httpClient->queueResult('getAvailableUserRoles', [$roleNew]);
         $httpClient->queueResult('assignRolesToUser', null);
         $httpClient->queueResult('unassignRolesFromUser', null);
@@ -324,12 +325,12 @@ final class KeycloakServiceTest extends TestCase
             [
                 'getRoles',
                 'updateUser',
-                'getUsers',
+                'getUserById',
                 'getRoles',
                 'getAvailableUserRoles',
                 'assignRolesToUser',
                 'unassignRolesFromUser',
-                'getUsers',
+                'getUserById',
             ],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
@@ -363,11 +364,11 @@ final class KeycloakServiceTest extends TestCase
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: [],
         );
         $newUserVersion = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: ['role-new'],
         );
         $roleNew = new RoleDto(
@@ -390,7 +391,7 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', [$roleNew]);
         $httpClient->queueResult('getRoles', [$roleNew]);
         $httpClient->queueResult('updateUser', null);
-        $httpClient->queueResult('getUsers', [$updatedUser]);
+        $httpClient->queueResult('getUserById', $updatedUser);
         $httpClient->queueResult('getAvailableUserRoles', []);
 
         $service->updateUser($oldUserVersion, $newUserVersion);
@@ -399,7 +400,7 @@ final class KeycloakServiceTest extends TestCase
     public function testUpdateUserRejectsDifferentIds(): void
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Old and new user versions must reference the same user id.');
+        $this->expectExceptionMessage('Old and new user versions must reference the same Keycloak user id.');
 
         $httpClient = new TestKeycloakHttpClient();
         $mapper = new ServiceTestMapper(
@@ -408,8 +409,8 @@ final class KeycloakServiceTest extends TestCase
         );
         $service = $this->createService($httpClient, $mapper);
 
-        $oldUserVersion = new ServiceTestUser(id: '92a372d5-c338-4e77-a1b3-08771241036e');
-        $newUserVersion = new ServiceTestUser(id: 'd15f15d4-c107-4a99-8281-8b2a7d7c6d6a');
+        $oldUserVersion = new ServiceTestUser(keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e');
+        $newUserVersion = new ServiceTestUser(keycloakId: 'd15f15d4-c107-4a99-8281-8b2a7d7c6d6a');
 
         $service->updateUser($oldUserVersion, $newUserVersion);
     }
@@ -433,7 +434,93 @@ final class KeycloakServiceTest extends TestCase
         self::assertCount(1, $calls);
         self::assertSame('deleteUser', $calls[0]['method']);
         self::assertSame('master', $calls[0]['args'][0]->getRealm());
-        self::assertSame($user->getId(), $calls[0]['args'][0]->getUserId()->toString());
+        self::assertSame($user->getKeycloakId(), $calls[0]['args'][0]->getUserId()->toString());
+    }
+
+    public function testFindUserResolvesRealmFromMapperAndUsesKeycloakIdLookup(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = $this->createService($httpClient, $mapper);
+        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $expectedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+
+        $httpClient->queueResult('getUserById', $expectedUser);
+
+        $result = $service->findUser($user);
+
+        self::assertSame($expectedUser, $result);
+        self::assertSame(['getUserById'], array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()));
+        self::assertSame('master', $httpClient->getCalls()[0]['args'][0]->getRealm());
+        self::assertSame($user->getKeycloakId(), $httpClient->getCalls()[0]['args'][0]->getUserId()->toString());
+    }
+
+    public function testSearchUsersDelegatesToUserManagementService(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = $this->createService($httpClient, $mapper);
+        $dto = new SearchUsersDto(
+            realm: 'master',
+            email: 'user@example.com',
+            exact: true,
+        );
+        $expectedUsers = [
+            KeycloakUser::fromArray(
+                [
+                    'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                    'username' => 'user@example.com',
+                    'createdTimestamp' => 1_700_000_000_000,
+                ]
+            ),
+        ];
+
+        $httpClient->queueResult('getUsers', $expectedUsers);
+
+        $result = $service->searchUsers($dto);
+
+        self::assertSame($expectedUsers, $result);
+        self::assertSame(['getUsers'], array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()));
+        self::assertSame($dto, $httpClient->getCalls()[0]['args'][0]);
+    }
+
+    public function testFindUserByIdDelegatesToUserManagementService(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto()
+        );
+        $service = $this->createService($httpClient, $mapper);
+        $expectedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+        $userId = Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e');
+
+        $httpClient->queueResult('getUserById', $expectedUser);
+
+        $result = $service->findUserById('master', $userId);
+
+        self::assertSame($expectedUser, $result);
+        self::assertSame(['getUserById'], array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()));
+        self::assertSame('master', $httpClient->getCalls()[0]['args'][0]->getRealm());
+        self::assertSame($userId->toString(), $httpClient->getCalls()[0]['args'][0]->getUserId()->toString());
     }
 
     public function testEnsureUserIdentifierAttributeDelegatesToUnderlyingServices(): void
@@ -444,7 +531,6 @@ final class KeycloakServiceTest extends TestCase
             $this->buildTokenRequestDto()
         );
         $service = $this->createService($httpClient, $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
 
         $httpClient->queueResult(
             'getUserProfile',
@@ -462,7 +548,7 @@ final class KeycloakServiceTest extends TestCase
         $this->expectException(LogicException::class);
 
         $service->ensureUserIdentifierAttribute(
-            localUser: $user,
+            realm: 'master',
             dto: new EnsureUserIdentifierAttributeDto(
                 attributeName: 'external-user-id',
                 displayName: 'External user id',

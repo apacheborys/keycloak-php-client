@@ -14,9 +14,8 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
-use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
-use Apacheborys\KeycloakPhpClient\Service\Internal\LocalUserMapperResolver;
 use Apacheborys\KeycloakPhpClient\ValueObject\AttributePermission;
 use LogicException;
 use Override;
@@ -27,19 +26,15 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
 {
     public function __construct(
         private KeycloakHttpClientInterface $httpClient,
-        private LocalUserMapperResolver $mapperResolver,
         private ?LoggerInterface $logger = null,
     ) {
     }
 
     #[Override]
     public function ensureUserIdentifierAttribute(
-        KeycloakUserInterface $localUser,
+        string $realm,
         EnsureUserIdentifierAttributeDto $dto
     ): void {
-        $mapper = $this->mapperResolver->resolveForUser(localUser: $localUser);
-        $realm = $mapper->getRealm(localUser: $localUser);
-
         $profile = $this->httpClient->getUserProfile(
             dto: new GetUserProfileDto(realm: $realm),
         );
@@ -51,7 +46,6 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
                     context: [
                         'realm' => $realm,
                         'attribute_name' => $dto->getAttributeName(),
-                        'user_id' => $localUser->getId(),
                     ],
                 );
 
@@ -75,7 +69,6 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
                 context: [
                     'realm' => $realm,
                     'attribute_name' => $dto->getAttributeName(),
-                    'user_id' => $localUser->getId(),
                 ],
             );
         }
@@ -163,6 +156,9 @@ final readonly class KeycloakUserIdentifierAttributeService implements KeycloakU
                 'edit' => [AttributePermission::ADMIN->value, AttributePermission::USER->value],
             ],
             multivalued: false,
+            required: new AttributeRequiredDto(
+                roles: [AttributePermission::ADMIN->value, AttributePermission::USER->value],
+            ),
             annotations: [
                 'inputType' => 'text',
             ],

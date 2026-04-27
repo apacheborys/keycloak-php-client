@@ -8,7 +8,7 @@ use DateTimeInterface;
 
 interface KeycloakUserInterface
 {
-    public function getId(): string;
+    public function getKeycloakId(): string;
 
     public function getUsername(): string;
 

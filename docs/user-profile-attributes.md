@@ -24,6 +24,17 @@ Some applications need one or more stable identifiers that:
 - `jwtClaimName` (default: kebab-case to snake_case conversion)
 - `protocolMapperName` (default: `<displayName> attribute`)
 
+## Attribute Model Notes
+
+`AttributeDto` now has first-class support for Keycloak `required` rules through `AttributeRequiredDto`.
+
+Supported typed fields:
+
+- `roles`
+- `scopes`
+
+Unknown fields inside `required` are still preserved and round-tripped.
+
 ## What The Service Manages
 
 The workflow coordinates two different Keycloak concerns:
@@ -37,7 +48,7 @@ The service does not try to become a generic Keycloak schema editor. It manages 
 
 `KeycloakUserIdentifierAttributeService::ensureUserIdentifierAttribute()`:
 
-1. Resolve mapper and realm for local user.
+1. Use the provided realm.
 2. Read current user profile.
 3. If attribute is missing:
    - throw exception when `createIfMissing=false`;
@@ -56,7 +67,7 @@ sequenceDiagram
     participant Scope as ClientScopeManagementHttpClient
     participant KC as Keycloak
 
-    App->>Service: ensureUserIdentifierAttribute(dto)
+    App->>Service: ensureUserIdentifierAttribute(realm, dto)
     Service->>Realm: getUserProfile()
     Realm->>KC: GET /admin/realms/{realm}/users/profile
     KC-->>Realm: UPConfig
@@ -120,8 +131,20 @@ When auto-creating attribute, default payload includes:
 
 - `permissions.view`: `admin`, `user`
 - `permissions.edit`: `admin`, `user`
+- `required.roles`: `admin`, `user`
 - `annotations.inputType`: `text`
 - `multivalued`: `false`
+
+Example shape of `required`:
+
+```json
+{
+  "required": {
+    "roles": ["admin", "user"],
+    "scopes": ["openid"]
+  }
+}
+```
 
 ## Design Guarantees
 
@@ -148,4 +171,4 @@ Mapper upsert does not depend on `protocolMappers` being embedded in a client-sc
 - it does not attempt to expose the full Keycloak user-profile schema as a first-class builder API;
 - it does not try to manage every possible protocol-mapper type;
 - it does not hide all possible Keycloak race conditions across multiple concurrent application instances;
-- it does not replace direct HTTP access when you need low-level control over every payload field.
+- it does not replace the transport foundation for contributors who need to extend the library with new service-level workflows.

@@ -14,6 +14,33 @@ composer require apacheborys/keycloak-php-client
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    App["Application"]
+    Config["KeycloakClientConfig"]
+    HttpFactory["KeycloakHttpClientFactory"]
+    ServiceFactory["KeycloakServiceFactory"]
+    HttpFacade["KeycloakHttpClientInterface"]
+    ServiceFacade["KeycloakServiceInterface"]
+    Mapper["LocalKeycloakUserBridgeMapperInterface[]"]
+    Resolver["LocalUserMapperResolver"]
+    Keycloak["Keycloak Admin REST / OIDC"]
+
+    App --> HttpFactory
+    App --> ServiceFactory
+    App --> ServiceFacade
+
+    Config --> HttpFactory
+    HttpFactory --> HttpFacade
+
+    Mapper --> ServiceFactory
+    ServiceFactory --> Resolver
+    ServiceFactory --> ServiceFacade
+    ServiceFacade --> HttpFacade
+    ServiceFacade --> Resolver
+    HttpFacade --> Keycloak
+```
+
 - `KeycloakClientConfig` - immutable connection/config value object for Keycloak client credentials.
 - `KeycloakHttpClientFactory` - builds `KeycloakHttpClientInterface` from PSR-18/PSR-17 dependencies.
 - `KeycloakHttpClient` - low-level HTTP facade over Keycloak Admin/OIDC endpoints.
@@ -31,21 +58,32 @@ Main service components:
 
 Recommended composition flow:
 
-1. Build HTTP client via `KeycloakHttpClientFactory`.
+1. Build transport dependencies via `KeycloakHttpClientFactory`.
 2. Build service facade via `KeycloakServiceFactory`.
 3. Use `KeycloakServiceInterface` in your application code.
 
 Core design ideas:
 
-- the HTTP layer maps directly to Keycloak Admin REST and OIDC endpoints;
+- the service layer is the primary integration boundary for application code;
+- the transport layer maps directly to Keycloak Admin REST and OIDC endpoints underneath the service layer;
 - the service layer owns multi-step workflows and application-facing orchestration;
 - realm user-profile mutations are handled as lossless document updates, so unknown Keycloak fields are preserved;
 - protocol mapper upsert relies on dedicated mapper endpoints instead of optional embedded fields inside client-scope list responses.
 
-## Quick Start (HTTP Client)
+Applied patterns:
+
+- Factory: `KeycloakHttpClientFactory`, `KeycloakServiceFactory`
+- Facade: `KeycloakHttpClientInterface`, `KeycloakServiceInterface`
+- Strategy + Resolver: `LocalKeycloakUserBridgeMapperInterface`, `LocalUserMapperResolver`
+- Query Object: `SearchUsersDto`
+- Lossless document model: `UserProfileDto`, `AttributeDto`, `UserProfileGroupDto`
+
+## Quick Start
 
 ```php
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientFactory;
+use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 
 $config = new KeycloakClientConfig(
@@ -62,12 +100,6 @@ $httpClient = $httpFactory->create(
     requestFactory: $psr17RequestFactory,
     streamFactory: $psr17StreamFactory,
 );
-```
-
-## Quick Start (Service Layer)
-
-```php
-use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 
 $serviceFactory = new KeycloakServiceFactory();
 $service = $serviceFactory->create(
@@ -78,7 +110,41 @@ $service = $serviceFactory->create(
 
 $tokenResponse = $service->loginUser($localUser, 'PlainPassword123!');
 $isValid = $service->verifyJwt($tokenResponse->getAccessToken()->getRawToken());
+$freshKeycloakUser = $service->findUser($localUser);
+$matchedUsers = $service->searchUsers(
+    new SearchUsersDto(
+        realm: 'master',
+        email: 'user@example.com',
+        exact: true,
+    ),
+);
 ```
+
+## Local User Contract
+
+When your application passes a local user object into the service layer, `KeycloakUserInterface::getKeycloakId()` must return the Keycloak user identifier for that realm.
+
+This identifier is used by:
+
+- `updateUser(...)`
+- `deleteUser(...)`
+- `findUser(...)`
+
+`findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
+
+For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
+
+## Recommended Integration Style
+
+Application code should integrate with `KeycloakServiceInterface`.
+
+Why:
+
+- it keeps Keycloak-specific orchestration out of application code;
+- it centralizes mapper resolution, branching decisions and workflow defaults;
+- it lets the transport layer stay replaceable and specialized without becoming your runtime API.
+
+`KeycloakHttpClientInterface` still exists, but it should be treated as infrastructure used by the service layer and by custom library extensions, not as the normal application entry point.
 
 ## User Identifier Attribute Quick Example
 
@@ -86,7 +152,7 @@ $isValid = $service->verifyJwt($tokenResponse->getAccessToken()->getRawToken());
 use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
 
 $service->ensureUserIdentifierAttribute(
-    localUser: $localUser,
+    realm: 'master',
     dto: new EnsureUserIdentifierAttributeDto(
         attributeName: 'external-user-id',
         displayName: 'External user id',
@@ -104,6 +170,8 @@ Behavior:
 - if missing and `createIfMissing=true` -> creates attribute in realm user profile;
 - if `exposeInJwt=true` -> resolves the target client scope and creates or updates protocol mapper in selected client scope.
 
+For auto-created identifier attributes, the default user-profile payload also marks the attribute as required for `admin` and `user`.
+
 This workflow is intended for bootstrap or migration-like initialization of application-specific identifier attributes:
 
 - the application can ensure that a realm contains the attribute it depends on;
@@ -116,7 +184,7 @@ Detailed docs are in [`docs/README.md`](docs/README.md):
 
 - architecture and layering;
 - service-layer orchestration and responsibilities;
-- HTTP client modules and contracts;
+- transport-layer modules and contracts;
 - user profile attributes and JWT exposure flow;
 - client scopes and protocol mappers;
 - testing strategy and local checks.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile;
 
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileGroupDto;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +50,9 @@ final class UserProfileDtoTest extends TestCase
             new AttributeDto(
                 name: 'external-user-id',
                 permissions: ['view' => ['admin'], 'edit' => ['admin']],
+                required: new AttributeRequiredDto(
+                    roles: ['admin'],
+                ),
             ),
         );
         self::assertTrue($created->hasAttribute('external-user-id'));
@@ -102,14 +106,14 @@ final class UserProfileDtoTest extends TestCase
                 name: 'external-user-id',
                 displayName: 'External user id',
                 permissions: ['view' => ['admin'], 'edit' => ['admin']],
+                required: new AttributeRequiredDto(
+                    roles: ['manager'],
+                ),
             ),
         );
         self::assertTrue($updated->hasAttribute('external-user-id'));
         self::assertSame(
             [
-                'required' => [
-                    'roles' => ['admin'],
-                ],
                 'selector' => [
                     'scopes' => ['openid'],
                 ],
@@ -122,6 +126,9 @@ final class UserProfileDtoTest extends TestCase
                 'permissions' => ['view' => ['admin'], 'edit' => ['admin']],
                 'multivalued' => false,
                 'annotations' => [],
+                'required' => [
+                    'roles' => ['manager'],
+                ],
                 'displayName' => 'External user id',
             ],
             $updated->getAttributes()[1]->toArray(),

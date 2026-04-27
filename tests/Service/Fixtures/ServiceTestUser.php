@@ -14,7 +14,7 @@ final class ServiceTestUser implements KeycloakUserInterface
      * @param list<string> $roles
      */
     public function __construct(
-        private string $id,
+        private string $keycloakId,
         private string $username = 'user@example.com',
         private string $email = 'user@example.com',
         private bool $emailVerified = true,
@@ -25,9 +25,9 @@ final class ServiceTestUser implements KeycloakUserInterface
     ) {
     }
 
-    public function getId(): string
+    public function getKeycloakId(): string
     {
-        return $this->id;
+        return $this->keycloakId;
     }
 
     public function getUsername(): string

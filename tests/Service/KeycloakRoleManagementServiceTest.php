@@ -176,11 +176,11 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         $service = new KeycloakRoleManagementService($httpClient, $resolver);
 
         $oldUser = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: ['role-old'],
         );
         $newUser = new ServiceTestUser(
-            id: '92a372d5-c338-4e77-a1b3-08771241036e',
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
             roles: ['role-new'],
         );
 

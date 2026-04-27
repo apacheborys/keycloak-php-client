@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO\Realm\UserProfile;
 
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -54,6 +55,8 @@ final class AttributeDtoTest extends TestCase
         self::assertSame(['admin', 'manager'], $dto->getPermissions()['view']);
         self::assertSame(['admin', 'manager'], $dto->getPermissions()['edit']);
         self::assertFalse($dto->isMultivalued());
+        self::assertTrue($dto->isRequired());
+        self::assertSame(['admin'], $dto->getRequired()?->getRoles());
         self::assertSame('text', $dto->getAnnotations()['inputType'] ?? null);
         self::assertSame(['section' => 'metadata'], $dto->getAnnotations()['ui'] ?? null);
         self::assertTrue((bool) ($dto->getAnnotations()['required'] ?? false));
@@ -74,9 +77,6 @@ final class AttributeDtoTest extends TestCase
         self::assertSame(
             [
                 'group' => 'user-metadata',
-                'required' => [
-                    'roles' => ['admin'],
-                ],
                 'selector' => [
                     'scopes' => ['openid'],
                 ],
@@ -88,9 +88,6 @@ final class AttributeDtoTest extends TestCase
         self::assertSame(
             [
                 'group' => 'user-metadata',
-                'required' => [
-                    'roles' => ['admin'],
-                ],
                 'selector' => [
                     'scopes' => ['openid'],
                 ],
@@ -116,6 +113,9 @@ final class AttributeDtoTest extends TestCase
                         'section' => 'metadata',
                     ],
                     'required' => true,
+                ],
+                'required' => [
+                    'roles' => ['admin'],
                 ],
                 'displayName' => 'External user id',
             ],
@@ -172,16 +172,16 @@ final class AttributeDtoTest extends TestCase
                 'view' => ['admin'],
                 'edit' => ['admin'],
             ],
+            required: new AttributeRequiredDto(
+                roles: ['manager'],
+            ),
         ))->withPreservedUnknownFieldsFrom($current);
 
         self::assertSame(
-            [
-                'required' => [
-                    'roles' => ['admin'],
-                ],
-            ],
+            [],
             $updated->getExtra(),
         );
+        self::assertSame(['manager'], $updated->getRequired()?->getRoles());
         self::assertSame(
             [
                 'custom-validator' => [
