@@ -15,7 +15,7 @@ In practice, the facade mixes two kinds of operations:
 - orchestration methods such as `createUser`, `updateUser`, `ensureUserIdentifierAttribute`;
 - convenience pass-through methods such as `searchUsers`, `findUserById`, `loginUser`.
 
-Use the service layer when your application wants a business operation instead of a single REST call. If you already know the exact Keycloak endpoint shape you want to control, prefer the HTTP layer directly.
+Application code should integrate through the service layer. Even when an operation is only one transport call today, keeping it behind the service boundary preserves a consistent integration style and leaves room for future orchestration, defaults or validation without changing the application contract.
 
 ## Service Composition
 
@@ -132,3 +132,4 @@ Interpretation:
 - orchestration lives in focused services rather than in the facade itself;
 - mapper resolution is a dependency of user- and role-oriented workflows, not of the HTTP layer;
 - the facade stays small and coordinates service composition rather than re-implementing workflow logic.
+- application code should depend on this facade/service graph rather than on transport clients directly.

@@ -171,4 +171,4 @@ Mapper upsert does not depend on `protocolMappers` being embedded in a client-sc
 - it does not attempt to expose the full Keycloak user-profile schema as a first-class builder API;
 - it does not try to manage every possible protocol-mapper type;
 - it does not hide all possible Keycloak race conditions across multiple concurrent application instances;
-- it does not replace direct HTTP access when you need low-level control over every payload field.
+- it does not replace the transport foundation for contributors who need to extend the library with new service-level workflows.

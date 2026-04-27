@@ -4,9 +4,9 @@
 
 The library is designed around a few explicit goals:
 
-- keep Keycloak Admin REST and OIDC access available through a thin HTTP facade;
+- keep Keycloak Admin REST and OIDC access available through a focused transport foundation;
 - keep multi-step workflows outside of the low-level HTTP layer;
-- expose a pragmatic API for common application workflows without pretending to model the entire Keycloak domain;
+- expose a pragmatic service API for common application workflows without pretending to model the entire Keycloak domain;
 - stay extensible when Keycloak returns fields or configurations the library does not manage directly.
 
 ## Non-Goals
@@ -15,7 +15,7 @@ The library intentionally does not try to:
 
 - model the entire Keycloak Admin REST schema as a complete domain model;
 - hide every Keycloak concept behind application-specific abstractions;
-- replace direct HTTP access when the caller needs endpoint-level control.
+- make application code orchestrate Keycloak endpoint flows directly.
 
 ## Architectural Overview
 
@@ -48,7 +48,6 @@ flowchart TB
 
     App --> HttpFactory
     App --> ServiceFactory
-    App --> HttpFacade
     App --> ServiceFacade
 
     Config --> HttpFactory
@@ -89,10 +88,9 @@ flowchart TB
 flowchart LR
     App["Application Code"]
     Service["KeycloakServiceInterface"]
-    Http["KeycloakHttpClientInterface"]
+    Http["Transport Layer"]
 
     App --> Service
-    App --> Http
 
     Service --> UserSvc["KeycloakUserManagementService"]
     Service --> RoleSvc["KeycloakRoleManagementService"]
@@ -120,6 +118,8 @@ The library is split into two main layers:
 
 - HTTP layer (`src/Http/*`) for direct Keycloak REST/OIDC interaction.
 - Service layer (`src/Service/*`) for orchestration and business workflows.
+
+For application code, the service layer is the intended runtime boundary. The HTTP layer exists underneath it as transport infrastructure and as an extension point for custom service composition.
 
 ## Entry Points
 
@@ -178,7 +178,7 @@ The service layer owns orchestration and application-facing intent:
 
 ### Thin transport, richer orchestration
 
-`KeycloakHttpClient` is intentionally a thin facade over focused transport clients. The service layer is the place where workflows become meaningful to application code.
+`KeycloakHttpClient` is intentionally a thin facade over focused transport clients. The service layer is the place where workflows become meaningful to application code, and it is the boundary application code should depend on.
 
 ### Open-door document handling
 
@@ -209,6 +209,7 @@ Pattern notes:
 
 - Factories keep wiring and dependency composition out of application code.
 - Facades keep the public surface compact while allowing the internals to stay specialized.
+- `KeycloakServiceInterface` is the application-facing facade; `KeycloakHttpClientInterface` is an infrastructural facade used below it.
 - Mapper strategy objects isolate application-specific realm and profile mapping rules from transport logic.
 - `SearchUsersDto` is treated as a query object because it captures search intent, not a raw REST payload.
 - The lossless document model preserves unknown Keycloak fields during read-modify-write cycles.

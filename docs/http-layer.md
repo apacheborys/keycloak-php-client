@@ -1,5 +1,7 @@
 # HTTP Layer
 
+This document describes the transport foundation used by the service layer. It is primarily useful for contributors and for teams building custom services on top of the library internals.
+
 ## Facade Contract
 
 `KeycloakHttpClientInterface` composes these contracts:
@@ -36,7 +38,7 @@ The HTTP layer is intentionally narrow:
 - DTOs at this layer are transport-facing and map closely to request or response shapes;
 - the layer should not resolve mappers, infer business defaults or decide workflow branches.
 
-This keeps transport code predictable and easy to reason about when the caller needs low-level control.
+This keeps transport code predictable and easy to reason about as the infrastructure beneath the service layer.
 
 ## Specialized Clients
 
@@ -89,16 +91,12 @@ At this layer, errors are surfaced as transport-oriented failures:
 - request/response DTO mismatch is treated as a client-side contract problem;
 - retry, fallback or create-vs-update branching belongs in the service layer, not here.
 
-## When To Use Direct HTTP Access
+## Boundary Position
 
-Prefer the HTTP layer when:
+For normal application integration, this layer is not the recommended entry point.
 
-- you need low-level control over DTO payloads;
-- you want to compose your own workflow on top of Keycloak endpoints;
-- you do not want service-layer defaults or orchestration.
+Recommended usage:
 
-Prefer the service layer when:
-
-- the operation is inherently multi-step;
-- you want application-oriented intent instead of endpoint-oriented code;
-- you want the library to handle lookup, branching, and upsert logic for you.
+- application code depends on `KeycloakServiceInterface`;
+- the service layer depends on `KeycloakHttpClientInterface`;
+- custom transport-aware extensions should usually be expressed as custom services, not as direct application calls to transport clients.
