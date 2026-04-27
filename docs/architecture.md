@@ -19,92 +19,73 @@ The library intentionally does not try to:
 
 ## Architectural Overview
 
+This overview intentionally shows only runtime boundaries. Detailed composition is documented in the sections below and in the service/HTTP layer pages.
+
+```mermaid
+flowchart LR
+    App["Application code"]
+    ServiceFacade["KeycloakServiceInterface<br/>application-facing facade"]
+    ServiceGraph["Focused services<br/>user / role / identifier attribute / OIDC / JWT / realm"]
+    HttpFacade["KeycloakHttpClientInterface<br/>transport facade"]
+    HttpGraph["Focused HTTP clients<br/>user / role / client scope / realm settings / OIDC"]
+    KC["Keycloak<br/>Admin REST + OIDC"]
+
+    App --> ServiceFacade
+    ServiceFacade --> ServiceGraph
+    ServiceGraph --> HttpFacade
+    HttpFacade --> HttpGraph
+    HttpGraph --> KC
+
+    ServiceFactory["KeycloakServiceFactory"] -.-> ServiceFacade
+    HttpFactory["KeycloakHttpClientFactory"] -.-> HttpFacade
+    Mapper["Local user mappers<br/>+ LocalUserMapperResolver"] -.-> ServiceGraph
+    Config["KeycloakClientConfig"] -.-> HttpFactory
+```
+
+Solid arrows show the main runtime call path. Dotted arrows show wiring or supporting dependencies.
+
+## Layer Model
+
 ```mermaid
 flowchart TB
-    App["Application code"]
-    HttpFactory["KeycloakHttpClientFactory"]
-    ServiceFactory["KeycloakServiceFactory"]
-    Config["KeycloakClientConfig"]
-    Mapper["LocalKeycloakUserBridgeMapperInterface[]"]
-    Resolver["LocalUserMapperResolver"]
+    subgraph Application["Application boundary"]
+        App["Your code"]
+        Mapper["Local user mapper(s)"]
+    end
 
-    HttpFacade["KeycloakHttpClientInterface"]
-    ServiceFacade["KeycloakServiceInterface"]
+    subgraph Services["Service layer"]
+        Facade["KeycloakService"]
+        User["User management"]
+        Role["Role management"]
+        Identifier["Identifier attributes"]
+        Auth["OIDC authentication"]
+        Jwt["JWT verification"]
+        Realm["Realm listing"]
+    end
 
-    UserSvc["KeycloakUserManagementService"]
-    RoleSvc["KeycloakRoleManagementService"]
-    IdentifierSvc["KeycloakUserIdentifierAttributeService"]
-    OidcSvc["KeycloakOidcAuthenticationService"]
-    JwtSvc["KeycloakJwtVerificationService"]
-    RealmSvc["KeycloakRealmService"]
+    subgraph Transport["HTTP layer"]
+        HttpFacade["KeycloakHttpClient"]
+        UserHttp["Users"]
+        RoleHttp["Roles"]
+        ScopeHttp["Client scopes"]
+        RealmHttp["Realm settings"]
+        OidcHttp["OIDC"]
+    end
 
-    UserHttp["UserManagementHttpClient"]
-    RoleHttp["RoleManagementHttpClient"]
-    ScopeHttp["ClientScopeManagementHttpClient"]
-    RealmHttp["RealmSettingsManagementHttpClient"]
-    OidcHttp["OidcInteractionHttpClient"]
-
-    KC["Keycloak Admin REST / OIDC"]
-
-    App --> HttpFactory
-    App --> ServiceFactory
-    App --> ServiceFacade
-
-    Config --> HttpFactory
-    HttpFactory --> HttpFacade
-
-    Mapper --> ServiceFactory
-    ServiceFactory --> Resolver
-    ServiceFactory --> ServiceFacade
-
-    ServiceFacade --> UserSvc
-    ServiceFacade --> RoleSvc
-    ServiceFacade --> IdentifierSvc
-    ServiceFacade --> OidcSvc
-    ServiceFacade --> JwtSvc
-    ServiceFacade --> RealmSvc
-
-    Resolver --> UserSvc
-    Resolver --> RoleSvc
-    Resolver --> OidcSvc
-
-    ServiceFacade --> HttpFacade
+    App --> Facade
+    Mapper -.-> Facade
+    Facade --> User
+    Facade --> Role
+    Facade --> Identifier
+    Facade --> Auth
+    Facade --> Jwt
+    Facade --> Realm
+    Facade --> HttpFacade
     HttpFacade --> UserHttp
     HttpFacade --> RoleHttp
     HttpFacade --> ScopeHttp
     HttpFacade --> RealmHttp
     HttpFacade --> OidcHttp
-
-    UserHttp --> KC
-    RoleHttp --> KC
-    ScopeHttp --> KC
-    RealmHttp --> KC
-    OidcHttp --> KC
-```
-
-## Layer Model
-
-```mermaid
-flowchart LR
-    App["Application Code"]
-    Service["KeycloakServiceInterface"]
-    Http["Transport Layer"]
-
-    App --> Service
-
-    Service --> UserSvc["KeycloakUserManagementService"]
-    Service --> RoleSvc["KeycloakRoleManagementService"]
-    Service --> IdentifierSvc["KeycloakUserIdentifierAttributeService"]
-    Service --> OidcSvc["KeycloakOidcAuthenticationService"]
-    Service --> JwtSvc["KeycloakJwtVerificationService"]
-    Service --> RealmSvc["KeycloakRealmService"]
-
-    Http --> UserHttp["UserManagementHttpClient"]
-    Http --> RoleHttp["RoleManagementHttpClient"]
-    Http --> ScopeHttp["ClientScopeManagementHttpClient"]
-    Http --> RealmHttp["RealmSettingsManagementHttpClient"]
-    Http --> OidcHttp["OidcInteractionHttpClient"]
-
     UserHttp --> KC["Keycloak"]
     RoleHttp --> KC
     ScopeHttp --> KC
