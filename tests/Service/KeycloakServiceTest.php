@@ -159,11 +159,7 @@ final class KeycloakServiceTest extends TestCase
                 new RoleDto(name: 'missing-role', description: 'Role for test'),
             ],
         );
-        $mapper = new ServiceTestMapper(
-            $profileDto,
-            $this->buildTokenRequestDto(),
-            roleCreationAllowed: true,
-        );
+        $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
         $service = $this->createService($httpClient, $mapper);
         $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
 
@@ -226,11 +222,8 @@ final class KeycloakServiceTest extends TestCase
         );
     }
 
-    public function testCreateUserWithMissingRoleThrowsWhenRoleCreationDisabled(): void
+    public function testCreateUserSkipsRoleSyncWhenMapperReturnsNoRoles(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Role "missing-role" cannot be resolved in Keycloak available roles.');
-
         $httpClient = new TestKeycloakHttpClient();
         $profileDto = new CreateUserProfileDto(
             username: 'user@example.com',
@@ -240,11 +233,13 @@ final class KeycloakServiceTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
-            roles: [new RoleDto(name: 'missing-role')],
         );
         $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
         $service = $this->createService($httpClient, $mapper);
-        $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
+        $user = new ServiceTestUser(
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            roles: ['missing-role'],
+        );
 
         $createdUser = KeycloakUser::fromArray(
             [
@@ -258,9 +253,16 @@ final class KeycloakServiceTest extends TestCase
         $httpClient->queueResult('getRoles', []);
         $httpClient->queueResult('createUser', null);
         $httpClient->queueResult('getUsers', [$createdUser]);
+        $httpClient->queueResult('getUserById', $createdUser);
         $httpClient->queueResult('resetPassword', null);
 
-        $service->createUser($user, new PasswordDto(plainPassword: 'secret'));
+        $result = $service->createUser($user, new PasswordDto(plainPassword: 'secret'));
+
+        self::assertSame($createdUser, $result);
+        self::assertSame(
+            ['getRoles', 'createUser', 'getUsers', 'resetPassword', 'getRoles', 'getUserById'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
     }
 
     public function testUpdateUserSynchronizesRoleMappings(): void

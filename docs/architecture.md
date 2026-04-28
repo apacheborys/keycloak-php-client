@@ -192,7 +192,7 @@ Pattern notes:
 - Facades keep the public surface compact while allowing the internals to stay specialized.
 - `KeycloakServiceInterface` is the application-facing facade; `KeycloakHttpClientInterface` is an infrastructural facade used below it.
 - Mapper strategy objects isolate application-specific realm and profile mapping rules from transport logic.
-- Mapper strategy objects also compile Keycloak role names and decide whether role auto-creation is allowed for a specific local user.
+- Mapper strategy objects compile final Keycloak role names in user profile DTOs, including application-specific prefixes or suffixes.
 - `SearchUsersDto` is treated as a query object because it captures search intent, not a raw REST payload.
 - The lossless document model preserves unknown Keycloak fields during read-modify-write cycles.
 - Dedicated lookup endpoints are preferred whenever response shape from aggregate endpoints is optional or unstable.

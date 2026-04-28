@@ -41,10 +41,6 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             localUser: $localUser,
             availableRoles: $availableRoles,
         );
-        $preparedRoles = $mapper->prepareRolesForUser(
-            localUser: $localUser,
-            availableRoles: $availableRoles,
-        );
 
         $this->assertMappedRealmMatches(
             expectedRealm: $realm,
@@ -52,16 +48,19 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             operation: 'synchronizeRolesOnUserCreation',
         );
 
-        if ($preparedRoles->isRoleCreationAllowed()) {
-            $availableRoles = $this->ensureRolesExistForRealm(
-                realm: $realm,
-                desiredRoles: $preparedRoles->getRoles(),
-                availableRoles: $availableRoles,
-            );
+        $desiredRoles = $profileDto->getRoles();
+        if ($desiredRoles === []) {
+            return;
         }
 
+        $availableRoles = $this->ensureRolesExistForRealm(
+            realm: $realm,
+            desiredRoles: $desiredRoles,
+            availableRoles: $availableRoles,
+        );
+
         $rolesToAssign = $this->resolveRolesByName(
-            desiredRoles: $preparedRoles->getRoles(),
+            desiredRoles: $desiredRoles,
             availableRoles: $availableRoles,
             strict: true,
         );
@@ -126,14 +125,6 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             newUserVersion: $newUserVersion,
             availableRoles: $availableRoles,
         );
-        $currentPreparedRoles = $mapper->prepareRolesForUser(
-            localUser: $oldUserVersion,
-            availableRoles: $availableRoles,
-        );
-        $desiredPreparedRoles = $mapper->prepareRolesForUser(
-            localUser: $newUserVersion,
-            availableRoles: $availableRoles,
-        );
 
         $this->assertMappedRealmMatches(
             expectedRealm: $oldRealm,
@@ -146,15 +137,16 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             operation: 'synchronizeRolesOnUserUpdate',
         );
 
-        $desiredRoles = $desiredPreparedRoles->getRoles();
-
-        if ($desiredPreparedRoles->isRoleCreationAllowed()) {
-            $availableRoles = $this->ensureRolesExistForRealm(
-                realm: $oldRealm,
-                desiredRoles: $desiredRoles,
-                availableRoles: $availableRoles,
-            );
+        $desiredRoles = $dto->getProfile()->getRoles();
+        if ($desiredRoles === null || $desiredRoles === []) {
+            return;
         }
+
+        $availableRoles = $this->ensureRolesExistForRealm(
+            realm: $oldRealm,
+            desiredRoles: $desiredRoles,
+            availableRoles: $availableRoles,
+        );
 
         $resolvedDesiredRoles = $this->resolveRolesByName(
             desiredRoles: $desiredRoles,
@@ -162,9 +154,7 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             strict: true,
         );
 
-        $currentRoleNames = $this->extractRoleNames(
-            roles: $this->normalizeRoles(roles: $currentPreparedRoles->getRoles())
-        );
+        $currentRoleNames = $this->normalizeRoleNames(roleNames: $oldUserVersion->getRoles());
         $desiredRoleNames = $this->extractRoleNames(roles: $resolvedDesiredRoles);
 
         $roleNamesToAssign = array_values(array_diff($desiredRoleNames, $currentRoleNames));

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Mapper;
 
-use Apacheborys\KeycloakPhpClient\DTO\PreparedUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
@@ -17,18 +16,12 @@ interface LocalKeycloakUserBridgeMapperInterface
     public function getRealm(KeycloakUserInterface $localUser): string;
 
     /**
-     * Compiles local user roles into Keycloak realm roles.
+     * Builds the Keycloak user creation profile from a local user.
      *
-     * Role naming rules such as application-specific prefixes or suffixes belong here.
+     * Returned roles are treated as final Keycloak realm role names. Apply application-specific
+     * role prefixes or suffixes before returning the DTO. Return an empty role list to skip
+     * role synchronization for this user.
      *
-     * @param list<RoleDto> $availableRoles
-     */
-    public function prepareRolesForUser(
-        KeycloakUserInterface $localUser,
-        array $availableRoles
-    ): PreparedUserRolesDto;
-
-    /**
      * @param list<RoleDto> $availableRoles
      */
     public function prepareLocalUserForKeycloakUserCreation(
@@ -46,6 +39,12 @@ interface LocalKeycloakUserBridgeMapperInterface
     ): DeleteUserDto;
 
     /**
+     * Builds the Keycloak user update profile from old and new local user versions.
+     *
+     * Returned roles are treated as final desired Keycloak realm role names. Apply
+     * application-specific role prefixes or suffixes before returning the DTO. Return null
+     * or an empty role list to skip role synchronization for this update.
+     *
      * @param list<RoleDto> $availableRoles
      */
     public function prepareLocalUserDiffForKeycloakUserUpdate(
