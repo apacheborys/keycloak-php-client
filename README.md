@@ -105,7 +105,6 @@ $serviceFactory = new KeycloakServiceFactory();
 $service = $serviceFactory->create(
     httpClient: $httpClient,
     mappers: [$yourLocalUserMapper],
-    isRoleCreationAllowed: true,
 );
 
 $tokenResponse = $service->loginUser($localUser, 'PlainPassword123!');
@@ -133,6 +132,8 @@ This identifier is used by:
 `findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
 
 For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
+
+Role synchronization is controlled by your `LocalKeycloakUserBridgeMapperInterface::prepareRolesForUser(...)` implementation. The mapper returns compiled Keycloak roles and decides whether missing roles may be auto-created, keeping prefix/suffix and naming policies out of the service layer.
 
 ## Recommended Integration Style
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures;
 
+use Apacheborys\KeycloakPhpClient\DTO\PreparedUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
@@ -33,12 +34,35 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
         private OidcTokenRequestDto $tokenRequest,
         private string $realmForDeletion = 'master',
         private ?UpdateUserDto $updateUserDto = null,
+        private bool $roleCreationAllowed = false,
     ) {
     }
 
     public function getRealm(KeycloakUserInterface $localUser): string
     {
         return $this->createUserProfile->getRealm();
+    }
+
+    /**
+     * @param list<RoleDto> $availableRoles
+     */
+    public function prepareRolesForUser(
+        KeycloakUserInterface $localUser,
+        array $availableRoles
+    ): PreparedUserRolesDto {
+        $roles = array_map(
+            static fn (string $roleName): RoleDto => new RoleDto(name: $roleName),
+            $localUser->getRoles(),
+        );
+
+        if ($roles === []) {
+            $roles = $this->createUserProfile->getRoles();
+        }
+
+        return new PreparedUserRolesDto(
+            roles: $roles,
+            roleCreationAllowed: $this->roleCreationAllowed,
+        );
     }
 
     public function prepareLocalUserForKeycloakUserCreation(

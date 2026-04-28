@@ -43,12 +43,16 @@ flowchart TD
 
 - creates user via `KeycloakUserManagementService`;
 - synchronizes roles via `KeycloakRoleManagementService`;
+- uses mapper-prepared roles, including application-specific naming/prefix/suffix policy;
+- creates missing roles only when the mapper-prepared role DTO allows role auto-creation;
 - fetches final user representation by id.
 
 ### `updateUser`
 
 - updates user profile via `KeycloakUserManagementService`;
 - synchronizes role assignments/unassignments;
+- compares mapper-prepared roles for old and new user versions;
+- creates missing desired roles only when the mapper-prepared role DTO for the new local user version allows it;
 - fetches final user representation by id.
 
 ### `findUser`
@@ -105,6 +109,7 @@ The method intentionally hides the multi-step orchestration required to make thi
 - Services should prefer stable Keycloak contracts over incidental response shape.
 - `SearchUsersDto` is acceptable at the service boundary because it models a repository query, not a raw transport payload.
 - Services are allowed to throw workflow-level exceptions such as "required attribute is missing and auto-create is disabled".
+- Role naming and auto-creation are mapper policies, not factory-level settings, because they may differ by local user type or realm.
 
 ## Service Patterns
 

@@ -159,8 +159,12 @@ final class KeycloakServiceTest extends TestCase
                 new RoleDto(name: 'missing-role', description: 'Role for test'),
             ],
         );
-        $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
-        $service = $this->createService($httpClient, $mapper, true);
+        $mapper = new ServiceTestMapper(
+            $profileDto,
+            $this->buildTokenRequestDto(),
+            roleCreationAllowed: true,
+        );
+        $service = $this->createService($httpClient, $mapper);
         $user = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
 
         $createdUser = KeycloakUser::fromArray(
@@ -859,14 +863,12 @@ final class KeycloakServiceTest extends TestCase
     private function createService(
         TestKeycloakHttpClient $httpClient,
         ServiceTestMapper $mapper,
-        bool $isRoleCreationAllowed = false,
     ): KeycloakServiceInterface {
         $factory = new KeycloakServiceFactory();
 
         return $factory->create(
             httpClient: $httpClient,
             mappers: [$mapper],
-            isRoleCreationAllowed: $isRoleCreationAllowed,
         );
     }
 }

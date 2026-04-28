@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Mapper;
 
+use Apacheborys\KeycloakPhpClient\DTO\PreparedUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
@@ -14,6 +15,18 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 interface LocalKeycloakUserBridgeMapperInterface
 {
     public function getRealm(KeycloakUserInterface $localUser): string;
+
+    /**
+     * Compiles local user roles into Keycloak realm roles.
+     *
+     * Role naming rules such as application-specific prefixes or suffixes belong here.
+     *
+     * @param list<RoleDto> $availableRoles
+     */
+    public function prepareRolesForUser(
+        KeycloakUserInterface $localUser,
+        array $availableRoles
+    ): PreparedUserRolesDto;
 
     /**
      * @param list<RoleDto> $availableRoles
