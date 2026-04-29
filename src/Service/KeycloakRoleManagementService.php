@@ -25,7 +25,6 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         private KeycloakHttpClientInterface $httpClient,
         private LocalUserMapperResolver $mapperResolver,
         private ?LoggerInterface $logger = null,
-        private bool $isRoleCreationAllowed = false,
     ) {
     }
 
@@ -49,16 +48,19 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             operation: 'synchronizeRolesOnUserCreation',
         );
 
-        if ($this->isRoleCreationAllowed) {
-            $availableRoles = $this->ensureRolesExistForRealm(
-                realm: $realm,
-                desiredRoles: $profileDto->getRoles(),
-                availableRoles: $availableRoles,
-            );
+        $desiredRoles = $profileDto->getRoles();
+        if ($desiredRoles === []) {
+            return;
         }
 
+        $availableRoles = $this->ensureRolesExistForRealm(
+            realm: $realm,
+            desiredRoles: $desiredRoles,
+            availableRoles: $availableRoles,
+        );
+
         $rolesToAssign = $this->resolveRolesByName(
-            desiredRoles: $profileDto->getRoles(),
+            desiredRoles: $desiredRoles,
             availableRoles: $availableRoles,
             strict: true,
         );
@@ -136,17 +138,15 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         );
 
         $desiredRoles = $dto->getProfile()->getRoles();
-        if ($desiredRoles === null) {
+        if ($desiredRoles === null || $desiredRoles === []) {
             return;
         }
 
-        if ($this->isRoleCreationAllowed) {
-            $availableRoles = $this->ensureRolesExistForRealm(
-                realm: $oldRealm,
-                desiredRoles: $desiredRoles,
-                availableRoles: $availableRoles,
-            );
-        }
+        $availableRoles = $this->ensureRolesExistForRealm(
+            realm: $oldRealm,
+            desiredRoles: $desiredRoles,
+            availableRoles: $availableRoles,
+        );
 
         $resolvedDesiredRoles = $this->resolveRolesByName(
             desiredRoles: $desiredRoles,

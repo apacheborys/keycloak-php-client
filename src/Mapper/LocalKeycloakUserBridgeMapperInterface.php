@@ -16,6 +16,12 @@ interface LocalKeycloakUserBridgeMapperInterface
     public function getRealm(KeycloakUserInterface $localUser): string;
 
     /**
+     * Builds the Keycloak user creation profile from a local user.
+     *
+     * Returned roles are treated as final Keycloak realm role names. Apply application-specific
+     * role prefixes or suffixes before returning the DTO. Return an empty role list to skip
+     * role synchronization for this user.
+     *
      * @param list<RoleDto> $availableRoles
      */
     public function prepareLocalUserForKeycloakUserCreation(
@@ -33,6 +39,12 @@ interface LocalKeycloakUserBridgeMapperInterface
     ): DeleteUserDto;
 
     /**
+     * Builds the Keycloak user update profile from old and new local user versions.
+     *
+     * Returned roles are treated as final desired Keycloak realm role names. Apply
+     * application-specific role prefixes or suffixes before returning the DTO. Return null
+     * or an empty role list to skip role synchronization for this update.
+     *
      * @param list<RoleDto> $availableRoles
      */
     public function prepareLocalUserDiffForKeycloakUserUpdate(

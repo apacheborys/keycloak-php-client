@@ -17,7 +17,6 @@ use Apacheborys\KeycloakPhpClient\Service\KeycloakRoleManagementService;
 use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestMapper;
 use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestUser;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
-use LogicException;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
@@ -70,7 +69,7 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         self::assertSame([$role], $dto->getRoles());
     }
 
-    public function testSynchronizeRolesOnUserCreationCreatesMissingRoleWhenAllowed(): void
+    public function testSynchronizeRolesOnUserCreationCreatesMissingRoleWhenMapperReturnsRole(): void
     {
         $httpClient = new TestKeycloakHttpClient();
         $profileDto = new CreateUserProfileDto(
@@ -85,11 +84,7 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         );
         $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
         $resolver = new LocalUserMapperResolver([$mapper]);
-        $service = new KeycloakRoleManagementService(
-            httpClient: $httpClient,
-            mapperResolver: $resolver,
-            isRoleCreationAllowed: true,
-        );
+        $service = new KeycloakRoleManagementService($httpClient, $resolver);
 
         $localUser = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
         $createdUser = KeycloakUser::fromArray(
@@ -121,11 +116,8 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         );
     }
 
-    public function testSynchronizeRolesOnUserCreationThrowsWhenRoleMissingAndCreationDisabled(): void
+    public function testSynchronizeRolesOnUserCreationSkipsRoleSyncWhenMapperReturnsNoRoles(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Role "missing-role" cannot be resolved in Keycloak available roles.');
-
         $httpClient = new TestKeycloakHttpClient();
         $profileDto = new CreateUserProfileDto(
             username: 'user@example.com',
@@ -135,11 +127,10 @@ final class KeycloakRoleManagementServiceTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
-            roles: [new RoleDto(name: 'missing-role')],
         );
         $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
         $resolver = new LocalUserMapperResolver([$mapper]);
-        $service = new KeycloakRoleManagementService($httpClient, $resolver, isRoleCreationAllowed: false);
+        $service = new KeycloakRoleManagementService($httpClient, $resolver);
 
         $localUser = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
         $createdUser = KeycloakUser::fromArray(
@@ -153,6 +144,11 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         $httpClient->queueResult('getRoles', []);
 
         $service->synchronizeRolesOnUserCreation($localUser, $createdUser);
+
+        self::assertSame(
+            ['getRoles'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
     }
 
     public function testSynchronizeRolesOnUserUpdateAssignsAndUnassignsRoles(): void
@@ -218,6 +214,60 @@ final class KeycloakRoleManagementServiceTest extends TestCase
 
         self::assertSame([$roleNew], $assignDto->getRoles());
         self::assertSame([$roleOld], $unassignDto->getRoles());
+    }
+
+    public function testSynchronizeRolesOnUserUpdateCreatesMissingRoleWhenMapperReturnsRole(): void
+    {
+        $httpClient = new TestKeycloakHttpClient();
+        $mappedUpdateDto = new UpdateUserDto(
+            realm: 'master',
+            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
+            profile: new UpdateUserProfileDto(
+                username: 'user@example.com',
+                email: 'new@example.com',
+                roles: [new RoleDto(name: 'missing-role', description: 'Role for test')],
+            ),
+        );
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto(),
+            updateUserDto: $mappedUpdateDto,
+        );
+        $resolver = new LocalUserMapperResolver([$mapper]);
+        $service = new KeycloakRoleManagementService($httpClient, $resolver);
+        $oldUser = new ServiceTestUser(
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            roles: [],
+        );
+        $newUser = new ServiceTestUser(
+            keycloakId: '92a372d5-c338-4e77-a1b3-08771241036e',
+            roles: ['missing-role'],
+        );
+        $createdRole = new RoleDto(
+            id: Uuid::fromString('3e7f40af-e8d4-4ead-bb8b-b034e95ffad8'),
+            name: 'missing-role',
+            description: 'Role for test',
+            composite: false,
+            clientRole: false,
+            containerId: Uuid::fromString('992b5dcf-1cdc-4b69-8fe2-0beaec437b17'),
+        );
+
+        $httpClient->queueResult('getRoles', []);
+        $httpClient->queueResult('createRole', null);
+        $httpClient->queueResult('getRoles', [$createdRole]);
+        $httpClient->queueResult('getAvailableUserRoles', [$createdRole]);
+        $httpClient->queueResult('assignRolesToUser', null);
+
+        $service->synchronizeRolesOnUserUpdate($oldUser, $newUser);
+
+        self::assertSame(
+            ['getRoles', 'createRole', 'getRoles', 'getAvailableUserRoles', 'assignRolesToUser'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
+        self::assertSame('missing-role', $httpClient->getCalls()[1]['args'][0]->getRole()->getName());
+        /** @var AssignUserRolesDto $assignDto */
+        $assignDto = $httpClient->getCalls()[4]['args'][0];
+        self::assertSame([$createdRole], $assignDto->getRoles());
     }
 
     private function buildProfileDto(): CreateUserProfileDto

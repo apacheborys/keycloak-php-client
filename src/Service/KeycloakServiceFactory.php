@@ -18,7 +18,6 @@ final readonly class KeycloakServiceFactory
         KeycloakHttpClientInterface $httpClient,
         iterable $mappers,
         ?LoggerInterface $logger = null,
-        bool $isRoleCreationAllowed = false,
     ): KeycloakServiceInterface {
         $mapperResolver = new LocalUserMapperResolver(
             mappers: $mappers,
@@ -35,7 +34,6 @@ final readonly class KeycloakServiceFactory
             httpClient: $httpClient,
             mapperResolver: $mapperResolver,
             logger: $logger,
-            isRoleCreationAllowed: $isRoleCreationAllowed,
         );
 
         $userIdentifierAttributeService = new KeycloakUserIdentifierAttributeService(
