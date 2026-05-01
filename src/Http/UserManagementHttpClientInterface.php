@@ -28,9 +28,15 @@ interface UserManagementHttpClientInterface
 
     /**
      * Supports full user attribute updates through UpdateUserDto profile payload.
+     * HTTP calls require UpdateUserDto::getUserId() to be non-null; the service layer
+     * resolves it for mapper-generated DTOs before calling transport.
      */
     public function updateUser(UpdateUserDto $dto): void;
 
+    /**
+     * HTTP calls require DeleteUserDto::getUserId() to be non-null; the service layer
+     * resolves it for mapper-generated DTOs before calling transport.
+     */
     public function deleteUser(DeleteUserDto $dto): void;
 
     /**

@@ -33,12 +33,18 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
         private OidcTokenRequestDto $tokenRequest,
         private string $realmForDeletion = 'master',
         private ?UpdateUserDto $updateUserDto = null,
+        private string $localUserIdAttributeName = self::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME,
     ) {
     }
 
     public function getRealm(KeycloakUserInterface $localUser): string
     {
         return $this->createUserProfile->getRealm();
+    }
+
+    public function getLocalUserIdAttributeName(KeycloakUserInterface $localUser): string
+    {
+        return $this->localUserIdAttributeName;
     }
 
     public function prepareLocalUserForKeycloakUserCreation(
@@ -63,9 +69,12 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     public function prepareLocalUserForKeycloakUserDeletion(
         KeycloakUserInterface $localUser
     ): DeleteUserDto {
+        $keycloakId = $localUser->getKeycloakId();
+
         return new DeleteUserDto(
             realm: $this->realmForDeletion,
-            userId: Uuid::fromString($localUser->getKeycloakId()),
+            userId: $keycloakId !== null ? Uuid::fromString($keycloakId) : null,
+            localUserId: $localUser->getId(),
         );
     }
 
@@ -83,9 +92,10 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
             return $this->updateUserDto;
         }
 
+        $keycloakId = $newUserVersion->getKeycloakId();
+
         return new UpdateUserDto(
             realm: $this->realmForDeletion,
-            userId: Uuid::fromString($newUserVersion->getKeycloakId()),
             profile: new UpdateUserProfileDto(
                 username: $newUserVersion->getUsername(),
                 email: $newUserVersion->getEmail(),
@@ -98,6 +108,8 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
                     $newUserVersion->getRoles(),
                 ),
             ),
+            userId: $keycloakId !== null ? Uuid::fromString($keycloakId) : null,
+            localUserId: $newUserVersion->getId(),
         );
     }
 

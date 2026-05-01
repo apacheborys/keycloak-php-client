@@ -13,7 +13,14 @@ use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 
 interface LocalKeycloakUserBridgeMapperInterface
 {
+    public const string DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME = 'external-user-id';
+
     public function getRealm(KeycloakUserInterface $localUser): string;
+
+    /**
+     * Returns the Keycloak user attribute that stores KeycloakUserInterface::getId().
+     */
+    public function getLocalUserIdAttributeName(KeycloakUserInterface $localUser): string;
 
     /**
      * Builds the Keycloak user creation profile from a local user.
@@ -34,12 +41,20 @@ interface LocalKeycloakUserBridgeMapperInterface
         string $plainPassword
     ): OidcTokenRequestDto;
 
+    /**
+     * The returned DTO must carry the local user id from KeycloakUserInterface::getId().
+     * The Keycloak user id is optional here because the service layer resolves the target
+     * user by Keycloak id first and then by this mapper's local-id attribute fallback.
+     */
     public function prepareLocalUserForKeycloakUserDeletion(
         KeycloakUserInterface $localUser
     ): DeleteUserDto;
 
     /**
      * Builds the Keycloak user update profile from old and new local user versions.
+     * The returned DTO must carry the local user id from KeycloakUserInterface::getId().
+     * The Keycloak user id is optional here because the service layer resolves the target
+     * user by Keycloak id first and then by this mapper's local-id attribute fallback.
      *
      * Returned roles are treated as final desired Keycloak realm role names. Apply
      * application-specific role prefixes or suffixes before returning the DTO. Return null

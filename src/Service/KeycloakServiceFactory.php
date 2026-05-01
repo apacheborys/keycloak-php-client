@@ -6,6 +6,7 @@ namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
+use Apacheborys\KeycloakPhpClient\Service\Internal\KeycloakUserLookup;
 use Apacheborys\KeycloakPhpClient\Service\Internal\LocalUserMapperResolver;
 use Psr\Log\LoggerInterface;
 
@@ -23,16 +24,22 @@ final readonly class KeycloakServiceFactory
             mappers: $mappers,
             logger: $logger,
         );
+        $userLookup = new KeycloakUserLookup(
+            httpClient: $httpClient,
+            logger: $logger,
+        );
 
         $userManagementService = new KeycloakUserManagementService(
             httpClient: $httpClient,
             mapperResolver: $mapperResolver,
+            userLookup: $userLookup,
             logger: $logger,
         );
 
         $roleManagementService = new KeycloakRoleManagementService(
             httpClient: $httpClient,
             mapperResolver: $mapperResolver,
+            userLookup: $userLookup,
             logger: $logger,
         );
 

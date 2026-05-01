@@ -5,6 +5,7 @@
 `KeycloakServiceInterface` aggregates:
 
 - user management;
+- role management;
 - user identifier attribute management;
 - OIDC authentication;
 - JWT verification;
@@ -30,6 +31,8 @@ flowchart TD
     Facade --> Realm["KeycloakRealmService"]
 ```
 
+`KeycloakServiceFactory` wires shared service helpers at this boundary. In particular, it creates one `KeycloakUserLookup` and injects it into user and role management services instead of letting those services construct their own lookup helper.
+
 ## Method Selection Guide
 
 - Use `findUser(localUser)` when your application already has a local user object and wants mapper-based realm resolution.
@@ -44,6 +47,7 @@ flowchart TD
 - creates user via `KeycloakUserManagementService`;
 - synchronizes roles via `KeycloakRoleManagementService`;
 - uses roles from the mapper-created `CreateUserProfileDto`;
+- can persist the local application id through `CreateUserProfileDto` attributes because no Keycloak user id exists before creation;
 - creates missing realm roles and assigns them when the mapper returns a non-empty role list;
 - skips role synchronization when the mapper returns an empty role list;
 - fetches final user representation by id.
@@ -53,15 +57,30 @@ flowchart TD
 - updates user profile via `KeycloakUserManagementService`;
 - synchronizes role assignments/unassignments;
 - uses roles from the mapper-created `UpdateUserDto`;
+- matches old and new local user versions by `KeycloakUserInterface::getId()`;
+- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute fallback second;
+- allows mapper-created `UpdateUserDto::getUserId()` to be null;
+- validates `UpdateUserDto::getLocalUserId()` against the local user id and keeps that value out of the Keycloak payload;
 - creates missing desired realm roles and synchronizes mappings when the mapper returns a non-empty role list;
 - skips role synchronization when the mapper returns null or an empty role list;
 - fetches final user representation by id.
 
+The user-management step owns local/Keycloak identity validation. The role-management step only resolves the Keycloak target user id through `KeycloakUserLookup` and applies the role diff.
+
+### `deleteUser`
+
+- delegates deletion coordinates to the mapper-created `DeleteUserDto`;
+- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute fallback second;
+- validates `DeleteUserDto::getLocalUserId()` against `KeycloakUserInterface::getId()`;
+- allows mapper-created `DeleteUserDto::getUserId()` to be null;
+- deletes the user through the dedicated user-by-id endpoint.
+
 ### `findUser`
 
 - resolves realm from mapper;
-- reads the Keycloak user id from `KeycloakUserInterface::getKeycloakId()`;
-- fetches the current Keycloak representation through the dedicated user-by-id endpoint.
+- uses the direct user-by-id endpoint when `KeycloakUserInterface::getKeycloakId()` is non-null;
+- otherwise searches by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()`;
+- throws when the local-id lookup does not return exactly one Keycloak user.
 
 ### `findUserById`
 
@@ -74,10 +93,6 @@ flowchart TD
 - delegates user repository search to `KeycloakUserManagementService`;
 - accepts `SearchUsersDto` as a query object with realm, filters and pagination;
 - returns the current Keycloak user representations matching the query.
-
-### `deleteUser`
-
-- delegates deletion workflow to `KeycloakUserManagementService`.
 
 ### `ensureUserIdentifierAttribute`
 

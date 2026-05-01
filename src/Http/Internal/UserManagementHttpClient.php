@@ -16,6 +16,7 @@ use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Assert\Assert;
 use LogicException;
 use RuntimeException;
+use Ramsey\Uuid\UuidInterface;
 
 final readonly class UserManagementHttpClient implements UserManagementHttpClientInterface
 {
@@ -126,8 +127,9 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
     public function updateUser(UpdateUserDto $dto): void
     {
         $token = $this->accessTokenProvider->getAccessToken();
+        $userId = $this->requireUserId(userId: $dto->getUserId(), operation: 'update user');
         $endpoint = $this->httpCore->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $userId->toString()
         );
 
         /** @var string $payload */
@@ -160,8 +162,9 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
     public function deleteUser(DeleteUserDto $dto): void
     {
         $token = $this->accessTokenProvider->getAccessToken();
+        $userId = $this->requireUserId(userId: $dto->getUserId(), operation: 'delete user');
         $endpoint = $this->httpCore->buildEndpoint(
-            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $dto->getUserId()->toString()
+            path: '/admin/realms/' . $dto->getRealm() . '/users/' . $userId->toString()
         );
 
         $request = $this->httpCore->createRequest(
@@ -255,5 +258,14 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         }
 
         return implode('&', $queryParts);
+    }
+
+    private function requireUserId(?UuidInterface $userId, string $operation): UuidInterface
+    {
+        if ($userId instanceof UuidInterface) {
+            return $userId;
+        }
+
+        throw new LogicException(sprintf('Keycloak user id is required to %s through HTTP client.', $operation));
     }
 }

@@ -129,6 +129,16 @@ For application code, the service layer is the intended runtime boundary. The HT
 - `KeycloakRealmService`
 
 Mapper resolution for local users is handled by `LocalUserMapperResolver` and `LocalKeycloakUserBridgeMapperInterface`.
+`KeycloakServiceFactory` is the composition root for service helpers: it creates one `KeycloakUserLookup` and injects it into the management services that need Keycloak user resolution.
+
+Local user identity is split into two coordinates:
+
+- `KeycloakUserInterface::getId()` is the stable local application id and must return `int`, `string` or `Ramsey\Uuid\UuidInterface`;
+- `KeycloakUserInterface::getKeycloakId()` is the Keycloak user id and may be `null` for applications that cannot persist it locally.
+
+The service layer is authoritative for choosing how to identify the user in Keycloak. It uses `getKeycloakId()` first because the direct user-by-id endpoint is the cheapest lookup, then falls back to searching by the local-id user attribute returned from `LocalKeycloakUserBridgeMapperInterface::getLocalUserIdAttributeName(...)`. The default attribute-name convention is `LocalKeycloakUserBridgeMapperInterface::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME` (`external-user-id`).
+
+Mapper-created DTOs for existing-user operations carry the local id as service metadata. Their Keycloak id may be null; services resolve and populate the final transport DTO before calling HTTP.
 
 ## Boundary Rules
 
