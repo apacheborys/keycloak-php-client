@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
-use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -18,7 +17,6 @@ final class UpdateUserProfileDtoTest extends TestCase
             email: 'new@example.com',
             firstName: 'Oleg',
             enabled: true,
-            roles: [new RoleDto(name: 'admin')],
             attributes: [
                 'external-user-id' => 'external-id-2',
                 'locale' => ['uk'],
@@ -27,9 +25,6 @@ final class UpdateUserProfileDtoTest extends TestCase
 
         self::assertSame('user@example.com', $dto->getUsername());
         self::assertSame('new@example.com', $dto->getEmail());
-        self::assertNotNull($dto->getRoles());
-        self::assertCount(1, $dto->getRoles());
-        self::assertSame('admin', $dto->getRoles()[0]->getName());
         self::assertSame(
             [
                 'external-user-id' => ['external-id-2'],

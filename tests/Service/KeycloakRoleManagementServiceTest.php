@@ -8,8 +8,7 @@ use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UserRolesDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Service\Internal\KeycloakUserLookup;
@@ -34,9 +33,15 @@ final class KeycloakRoleManagementServiceTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
-            roles: [new RoleDto(name: 'role-user')],
         );
-        $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
+        $mapper = new ServiceTestMapper(
+            $profileDto,
+            $this->buildTokenRequestDto(),
+            createUserRolesDto: new UserRolesDto(
+                realm: 'master',
+                roles: [new RoleDto(name: 'role-user')],
+            ),
+        );
         $service = $this->createService($httpClient, $mapper);
 
         $localUser = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
@@ -80,9 +85,15 @@ final class KeycloakRoleManagementServiceTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
-            roles: [new RoleDto(name: 'missing-role', description: 'Role for test')],
         );
-        $mapper = new ServiceTestMapper($profileDto, $this->buildTokenRequestDto());
+        $mapper = new ServiceTestMapper(
+            $profileDto,
+            $this->buildTokenRequestDto(),
+            createUserRolesDto: new UserRolesDto(
+                realm: 'master',
+                roles: [new RoleDto(name: 'missing-role', description: 'Role for test')],
+            ),
+        );
         $service = $this->createService($httpClient, $mapper);
 
         $localUser = new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e');
@@ -152,20 +163,14 @@ final class KeycloakRoleManagementServiceTest extends TestCase
     public function testSynchronizeRolesOnUserUpdateAssignsAndUnassignsRoles(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mappedUpdateDto = new UpdateUserDto(
+        $mappedRolesDto = new UserRolesDto(
             realm: 'master',
-            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
-            profile: new UpdateUserProfileDto(
-                username: 'user@example.com',
-                email: 'new@example.com',
-                roles: [new RoleDto(name: 'role-new')],
-            ),
-            localUserId: 1,
+            roles: [new RoleDto(name: 'role-new')],
         );
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto,
+            updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
 
@@ -217,19 +222,14 @@ final class KeycloakRoleManagementServiceTest extends TestCase
     public function testSynchronizeRolesOnUserUpdateAllowsLocalUsersWithoutStoredKeycloakId(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mappedUpdateDto = new UpdateUserDto(
+        $mappedRolesDto = new UserRolesDto(
             realm: 'master',
-            profile: new UpdateUserProfileDto(
-                username: 'user@example.com',
-                email: 'new@example.com',
-                roles: [new RoleDto(name: 'role-new')],
-            ),
-            localUserId: 'local-user-1',
+            roles: [new RoleDto(name: 'role-new')],
         );
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto,
+            updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUser = new ServiceTestUser(keycloakId: null, roles: [], id: 'local-user-1');
@@ -265,19 +265,14 @@ final class KeycloakRoleManagementServiceTest extends TestCase
     public function testSynchronizeRolesOnUserUpdateUsesOldKeycloakIdWhenNewVersionDoesNotExposeIt(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mappedUpdateDto = new UpdateUserDto(
+        $mappedRolesDto = new UserRolesDto(
             realm: 'master',
-            profile: new UpdateUserProfileDto(
-                username: 'user@example.com',
-                email: 'new@example.com',
-                roles: [new RoleDto(name: 'role-new')],
-            ),
-            localUserId: 1,
+            roles: [new RoleDto(name: 'role-new')],
         );
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto,
+            updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUser = new ServiceTestUser(
@@ -314,20 +309,14 @@ final class KeycloakRoleManagementServiceTest extends TestCase
     public function testSynchronizeRolesOnUserUpdateDoesNotRejectDifferentKeycloakIds(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mappedUpdateDto = new UpdateUserDto(
+        $mappedRolesDto = new UserRolesDto(
             realm: 'master',
-            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
-            profile: new UpdateUserProfileDto(
-                username: 'user@example.com',
-                email: 'new@example.com',
-                roles: [new RoleDto(name: 'role-new')],
-            ),
-            localUserId: 1,
+            roles: [new RoleDto(name: 'role-new')],
         );
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto,
+            updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUser = new ServiceTestUser(
@@ -360,20 +349,14 @@ final class KeycloakRoleManagementServiceTest extends TestCase
     public function testSynchronizeRolesOnUserUpdateCreatesMissingRoleWhenMapperReturnsRole(): void
     {
         $httpClient = new TestKeycloakHttpClient();
-        $mappedUpdateDto = new UpdateUserDto(
+        $mappedRolesDto = new UserRolesDto(
             realm: 'master',
-            userId: Uuid::fromString('92a372d5-c338-4e77-a1b3-08771241036e'),
-            profile: new UpdateUserProfileDto(
-                username: 'user@example.com',
-                email: 'new@example.com',
-                roles: [new RoleDto(name: 'missing-role', description: 'Role for test')],
-            ),
-            localUserId: 1,
+            roles: [new RoleDto(name: 'missing-role', description: 'Role for test')],
         );
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto,
+            updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUser = new ServiceTestUser(

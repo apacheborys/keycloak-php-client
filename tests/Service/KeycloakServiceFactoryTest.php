@@ -79,12 +79,17 @@ final class KeycloakServiceFactoryTest extends TestCase
         );
 
         $httpClient->queueResult('getUsers', [$expectedUser]);
+        $httpClient->queueResult('getUserById', $expectedUser);
 
         self::assertSame(
             $expectedUser,
             $service->findUser(new ServiceTestUser(keycloakId: null, id: 'local-user-1')),
         );
 
+        self::assertSame(
+            ['getUsers', 'getUserById'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
         /** @var SearchUsersDto $searchDto */
         $searchDto = $httpClient->getCalls()[0]['args'][0];
         self::assertSame(['app-user-id' => 'local-user-1'], $searchDto->getCustomAttributes());

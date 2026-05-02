@@ -46,8 +46,8 @@ flowchart TD
 
 - creates user via `KeycloakUserManagementService`;
 - synchronizes roles via `KeycloakRoleManagementService`;
-- uses roles from the mapper-created `CreateUserProfileDto`;
 - can persist the local application id through `CreateUserProfileDto` attributes because no Keycloak user id exists before creation;
+- uses `UserRolesDto` from `prepareLocalUserRolesForKeycloakUserCreation(...)` for role synchronization;
 - creates missing realm roles and assigns them when the mapper returns a non-empty role list;
 - skips role synchronization when the mapper returns an empty role list;
 - fetches final user representation by id.
@@ -56,7 +56,7 @@ flowchart TD
 
 - updates user profile via `KeycloakUserManagementService`;
 - synchronizes role assignments/unassignments;
-- uses roles from the mapper-created `UpdateUserDto`;
+- uses `UserRolesDto` from `prepareLocalUserRolesForKeycloakUserUpdate(...)` for role synchronization;
 - matches old and new local user versions by `KeycloakUserInterface::getId()`;
 - resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute fallback second;
 - allows mapper-created `UpdateUserDto::getUserId()` to be null;
@@ -65,7 +65,7 @@ flowchart TD
 - skips role synchronization when the mapper returns null or an empty role list;
 - fetches final user representation by id.
 
-The user-management step owns local/Keycloak identity validation. The role-management step only resolves the Keycloak target user id through `KeycloakUserLookup` and applies the role diff.
+The user-management step owns local/Keycloak identity validation and never requests available roles. The role-management step owns available-role lookup, resolves the Keycloak target user id through `KeycloakUserLookup`, and applies the role diff.
 
 ### `deleteUser`
 
@@ -78,8 +78,10 @@ The user-management step owns local/Keycloak identity validation. The role-manag
 ### `findUser`
 
 - resolves realm from mapper;
-- uses the direct user-by-id endpoint when `KeycloakUserInterface::getKeycloakId()` is non-null;
-- otherwise searches by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()`;
+- resolves the target Keycloak id via `KeycloakUserLookup`;
+- uses `KeycloakUserInterface::getKeycloakId()` first;
+- otherwise searches by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()` to resolve the Keycloak id;
+- loads the final representation through `findUserById`;
 - throws when the local-id lookup does not return exactly one Keycloak user.
 
 ### `findUserById`

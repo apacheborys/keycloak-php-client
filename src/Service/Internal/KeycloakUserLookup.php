@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Service\Internal;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
@@ -20,34 +19,6 @@ final readonly class KeycloakUserLookup
         private KeycloakHttpClientInterface $httpClient,
         private ?LoggerInterface $logger = null,
     ) {
-    }
-
-    public function resolveUser(
-        string $realm,
-        KeycloakUserInterface $localUser,
-        string $localUserIdAttributeName,
-        string $operation,
-    ): KeycloakUser {
-        $keycloakId = $localUser->getKeycloakId();
-        if ($keycloakId !== null) {
-            return $this->httpClient->getUserById(
-                dto: new GetUserByIdDto(
-                    realm: $realm,
-                    userId: $this->keycloakIdFromString(
-                        keycloakId: $keycloakId,
-                        localUser: $localUser,
-                        operation: $operation,
-                    ),
-                ),
-            );
-        }
-
-        return $this->findSingleUserByLocalId(
-            realm: $realm,
-            localUser: $localUser,
-            localUserIdAttributeName: $localUserIdAttributeName,
-            operation: $operation,
-        );
     }
 
     public function resolveUserId(

@@ -127,7 +127,7 @@ When your application passes a local user object into the service layer, `Keyclo
 
 For existing-user operations, the service layer resolves the target Keycloak user id in this order:
 
-1. use `KeycloakUserInterface::getKeycloakId()` and the direct user-by-id endpoint when the value is available;
+1. use `KeycloakUserInterface::getKeycloakId()` directly when the value is available;
 2. otherwise search Keycloak users by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()`;
 3. throw `LogicException` when the local-id lookup does not return exactly one Keycloak user.
 
@@ -143,13 +143,13 @@ For creation there is no Keycloak user id yet. If you need to persist the local 
 
 `updateUser(...)` matches old and new local versions by `getId()`. If either version exposes a Keycloak id, the service validates that the mapper-created DTO targets the same Keycloak user. `deleteUser(...)` performs the same local-id validation against the mapper-created delete DTO.
 
-`findUser(...)` resolves the realm through your mapper, then uses the same Keycloak-id-first/local-id-fallback strategy.
+`findUser(...)` resolves the realm through your mapper, resolves the target Keycloak id with the same Keycloak-id-first/local-id-fallback strategy, and then loads the current representation through the dedicated user-by-id endpoint.
 
 For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
 
-Role synchronization is controlled by the roles returned from `LocalKeycloakUserBridgeMapperInterface::prepareLocalUserForKeycloakUserCreation(...)` and `prepareLocalUserDiffForKeycloakUserUpdate(...)`. The mapper must return final Keycloak role names, including any application-specific prefixes or suffixes. Returning an empty role list means the service skips role synchronization for that operation; returning roles means the service creates missing realm roles and synchronizes user mappings.
+Role synchronization is controlled by `LocalKeycloakUserBridgeMapperInterface::prepareLocalUserRolesForKeycloakUserCreation(...)` and `prepareLocalUserRolesForKeycloakUserUpdate(...)`. Those methods return `UserRolesDto` with final Keycloak role names, including any application-specific prefixes or suffixes. Returning null or an empty role list means the service skips role synchronization for that operation; returning roles means the service creates missing realm roles and synchronizes user mappings.
 
-On update, user identity validation belongs to user management. Role synchronization resolves the target user through the shared service-layer lookup helper and then applies only the role diff.
+User profile mapping and role mapping are separate contracts. User management does not request available roles or read roles from `CreateUserProfileDto` / `UpdateUserDto`; role synchronization resolves the target user through the shared service-layer lookup helper and then applies only the role diff.
 
 ## Recommended Integration Style
 

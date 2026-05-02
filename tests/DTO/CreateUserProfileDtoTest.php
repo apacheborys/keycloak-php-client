@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
-use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +20,6 @@ final class CreateUserProfileDtoTest extends TestCase
             firstName: 'User',
             lastName: 'Example',
             realm: 'master',
-            roles: [new RoleDto(name: 'admin')],
             attributes: [
                 'external-user-id' => 'external-id-1',
                 'locale' => ['en', 'de'],
@@ -45,8 +43,6 @@ final class CreateUserProfileDtoTest extends TestCase
         );
         self::assertSame('master', $dto->getRealm());
         self::assertSame('user@example.com', $dto->getEmail());
-        self::assertCount(1, $dto->getRoles());
-        self::assertSame('admin', $dto->getRoles()[0]->getName());
         self::assertSame(
             [
                 'external-user-id' => ['external-id-1'],

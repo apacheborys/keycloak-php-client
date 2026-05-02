@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
-use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Assert\Assert;
 
 readonly final class CreateUserProfileDto
 {
     /**
-     * @param list<RoleDto> $roles
      * @param array<string, string|list<string>> $attributes
      */
     public function __construct(
@@ -21,7 +19,6 @@ readonly final class CreateUserProfileDto
         private string $firstName,
         private string $lastName,
         private string $realm,
-        private array $roles = [],
         private array $attributes = [],
     ) {
         Assert::that($username)->notEmpty();
@@ -29,10 +26,6 @@ readonly final class CreateUserProfileDto
         Assert::that($firstName)->notEmpty();
         Assert::that($lastName)->notEmpty();
         Assert::that($realm)->notEmpty();
-
-        foreach ($this->roles as $role) {
-            Assert::that($role)->isInstanceOf(RoleDto::class);
-        }
 
         self::assertAttributesMap(attributes: $this->attributes);
     }
@@ -53,14 +46,6 @@ readonly final class CreateUserProfileDto
     public function getAttributes(): array
     {
         return self::normalizeAttributesMap(attributes: $this->attributes);
-    }
-
-    /**
-     * @return list<RoleDto>
-     */
-    public function getRoles(): array
-    {
-        return $this->roles;
     }
 
     /**

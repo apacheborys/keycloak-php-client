@@ -38,18 +38,18 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             dto: new GetRolesDto(realm: $realm),
         );
 
-        $profileDto = $mapper->prepareLocalUserForKeycloakUserCreation(
+        $rolesDto = $mapper->prepareLocalUserRolesForKeycloakUserCreation(
             localUser: $localUser,
             availableRoles: $availableRoles,
         );
 
         $this->assertMappedRealmMatches(
             expectedRealm: $realm,
-            mappedRealm: $profileDto->getRealm(),
+            mappedRealm: $rolesDto->getRealm(),
             operation: 'synchronizeRolesOnUserCreation',
         );
 
-        $desiredRoles = $profileDto->getRoles();
+        $desiredRoles = $rolesDto->getRoles() ?? [];
         if ($desiredRoles === []) {
             return;
         }
@@ -109,7 +109,7 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
             dto: new GetRolesDto(realm: $oldRealm),
         );
 
-        $dto = $mapper->prepareLocalUserDiffForKeycloakUserUpdate(
+        $rolesDto = $mapper->prepareLocalUserRolesForKeycloakUserUpdate(
             oldUserVersion: $oldUserVersion,
             newUserVersion: $newUserVersion,
             availableRoles: $availableRoles,
@@ -117,11 +117,11 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
 
         $this->assertMappedRealmMatches(
             expectedRealm: $oldRealm,
-            mappedRealm: $dto->getRealm(),
+            mappedRealm: $rolesDto->getRealm(),
             operation: 'synchronizeRolesOnUserUpdate',
         );
 
-        $desiredRoles = $dto->getProfile()->getRoles();
+        $desiredRoles = $rolesDto->getRoles();
         if ($desiredRoles === null || $desiredRoles === []) {
             return;
         }

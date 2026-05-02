@@ -8,7 +8,6 @@ use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
@@ -60,13 +59,8 @@ final readonly class KeycloakUserManagementService implements
         $mapper = $this->mapperResolver->resolveForUser(localUser: $localUser);
         $realm = $mapper->getRealm(localUser: $localUser);
 
-        $availableRoles = $this->httpClient->getRoles(
-            dto: new GetRolesDto(realm: $realm),
-        );
-
         $profileDto = $mapper->prepareLocalUserForKeycloakUserCreation(
             localUser: $localUser,
-            availableRoles: $availableRoles,
         );
 
         $this->assertMappedRealmMatches(
@@ -119,12 +113,16 @@ final readonly class KeycloakUserManagementService implements
     {
         $mapper = $this->mapperResolver->resolveForUser(localUser: $localUser);
         $realm = $mapper->getRealm(localUser: $localUser);
-
-        return $this->userLookup->resolveUser(
+        $resolvedUserId = $this->userLookup->resolveUserId(
             realm: $realm,
             localUser: $localUser,
             localUserIdAttributeName: $mapper->getLocalUserIdAttributeName(localUser: $localUser),
             operation: 'findUser',
+        );
+
+        return $this->findUserById(
+            realm: $realm,
+            userId: $resolvedUserId,
         );
     }
 
@@ -181,14 +179,9 @@ final readonly class KeycloakUserManagementService implements
             operation: 'updateUser',
         );
 
-        $availableRoles = $this->httpClient->getRoles(
-            dto: new GetRolesDto(realm: $oldRealm),
-        );
-
         $dto = $mapper->prepareLocalUserDiffForKeycloakUserUpdate(
             oldUserVersion: $oldUserVersion,
             newUserVersion: $newUserVersion,
-            availableRoles: $availableRoles,
         );
 
         $this->assertMappedRealmMatches(

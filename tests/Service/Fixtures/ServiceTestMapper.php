@@ -10,6 +10,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\UserRolesDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
 use Ramsey\Uuid\Uuid;
@@ -34,6 +35,8 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
         private string $realmForDeletion = 'master',
         private ?UpdateUserDto $updateUserDto = null,
         private string $localUserIdAttributeName = self::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME,
+        private ?UserRolesDto $createUserRolesDto = null,
+        private ?UserRolesDto $updateUserRolesDto = null,
     ) {
     }
 
@@ -48,13 +51,29 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
     }
 
     public function prepareLocalUserForKeycloakUserCreation(
+        KeycloakUserInterface $localUser
+    ): CreateUserProfileDto {
+        return $this->createUserProfile;
+    }
+
+    public function prepareLocalUserRolesForKeycloakUserCreation(
         KeycloakUserInterface $localUser,
         array $availableRoles
-    ): CreateUserProfileDto {
+    ): UserRolesDto {
         /** @var list<RoleDto> $availableRoles */
         $this->capturedAvailableRolesForCreation = $availableRoles;
 
-        return $this->createUserProfile;
+        if ($this->createUserRolesDto !== null) {
+            return $this->createUserRolesDto;
+        }
+
+        return new UserRolesDto(
+            realm: $this->createUserProfile->getRealm(),
+            roles: array_map(
+                static fn (string $roleName): RoleDto => new RoleDto(name: $roleName),
+                $localUser->getRoles(),
+            ),
+        );
     }
 
     public function prepareLocalUserForKeycloakLoginUser(
@@ -80,13 +99,10 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 
     public function prepareLocalUserDiffForKeycloakUserUpdate(
         KeycloakUserInterface $oldUserVersion,
-        KeycloakUserInterface $newUserVersion,
-        array $availableRoles
+        KeycloakUserInterface $newUserVersion
     ): UpdateUserDto {
         $this->capturedOldUserForUpdate = $oldUserVersion;
         $this->capturedNewUserForUpdate = $newUserVersion;
-        /** @var list<RoleDto> $availableRoles */
-        $this->capturedAvailableRolesForUpdate = $availableRoles;
 
         if ($this->updateUserDto !== null) {
             return $this->updateUserDto;
@@ -103,13 +119,30 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
                 enabled: $newUserVersion->isEnabled(),
                 firstName: $newUserVersion->getFirstName(),
                 lastName: $newUserVersion->getLastName(),
-                roles: array_map(
-                    static fn (string $roleName): RoleDto => new RoleDto(name: $roleName),
-                    $newUserVersion->getRoles(),
-                ),
             ),
             userId: $keycloakId !== null ? Uuid::fromString($keycloakId) : null,
             localUserId: $newUserVersion->getId(),
+        );
+    }
+
+    public function prepareLocalUserRolesForKeycloakUserUpdate(
+        KeycloakUserInterface $oldUserVersion,
+        KeycloakUserInterface $newUserVersion,
+        array $availableRoles
+    ): UserRolesDto {
+        /** @var list<RoleDto> $availableRoles */
+        $this->capturedAvailableRolesForUpdate = $availableRoles;
+
+        if ($this->updateUserRolesDto !== null) {
+            return $this->updateUserRolesDto;
+        }
+
+        return new UserRolesDto(
+            realm: $this->realmForDeletion,
+            roles: array_map(
+                static fn (string $roleName): RoleDto => new RoleDto(name: $roleName),
+                $newUserVersion->getRoles(),
+            ),
         );
     }
 
