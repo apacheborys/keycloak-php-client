@@ -5,10 +5,19 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Entity;
 
 use DateTimeInterface;
+use Ramsey\Uuid\UuidInterface;
 
 interface KeycloakUserInterface
 {
-    public function getKeycloakId(): string;
+    /**
+     * Returns the stable local application user identifier.
+     */
+    public function getId(): int|string|UuidInterface;
+
+    /**
+     * Returns the Keycloak user identifier when it is persisted locally.
+     */
+    public function getKeycloakId(): ?string;
 
     public function getUsername(): string;
 

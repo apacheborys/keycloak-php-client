@@ -6,8 +6,10 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceInterface;
@@ -52,6 +54,45 @@ final class KeycloakServiceFactoryTest extends TestCase
         self::assertInstanceOf(OidcTokenResponseDto::class, $result);
         self::assertSame('requestTokenByPassword', $httpClient->getCalls()[0]['method']);
         self::assertSame('SecretPassword!2026', $mapper->getCapturedPlainPassword());
+    }
+
+    public function testCreateUsesMapperProvidedLocalUserIdAttributeName(): void
+    {
+        $factory = new KeycloakServiceFactory();
+        $httpClient = new TestKeycloakHttpClient();
+        $mapper = new ServiceTestMapper(
+            $this->buildProfileDto(),
+            $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+        );
+
+        $service = $factory->create(
+            httpClient: $httpClient,
+            mappers: [$mapper],
+        );
+        $expectedUser = KeycloakUser::fromArray(
+            [
+                'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                'username' => 'user@example.com',
+                'createdTimestamp' => 1_700_000_000_000,
+            ]
+        );
+
+        $httpClient->queueResult('getUsers', [$expectedUser]);
+        $httpClient->queueResult('getUserById', $expectedUser);
+
+        self::assertSame(
+            $expectedUser,
+            $service->findUser(new ServiceTestUser(keycloakId: null, id: 'local-user-1')),
+        );
+
+        self::assertSame(
+            ['getUsers', 'getUserById'],
+            array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
+        );
+        /** @var SearchUsersDto $searchDto */
+        $searchDto = $httpClient->getCalls()[0]['args'][0];
+        self::assertSame(['app-user-id' => 'local-user-1'], $searchDto->getCustomAttributes());
     }
 
     private function buildProfileDto(): CreateUserProfileDto

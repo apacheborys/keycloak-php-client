@@ -32,6 +32,7 @@ final readonly class LocalUserMapperResolver
             message: 'Mapper resolution failed: mapper for local user was not found.',
             context: [
                 'user_class' => $localUser::class,
+                'local_user_id' => LocalUserIdentifier::logValue($localUser->getId()),
                 'keycloak_user_id' => $localUser->getKeycloakId(),
             ],
         );
@@ -56,8 +57,10 @@ final readonly class LocalUserMapperResolver
             message: 'Mapper resolution failed: mapper for user update pair was not found.',
             context: [
                 'old_user_class' => $oldUserVersion::class,
+                'old_local_user_id' => LocalUserIdentifier::logValue($oldUserVersion->getId()),
                 'old_keycloak_user_id' => $oldUserVersion->getKeycloakId(),
                 'new_user_class' => $newUserVersion::class,
+                'new_local_user_id' => LocalUserIdentifier::logValue($newUserVersion->getId()),
                 'new_keycloak_user_id' => $newUserVersion->getKeycloakId(),
             ],
         );

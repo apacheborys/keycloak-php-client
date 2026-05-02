@@ -7,6 +7,7 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use DateTimeImmutable;
 use DateTimeInterface;
+use Ramsey\Uuid\UuidInterface;
 
 final class ServiceTestUser implements KeycloakUserInterface
 {
@@ -14,7 +15,7 @@ final class ServiceTestUser implements KeycloakUserInterface
      * @param list<string> $roles
      */
     public function __construct(
-        private string $keycloakId,
+        private ?string $keycloakId,
         private string $username = 'user@example.com',
         private string $email = 'user@example.com',
         private bool $emailVerified = true,
@@ -22,10 +23,16 @@ final class ServiceTestUser implements KeycloakUserInterface
         private string $lastName = 'Example',
         private bool $enabled = true,
         private array $roles = [],
+        private int|string|UuidInterface $id = 1,
     ) {
     }
 
-    public function getKeycloakId(): string
+    public function getId(): int|string|UuidInterface
+    {
+        return $this->id;
+    }
+
+    public function getKeycloakId(): ?string
     {
         return $this->keycloakId;
     }

@@ -121,19 +121,35 @@ $matchedUsers = $service->searchUsers(
 
 ## Local User Contract
 
-When your application passes a local user object into the service layer, `KeycloakUserInterface::getKeycloakId()` must return the Keycloak user identifier for that realm.
+When your application passes a local user object into the service layer, `KeycloakUserInterface::getId()` must return the stable local application identifier as `int`, `string` or `Ramsey\Uuid\UuidInterface`.
 
-This identifier is used by:
+`KeycloakUserInterface::getKeycloakId()` may return `null`. This lets applications use this library even when their local user table cannot store the Keycloak user id. For local entities that do store it, returning the id is still recommended because it enables direct lookup and additional mapper validation.
 
-- `updateUser(...)`
-- `deleteUser(...)`
-- `findUser(...)`
+For existing-user operations, the service layer resolves the target Keycloak user id in this order:
 
-`findUser(...)` resolves the realm through your mapper and then loads the current Keycloak representation through the dedicated `GET /admin/realms/{realm}/users/{id}` endpoint.
+1. use `KeycloakUserInterface::getKeycloakId()` directly when the value is available;
+2. otherwise search Keycloak users by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()`;
+3. throw `LogicException` when the local-id lookup does not return exactly one Keycloak user.
+
+The local-id attribute name is provided by `LocalKeycloakUserBridgeMapperInterface::getLocalUserIdAttributeName(...)`. Use `LocalKeycloakUserBridgeMapperInterface::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME` (`external-user-id`) when the default convention is enough.
+
+Mapper-created DTOs still carry identity metadata:
+
+- `UpdateUserDto::getUserId()` and `DeleteUserDto::getUserId()` may contain the target Keycloak user id, but the service layer is authoritative and will populate it before calling HTTP;
+- `UpdateUserDto::getLocalUserId()` and `DeleteUserDto::getLocalUserId()` contain the local id from `KeycloakUserInterface::getId()`;
+- the local id is metadata for service validation and is not sent in the Keycloak JSON payload.
+
+For creation there is no Keycloak user id yet. If you need to persist the local id in Keycloak, map it into `CreateUserProfileDto` attributes, for example through an `external-user-id` attribute.
+
+`updateUser(...)` matches old and new local versions by `getId()`. If either version exposes a Keycloak id, the service validates that the mapper-created DTO targets the same Keycloak user. `deleteUser(...)` performs the same local-id validation against the mapper-created delete DTO.
+
+`findUser(...)` resolves the realm through your mapper, resolves the target Keycloak id with the same Keycloak-id-first/local-id-fallback strategy, and then loads the current representation through the dedicated user-by-id endpoint.
 
 For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
 
-Role synchronization is controlled by the roles returned from `LocalKeycloakUserBridgeMapperInterface::prepareLocalUserForKeycloakUserCreation(...)` and `prepareLocalUserDiffForKeycloakUserUpdate(...)`. The mapper must return final Keycloak role names, including any application-specific prefixes or suffixes. Returning an empty role list means the service skips role synchronization for that operation; returning roles means the service creates missing realm roles and synchronizes user mappings.
+Role synchronization is controlled by `LocalKeycloakUserBridgeMapperInterface::prepareLocalUserRolesForKeycloakUserCreation(...)` and `prepareLocalUserRolesForKeycloakUserUpdate(...)`. Those methods return `UserRolesDto` with final Keycloak role names, including any application-specific prefixes or suffixes. Returning null or an empty role list means the service skips role synchronization for that operation; returning roles means the service creates missing realm roles and synchronizes user mappings.
+
+User profile mapping and role mapping are separate contracts. User management does not request available roles or read roles from `CreateUserProfileDto` / `UpdateUserDto`; role synchronization resolves the target user through the shared service-layer lookup helper and then applies only the role diff.
 
 ## Recommended Integration Style
 

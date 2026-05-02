@@ -43,6 +43,12 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
     }
 
     #[Override]
+    public function getId(): UuidInterface
+    {
+        return $this->id;
+    }
+
+    #[Override]
     public function getKeycloakId(): string
     {
         return $this->id->toString();
