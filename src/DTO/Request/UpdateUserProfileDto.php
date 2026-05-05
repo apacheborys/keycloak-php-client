@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Request;
 
 use Assert\Assert;
+use Ramsey\Uuid\UuidInterface;
 
 readonly final class UpdateUserProfileDto
 {
     /**
-     * @param ?array<string, string|list<string>> $attributes
+     * @var ?list<AttributeValueDto>
+     */
+    private ?array $attributes;
+
+    /**
+     * @param list<AttributeValueDto>|array<string, int|string|UuidInterface|list<string>>|null $attributes
      */
     public function __construct(
         private string $username,
@@ -18,7 +24,7 @@ readonly final class UpdateUserProfileDto
         private ?bool $enabled = null,
         private ?string $firstName = null,
         private ?string $lastName = null,
-        private ?array $attributes = null,
+        ?array $attributes = null,
     ) {
         Assert::that($this->username)->notEmpty();
 
@@ -34,9 +40,9 @@ readonly final class UpdateUserProfileDto
             Assert::that($this->lastName)->notEmpty();
         }
 
-        if ($this->attributes !== null) {
-            self::assertAttributesMap(attributes: $this->attributes);
-        }
+        $this->attributes = $attributes !== null
+            ? AttributeValueDto::normalizeCollection(attributes: $attributes)
+            : null;
     }
 
     public function getUsername(): string
@@ -50,6 +56,14 @@ readonly final class UpdateUserProfileDto
     }
 
     /**
+     * @return ?list<AttributeValueDto>
+     */
+    public function getAttributeDtos(): ?array
+    {
+        return $this->attributes;
+    }
+
+    /**
      * @return ?array<string, list<string>>
      */
     public function getAttributes(): ?array
@@ -58,7 +72,7 @@ readonly final class UpdateUserProfileDto
             return null;
         }
 
-        return self::normalizeAttributesMap(attributes: $this->attributes);
+        return AttributeValueDto::normalizeCollectionToMap(attributes: $this->attributes);
     }
 
     /**
@@ -107,45 +121,5 @@ readonly final class UpdateUserProfileDto
         }
 
         return $result;
-    }
-
-    /**
-     * @param array<string, string|list<string>> $attributes
-     */
-    private static function assertAttributesMap(array $attributes): void
-    {
-        foreach ($attributes as $attributeName => $attributeValue) {
-            Assert::that($attributeName)->string()->notEmpty();
-
-            if (is_string($attributeValue)) {
-                continue;
-            }
-
-            Assert::that($attributeValue)->isArray();
-            foreach ($attributeValue as $singleValue) {
-                Assert::that($singleValue)->string();
-            }
-        }
-    }
-
-    /**
-     * @param array<string, string|list<string>> $attributes
-     * @return array<string, list<string>>
-     */
-    private static function normalizeAttributesMap(array $attributes): array
-    {
-        $normalized = [];
-
-        foreach ($attributes as $attributeName => $attributeValue) {
-            if (is_string($attributeValue)) {
-                $normalized[$attributeName] = [$attributeValue];
-                continue;
-            }
-
-            /** @var list<string> $attributeValue */
-            $normalized[$attributeName] = array_values($attributeValue);
-        }
-
-        return $normalized;
     }
 }

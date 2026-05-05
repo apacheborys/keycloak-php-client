@@ -8,6 +8,7 @@ use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UserRolesDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
@@ -170,6 +171,8 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
             updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
@@ -229,6 +232,8 @@ final class KeycloakRoleManagementServiceTest extends TestCase
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
             updateUserRolesDto: $mappedRolesDto,
         );
         $service = $this->createService($httpClient, $mapper);
@@ -260,6 +265,9 @@ final class KeycloakRoleManagementServiceTest extends TestCase
             ['getRoles', 'getUsers', 'getAvailableUserRoles', 'assignRolesToUser'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
+        /** @var SearchUsersDto $searchDto */
+        $searchDto = $httpClient->getCalls()[1]['args'][0];
+        self::assertSame(['app-user-id' => 'mapped-user-id'], $searchDto->getCustomAttributes());
     }
 
     public function testSynchronizeRolesOnUserUpdateUsesOldKeycloakIdWhenNewVersionDoesNotExposeIt(): void

@@ -14,7 +14,6 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
-use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
 use Apacheborys\KeycloakPhpClient\Model\KeycloakCredential;
 use Apacheborys\KeycloakPhpClient\Service\Internal\KeycloakUserLookup;
 use Apacheborys\KeycloakPhpClient\Service\Internal\LocalUserIdentifier;
@@ -115,8 +114,8 @@ final readonly class KeycloakUserManagementService implements
         $realm = $mapper->getRealm(localUser: $localUser);
         $resolvedUserId = $this->userLookup->resolveUserId(
             realm: $realm,
-            localUser: $localUser,
-            localUserIdAttributeName: $mapper->getLocalUserIdAttributeName(localUser: $localUser),
+            keycloakId: $localUser->getKeycloakId(),
+            localUserIdAttribute: $mapper->getLocalUserIdAttribute(localUser: $localUser),
             operation: 'findUser',
         );
 
@@ -148,12 +147,6 @@ final readonly class KeycloakUserManagementService implements
         );
         $oldRealm = $mapper->getRealm(localUser: $oldUserVersion);
         $newRealm = $mapper->getRealm(localUser: $newUserVersion);
-        $localUserIdAttributeName = $this->resolveLocalUserIdAttributeNameForPair(
-            mapper: $mapper,
-            oldUserVersion: $oldUserVersion,
-            newUserVersion: $newUserVersion,
-            operation: 'updateUser',
-        );
         if ($oldRealm !== $newRealm) {
             $this->debug(
                 message: 'Update user failed: old and new user versions are mapped to different realms.',
@@ -172,10 +165,11 @@ final readonly class KeycloakUserManagementService implements
             oldUserVersion: $oldUserVersion,
             newUserVersion: $newUserVersion,
         );
+        $localUserIdAttribute = $mapper->getLocalUserIdAttribute(localUser: $lookupUser);
         $resolvedUserId = $this->userLookup->resolveUserId(
             realm: $oldRealm,
-            localUser: $lookupUser,
-            localUserIdAttributeName: $localUserIdAttributeName,
+            keycloakId: $lookupUser->getKeycloakId(),
+            localUserIdAttribute: $localUserIdAttribute,
             operation: 'updateUser',
         );
 
@@ -222,8 +216,8 @@ final readonly class KeycloakUserManagementService implements
         $realm = $mapper->getRealm(localUser: $user);
         $resolvedUserId = $this->userLookup->resolveUserId(
             realm: $realm,
-            localUser: $user,
-            localUserIdAttributeName: $mapper->getLocalUserIdAttributeName(localUser: $user),
+            keycloakId: $user->getKeycloakId(),
+            localUserIdAttribute: $mapper->getLocalUserIdAttribute(localUser: $user),
             operation: 'deleteUser',
         );
         $deleteDto = $mapper->prepareLocalUserForKeycloakUserDeletion(localUser: $user);
@@ -441,48 +435,6 @@ final readonly class KeycloakUserManagementService implements
         );
 
         throw new LogicException('Old and new user versions must reference the same Keycloak user id.');
-    }
-
-    private function resolveLocalUserIdAttributeNameForPair(
-        LocalKeycloakUserBridgeMapperInterface $mapper,
-        KeycloakUserInterface $oldUserVersion,
-        KeycloakUserInterface $newUserVersion,
-        string $operation,
-    ): string {
-        $oldAttributeName = $mapper->getLocalUserIdAttributeName(localUser: $oldUserVersion);
-        $newAttributeName = $mapper->getLocalUserIdAttributeName(localUser: $newUserVersion);
-
-        if (trim($oldAttributeName) === '' || trim($newAttributeName) === '') {
-            $this->debug(
-                message: 'Mapper returned an empty local user id attribute name.',
-                context: [
-                    'operation' => $operation,
-                    'old_local_user_id' => LocalUserIdentifier::logValue($oldUserVersion->getId()),
-                    'new_local_user_id' => LocalUserIdentifier::logValue($newUserVersion->getId()),
-                    'old_attribute_name' => $oldAttributeName,
-                    'new_attribute_name' => $newAttributeName,
-                ],
-            );
-
-            throw new LogicException('Mapper local user id attribute name must not be empty.');
-        }
-
-        if ($oldAttributeName === $newAttributeName) {
-            return $newAttributeName;
-        }
-
-        $this->debug(
-            message: 'Mapper returned different local user id attribute names for update pair.',
-            context: [
-                'operation' => $operation,
-                'old_local_user_id' => LocalUserIdentifier::logValue($oldUserVersion->getId()),
-                'new_local_user_id' => LocalUserIdentifier::logValue($newUserVersion->getId()),
-                'old_attribute_name' => $oldAttributeName,
-                'new_attribute_name' => $newAttributeName,
-            ],
-        );
-
-        throw new LogicException('Old and new user versions must use the same local user id attribute name.');
     }
 
     private function assertMappedLocalUserIdMatches(

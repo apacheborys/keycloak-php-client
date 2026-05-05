@@ -160,7 +160,9 @@ final class KeycloakServiceTest extends TestCase
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
-            updateUserDto: $mappedUpdateDto
+            updateUserDto: $mappedUpdateDto,
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
         );
         $service = $this->createService($httpClient, $mapper);
         $oldUserVersion = new ServiceTestUser(
@@ -195,6 +197,9 @@ final class KeycloakServiceTest extends TestCase
             ['getUsers', 'updateUser', 'getUserById', 'getRoles', 'getUserById'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
+        /** @var SearchUsersDto $searchDto */
+        $searchDto = $httpClient->getCalls()[0]['args'][0];
+        self::assertSame(['app-user-id' => 'mapped-user-id'], $searchDto->getCustomAttributes());
         /** @var UpdateUserDto $transportDto */
         $transportDto = $httpClient->getCalls()[1]['args'][0];
         self::assertSame('92a372d5-c338-4e77-a1b3-08771241036e', $transportDto->getUserId()?->toString());
@@ -582,7 +587,9 @@ final class KeycloakServiceTest extends TestCase
 
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
-            $this->buildTokenRequestDto()
+            $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
         );
 
         $service = $this->createService($httpClient, $mapper);
@@ -604,6 +611,9 @@ final class KeycloakServiceTest extends TestCase
             ['getUsers', 'deleteUser'],
             array_map(static fn (array $call): string => $call['method'], $httpClient->getCalls()),
         );
+        /** @var SearchUsersDto $searchDto */
+        $searchDto = $httpClient->getCalls()[0]['args'][0];
+        self::assertSame(['app-user-id' => 'mapped-user-id'], $searchDto->getCustomAttributes());
         self::assertSame(
             '92a372d5-c338-4e77-a1b3-08771241036e',
             $httpClient->getCalls()[1]['args'][0]->getUserId()?->toString(),
@@ -642,7 +652,9 @@ final class KeycloakServiceTest extends TestCase
         $httpClient = new TestKeycloakHttpClient();
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
-            $this->buildTokenRequestDto()
+            $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
         );
         $service = $this->createService($httpClient, $mapper);
         $user = new ServiceTestUser(keycloakId: null, id: 'local-user-1');
@@ -667,7 +679,7 @@ final class KeycloakServiceTest extends TestCase
         /** @var SearchUsersDto $searchDto */
         $searchDto = $httpClient->getCalls()[0]['args'][0];
         self::assertSame('master', $searchDto->getRealm());
-        self::assertSame(['external-user-id' => 'local-user-1'], $searchDto->getCustomAttributes());
+        self::assertSame(['app-user-id' => 'mapped-user-id'], $searchDto->getCustomAttributes());
         self::assertSame(
             '92a372d5-c338-4e77-a1b3-08771241036e',
             $httpClient->getCalls()[1]['args'][0]->getUserId()->toString(),
@@ -678,13 +690,15 @@ final class KeycloakServiceTest extends TestCase
     {
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage(
-            'Expected exactly one Keycloak user with external-user-id "local-user-1" in realm "master" during findUser, got 0.'
+            'Expected exactly one Keycloak user with app-user-id "mapped-user-id" in realm "master" during findUser, got 0.'
         );
 
         $httpClient = new TestKeycloakHttpClient();
         $mapper = new ServiceTestMapper(
             $this->buildProfileDto(),
-            $this->buildTokenRequestDto()
+            $this->buildTokenRequestDto(),
+            localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
         );
         $service = $this->createService($httpClient, $mapper);
         $user = new ServiceTestUser(keycloakId: null, id: 'local-user-1');

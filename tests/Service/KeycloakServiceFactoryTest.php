@@ -56,7 +56,7 @@ final class KeycloakServiceFactoryTest extends TestCase
         self::assertSame('SecretPassword!2026', $mapper->getCapturedPlainPassword());
     }
 
-    public function testCreateUsesMapperProvidedLocalUserIdAttributeName(): void
+    public function testCreateUsesMapperProvidedLocalUserIdAttribute(): void
     {
         $factory = new KeycloakServiceFactory();
         $httpClient = new TestKeycloakHttpClient();
@@ -64,6 +64,7 @@ final class KeycloakServiceFactoryTest extends TestCase
             $this->buildProfileDto(),
             $this->buildTokenRequestDto(),
             localUserIdAttributeName: 'app-user-id',
+            localUserIdAttributeValue: 'mapped-user-id',
         );
 
         $service = $factory->create(
@@ -92,7 +93,7 @@ final class KeycloakServiceFactoryTest extends TestCase
         );
         /** @var SearchUsersDto $searchDto */
         $searchDto = $httpClient->getCalls()[0]['args'][0];
-        self::assertSame(['app-user-id' => 'local-user-1'], $searchDto->getCustomAttributes());
+        self::assertSame(['app-user-id' => 'mapped-user-id'], $searchDto->getCustomAttributes());
     }
 
     private function buildProfileDto(): CreateUserProfileDto
