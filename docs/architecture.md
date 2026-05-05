@@ -204,10 +204,26 @@ Pattern notes:
 - Facades keep the public surface compact while allowing the internals to stay specialized.
 - `KeycloakServiceInterface` is the application-facing facade; `KeycloakHttpClientInterface` is an infrastructural facade used below it.
 - Mapper strategy objects isolate application-specific realm and profile mapping rules from transport logic.
-- Mapper strategy objects compile final Keycloak role names in user profile DTOs, including application-specific prefixes or suffixes.
+- Mapper strategy objects compile final Keycloak role names in `UserRolesDto`, including application-specific prefixes or suffixes.
 - `SearchUsersDto` is treated as a query object because it captures search intent, not a raw REST payload.
 - The lossless document model preserves unknown Keycloak fields during read-modify-write cycles.
 - Dedicated lookup endpoints are preferred whenever response shape from aggregate endpoints is optional or unstable.
+
+## DTO Namespace Layout
+
+DTO namespaces are grouped by feature rather than kept in one flat directory:
+
+- `DTO\Request\User\*`
+- `DTO\Request\Role\*`
+- `DTO\Request\ClientScope\*`
+- `DTO\Request\Realm\UserProfile\*`
+- `DTO\Request\Oidc\*`
+- `DTO\Response\Oidc\*`
+- `DTO\Response\Realm\*`
+
+Shared DTOs that are not specific to one request/response surface remain at `DTO\*`, for example `PasswordDto` and `RoleDto`.
+
+The mirrored test structure under `tests/DTO/*` follows the same rule. See [DTO Layout](dto-layout.md) for placement guidance and migration examples.
 
 ## Typical Flow
 

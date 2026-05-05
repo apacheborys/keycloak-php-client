@@ -38,6 +38,14 @@ The HTTP layer is intentionally narrow:
 - DTOs at this layer are transport-facing and map closely to request or response shapes;
 - the layer should not resolve mappers, infer business defaults or decide workflow branches.
 
+Request DTO namespaces mirror these transport boundaries:
+
+- `DTO\Request\User\*`
+- `DTO\Request\Role\*`
+- `DTO\Request\ClientScope\*`
+- `DTO\Request\Realm\UserProfile\*`
+- `DTO\Request\Oidc\*`
+
 This keeps transport code predictable and easy to reason about as the infrastructure beneath the service layer.
 
 ## Specialized Clients
@@ -47,7 +55,7 @@ This keeps transport code predictable and easy to reason about as the infrastruc
 - create/update/delete/search users;
 - get user by id;
 - reset password;
-- realm creation.
+- password-reset transport calls without service-layer workflow decisions.
 
 ### Role management
 

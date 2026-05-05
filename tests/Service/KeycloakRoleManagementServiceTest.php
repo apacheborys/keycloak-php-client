@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\AssignUserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\CreateUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Oidc\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\UserRolesDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\Test\TestKeycloakHttpClient;
 use Apacheborys\KeycloakPhpClient\Service\Internal\KeycloakUserLookup;

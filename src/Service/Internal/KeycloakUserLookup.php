@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Service\Internal;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;

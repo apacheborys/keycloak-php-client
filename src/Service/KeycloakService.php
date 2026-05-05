@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\EnsureUserIdentifierAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Oidc\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;

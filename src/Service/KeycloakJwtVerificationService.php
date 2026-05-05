@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Service;
 
-use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\JwkDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Override;

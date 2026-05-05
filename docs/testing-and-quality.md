@@ -15,6 +15,13 @@ Why the test suite is layered this way:
 - HTTP facade tests protect delegation wiring;
 - internal HTTP integration-like tests protect request shape and endpoint mapping without needing a live Keycloak instance.
 
+DTO tests mirror the source layout:
+
+- `tests/DTO/Request/User/*`, `Role/*`, `ClientScope/*`, `Realm/UserProfile/*`, `Oidc/*`
+- `tests/DTO/Response/Oidc/*`
+- `tests/DTO/Response/Realm/*`
+- root-level shared DTO tests such as `PasswordDtoTest.php` and `RoleDtoTest.php`
+
 ## Commands
 
 Run all checks:

@@ -4,6 +4,15 @@ This section documents the client-scope and protocol-mapper surface used by the 
 
 ## DTOs
 
+Request DTOs for this surface live under `DTO\Request\ClientScope\*`, for example:
+
+- `CreateClientScopeDto`
+- `GetClientScopesDto`
+- `CreateClientScopeProtocolMapperDto`
+- `UpdateClientScopeProtocolMapperDto`
+
+Response DTOs live under `DTO\Response\Realm\*`:
+
 - `ClientScopeDto`
 - `ClientScopesProtocolMapperDto`
 - `ClientScopesProtocolMapperConfigDto`

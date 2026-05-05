@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\AssignUserRolesDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateRoleDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteRoleDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetRolesDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserAvailableRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\AssignUserRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\CreateRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\DeleteRoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetRolesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetUserAvailableRolesDto;
 
 interface RoleManagementHttpClientInterface
 {

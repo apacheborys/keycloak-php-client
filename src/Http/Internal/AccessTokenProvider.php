@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 
-use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;

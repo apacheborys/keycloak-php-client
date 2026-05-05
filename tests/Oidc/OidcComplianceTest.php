@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Oidc;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Oidc\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;

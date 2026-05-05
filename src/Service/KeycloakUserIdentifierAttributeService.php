@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Service;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateClientScopeProtocolMapperDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopeProtocolMappersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetClientScopesDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\ClientScope\CreateClientScopeProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\EnsureUserIdentifierAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\ClientScope\GetClientScopeProtocolMappersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\ClientScope\GetClientScopesDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\GetUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\ClientScope\UpdateClientScopeProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
