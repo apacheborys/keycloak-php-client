@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service;
 
 use Apacheborys\KeycloakPhpClient\DTO\PasswordDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserByIdDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\ResetUserPasswordDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\CreateUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\DeleteUserDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\GetUserByIdDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\ResetUserPasswordDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;

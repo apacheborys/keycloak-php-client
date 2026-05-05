@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Http;
 
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\UserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserProfileAttributeDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\GetUserProfileDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\CreateUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\DeleteUserProfileAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\GetUserProfileDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\UpdateUserProfileAttributeDto;
 
 interface RealmSettingsManagementHttpClientInterface
 {

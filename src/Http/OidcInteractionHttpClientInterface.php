@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Http;
 
-use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\JwkDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\JwksDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\OidcTokenResponseDto;
-use Apacheborys\KeycloakPhpClient\DTO\Response\OpenIdConfigurationDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Oidc\OidcTokenRequestDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\JwkDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\JwksDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
+use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 
 interface OidcInteractionHttpClientInterface

@@ -81,7 +81,7 @@ Applied patterns:
 ## Quick Start
 
 ```php
-use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientFactory;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
@@ -166,7 +166,7 @@ Why:
 ## User Identifier Attribute Quick Example
 
 ```php
-use Apacheborys\KeycloakPhpClient\DTO\Request\EnsureUserIdentifierAttributeDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\EnsureUserIdentifierAttributeDto;
 
 $service->ensureUserIdentifierAttribute(
     realm: 'master',
