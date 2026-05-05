@@ -33,6 +33,8 @@ flowchart TD
 
 `KeycloakServiceFactory` wires shared service helpers at this boundary. In particular, it creates one `KeycloakUserLookup` and injects it into user and role management services instead of letting those services construct their own lookup helper.
 
+`KeycloakServiceInterface` does not expose `KeycloakRoleManagementServiceInterface` directly. Role management is an internal dependency of user-lifecycle workflows such as `createUser(...)` and `updateUser(...)`, not a separate application-facing entry point.
+
 ## Method Selection Guide
 
 - Use `findUser(localUser)` when your application already has a local user object and wants mapper-based realm resolution.
@@ -131,6 +133,7 @@ The method intentionally hides the multi-step orchestration required to make thi
 - Services are allowed to throw workflow-level exceptions such as "required attribute is missing and auto-create is disabled".
 - Role naming is a mapper policy. The mapper should apply any prefix/suffix before returning role DTOs.
 - Missing returned roles are created by the service; return no roles when role management should not run for that local user type.
+- See [Local User Mapping](local-user-mapping.md) for the detailed mapper contract and [DTO Layout](dto-layout.md) for request/response namespace grouping.
 
 ## Service Patterns
 

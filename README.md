@@ -151,6 +151,8 @@ Role synchronization is controlled by `LocalKeycloakUserBridgeMapperInterface::p
 
 User profile mapping and role mapping are separate contracts. User management does not request available roles or read roles from `CreateUserProfileDto` / `UpdateUserDto`; role synchronization resolves the target user through the shared service-layer lookup helper and then applies only the role diff.
 
+For the full mapper contract, attribute DTO guidance and identity-resolution rules, see [docs/local-user-mapping.md](docs/local-user-mapping.md).
+
 ## Recommended Integration Style
 
 Application code should integrate with `KeycloakServiceInterface`.
@@ -200,8 +202,10 @@ This workflow is intended for bootstrap or migration-like initialization of appl
 Detailed docs are in [`docs/README.md`](docs/README.md):
 
 - architecture and layering;
+- local user and mapper contract;
 - service-layer orchestration and responsibilities;
 - transport-layer modules and contracts;
+- DTO namespace layout and placement rules;
 - user profile attributes and JWT exposure flow;
 - client scopes and protocol mappers;
 - testing strategy and local checks.
