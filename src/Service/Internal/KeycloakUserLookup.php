@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Service\Internal;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\SearchUsersDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
-use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
 use Psr\Log\LoggerInterface;
@@ -23,15 +23,14 @@ final readonly class KeycloakUserLookup
 
     public function resolveUserId(
         string $realm,
-        KeycloakUserInterface $localUser,
-        string $localUserIdAttributeName,
+        ?string $keycloakId,
+        AttributeValueDto $localUserIdAttribute,
         string $operation,
     ): UuidInterface {
-        $keycloakId = $localUser->getKeycloakId();
         if ($keycloakId !== null) {
             return $this->keycloakIdFromString(
                 keycloakId: $keycloakId,
-                localUser: $localUser,
+                localUserIdAttribute: $localUserIdAttribute,
                 operation: $operation,
             );
         }
@@ -39,8 +38,7 @@ final readonly class KeycloakUserLookup
         return Uuid::fromString(
             $this->findSingleUserByLocalId(
                 realm: $realm,
-                localUser: $localUser,
-                localUserIdAttributeName: $localUserIdAttributeName,
+                localUserIdAttribute: $localUserIdAttribute,
                 operation: $operation,
             )->getKeycloakId()
         );
@@ -48,7 +46,7 @@ final readonly class KeycloakUserLookup
 
     private function keycloakIdFromString(
         string $keycloakId,
-        KeycloakUserInterface $localUser,
+        AttributeValueDto $localUserIdAttribute,
         string $operation,
     ): UuidInterface {
         if (Uuid::isValid($keycloakId)) {
@@ -59,7 +57,8 @@ final readonly class KeycloakUserLookup
             message: 'User lookup failed: local user exposes an invalid Keycloak user identifier.',
             context: [
                 'operation' => $operation,
-                'local_user_id' => LocalUserIdentifier::logValue($localUser->getId()),
+                'attribute_name' => $localUserIdAttribute->getAttributeName(),
+                'local_user_id_values' => $localUserIdAttribute->getNormalizedValues(),
                 'keycloak_user_id' => $keycloakId,
             ],
         );
@@ -69,24 +68,40 @@ final readonly class KeycloakUserLookup
 
     private function findSingleUserByLocalId(
         string $realm,
-        KeycloakUserInterface $localUser,
-        string $localUserIdAttributeName,
+        AttributeValueDto $localUserIdAttribute,
         string $operation,
     ): KeycloakUser {
+        $localUserIdAttributeName = $localUserIdAttribute->getAttributeName();
+
         if (trim($localUserIdAttributeName) === '') {
             $this->debug(
                 message: 'User lookup failed: mapper returned an empty local user id attribute name.',
                 context: [
                     'realm' => $realm,
                     'operation' => $operation,
-                    'local_user_id' => LocalUserIdentifier::logValue($localUser->getId()),
+                    'local_user_id_values' => $localUserIdAttribute->getNormalizedValues(),
                 ],
             );
 
             throw new LogicException('Mapper local user id attribute name must not be empty.');
         }
 
-        $localUserId = LocalUserIdentifier::normalize($localUser->getId());
+        $localUserIdValues = $localUserIdAttribute->getNormalizedValues();
+        if (count($localUserIdValues) !== 1) {
+            $this->debug(
+                message: 'User lookup failed: local user id attribute must contain exactly one value.',
+                context: [
+                    'realm' => $realm,
+                    'operation' => $operation,
+                    'attribute_name' => $localUserIdAttributeName,
+                    'local_user_id_values' => $localUserIdValues,
+                ],
+            );
+
+            throw new LogicException('Local user id attribute must contain exactly one value.');
+        }
+
+        $localUserId = $localUserIdValues[0];
         if ($localUserId === '') {
             $this->debug(
                 message: 'User lookup failed: local user id is empty.',
@@ -121,7 +136,7 @@ final readonly class KeycloakUserLookup
                 'realm' => $realm,
                 'operation' => $operation,
                 'attribute_name' => $localUserIdAttributeName,
-                'local_user_id' => LocalUserIdentifier::logValue($localUser->getId()),
+                'local_user_id_values' => $localUserIdValues,
                 'found_user_ids' => array_values(array_map(
                     static fn (KeycloakUser $user): string => $user->getKeycloakId(),
                     $users,

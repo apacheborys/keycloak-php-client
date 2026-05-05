@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
+use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -21,8 +22,14 @@ final class CreateUserProfileDtoTest extends TestCase
             lastName: 'Example',
             realm: 'master',
             attributes: [
-                'external-user-id' => 'external-id-1',
-                'locale' => ['en', 'de'],
+                new AttributeValueDto(
+                    attributeName: 'external-user-id',
+                    attributeValue: 'external-id-1',
+                ),
+                new AttributeValueDto(
+                    attributeName: 'locale',
+                    attributeValue: ['en', 'de'],
+                ),
             ],
         );
 
@@ -43,9 +50,35 @@ final class CreateUserProfileDtoTest extends TestCase
         );
         self::assertSame('master', $dto->getRealm());
         self::assertSame('user@example.com', $dto->getEmail());
+        self::assertCount(2, $dto->getAttributeDtos());
         self::assertSame(
             [
                 'external-user-id' => ['external-id-1'],
+                'locale' => ['en', 'de'],
+            ],
+            $dto->getAttributes(),
+        );
+    }
+
+    public function testAttributesMapInputRemainsSupported(): void
+    {
+        $dto = new CreateUserProfileDto(
+            username: 'user@example.com',
+            email: 'user@example.com',
+            emailVerified: true,
+            enabled: true,
+            firstName: 'User',
+            lastName: 'Example',
+            realm: 'master',
+            attributes: [
+                'external-user-id' => 42,
+                'locale' => ['en', 'de'],
+            ],
+        );
+
+        self::assertSame(
+            [
+                'external-user-id' => ['42'],
                 'locale' => ['en', 'de'],
             ],
             $dto->getAttributes(),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
@@ -14,6 +15,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\UserRolesDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUserInterface;
 use Apacheborys\KeycloakPhpClient\Mapper\LocalKeycloakUserBridgeMapperInterface;
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
 {
@@ -35,6 +37,7 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
         private string $realmForDeletion = 'master',
         private ?UpdateUserDto $updateUserDto = null,
         private string $localUserIdAttributeName = self::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME,
+        private int|string|UuidInterface|null $localUserIdAttributeValue = null,
         private ?UserRolesDto $createUserRolesDto = null,
         private ?UserRolesDto $updateUserRolesDto = null,
     ) {
@@ -45,9 +48,14 @@ final class ServiceTestMapper implements LocalKeycloakUserBridgeMapperInterface
         return $this->createUserProfile->getRealm();
     }
 
-    public function getLocalUserIdAttributeName(KeycloakUserInterface $localUser): string
+    public function getLocalUserIdAttribute(
+        KeycloakUserInterface $localUser
+    ): AttributeValueDto
     {
-        return $this->localUserIdAttributeName;
+        return new AttributeValueDto(
+            attributeName: $this->localUserIdAttributeName,
+            attributeValue: $this->localUserIdAttributeValue ?? $localUser->getId(),
+        );
     }
 
     public function prepareLocalUserForKeycloakUserCreation(

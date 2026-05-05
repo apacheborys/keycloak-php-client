@@ -132,8 +132,8 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
         );
         $resolvedUserId = $this->userLookup->resolveUserId(
             realm: $oldRealm,
-            localUser: $lookupUser,
-            localUserIdAttributeName: $mapper->getLocalUserIdAttributeName(localUser: $lookupUser),
+            keycloakId: $lookupUser->getKeycloakId(),
+            localUserIdAttribute: $mapper->getLocalUserIdAttribute(localUser: $lookupUser),
             operation: 'synchronizeRolesOnUserUpdate',
         );
 

@@ -128,10 +128,10 @@ When your application passes a local user object into the service layer, `Keyclo
 For existing-user operations, the service layer resolves the target Keycloak user id in this order:
 
 1. use `KeycloakUserInterface::getKeycloakId()` directly when the value is available;
-2. otherwise search Keycloak users by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()`;
+2. otherwise search Keycloak users by the mapper-provided local-id attribute DTO;
 3. throw `LogicException` when the local-id lookup does not return exactly one Keycloak user.
 
-The local-id attribute name is provided by `LocalKeycloakUserBridgeMapperInterface::getLocalUserIdAttributeName(...)`. Use `LocalKeycloakUserBridgeMapperInterface::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME` (`external-user-id`) when the default convention is enough.
+The local-id lookup attribute is provided by `LocalKeycloakUserBridgeMapperInterface::getLocalUserIdAttribute(...)` as `AttributeValueDto`. That DTO carries both the attribute name and the lookup value, so `KeycloakUserLookup` does not read `KeycloakUserInterface::getId()` directly. The same DTO can also be used in `CreateUserProfileDto` and `UpdateUserProfileDto` attribute collections. Use `LocalKeycloakUserBridgeMapperInterface::DEFAULT_LOCAL_USER_ID_ATTRIBUTE_NAME` (`external-user-id`) when the default convention is enough.
 
 Mapper-created DTOs still carry identity metadata:
 
@@ -143,7 +143,7 @@ For creation there is no Keycloak user id yet. If you need to persist the local 
 
 `updateUser(...)` matches old and new local versions by `getId()`. If either version exposes a Keycloak id, the service validates that the mapper-created DTO targets the same Keycloak user. `deleteUser(...)` performs the same local-id validation against the mapper-created delete DTO.
 
-`findUser(...)` resolves the realm through your mapper, resolves the target Keycloak id with the same Keycloak-id-first/local-id-fallback strategy, and then loads the current representation through the dedicated user-by-id endpoint.
+`findUser(...)` resolves the realm through your mapper, resolves the target Keycloak id with the same Keycloak-id-first/local-id-attribute strategy, and then loads the current representation through the dedicated user-by-id endpoint.
 
 For user repository search, the service layer also exposes `searchUsers(SearchUsersDto $dto)`. `SearchUsersDto` is accepted directly because it acts as a stable query object with realm, filters and pagination, not as a raw HTTP request payload.
 

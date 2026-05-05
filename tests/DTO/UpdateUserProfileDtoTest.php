@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
+use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\UpdateUserProfileDto;
 use Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -18,13 +19,20 @@ final class UpdateUserProfileDtoTest extends TestCase
             firstName: 'Oleg',
             enabled: true,
             attributes: [
-                'external-user-id' => 'external-id-2',
-                'locale' => ['uk'],
+                new AttributeValueDto(
+                    attributeName: 'external-user-id',
+                    attributeValue: 'external-id-2',
+                ),
+                new AttributeValueDto(
+                    attributeName: 'locale',
+                    attributeValue: ['uk'],
+                ),
             ],
         );
 
         self::assertSame('user@example.com', $dto->getUsername());
         self::assertSame('new@example.com', $dto->getEmail());
+        self::assertCount(2, $dto->getAttributeDtos() ?? []);
         self::assertSame(
             [
                 'external-user-id' => ['external-id-2'],
@@ -44,6 +52,25 @@ final class UpdateUserProfileDtoTest extends TestCase
                 ],
             ],
             $dto->toArray(),
+        );
+    }
+
+    public function testAttributesMapInputRemainsSupported(): void
+    {
+        $dto = new UpdateUserProfileDto(
+            username: 'user@example.com',
+            attributes: [
+                'external-user-id' => 42,
+                'locale' => ['uk'],
+            ],
+        );
+
+        self::assertSame(
+            [
+                'external-user-id' => ['42'],
+                'locale' => ['uk'],
+            ],
+            $dto->getAttributes(),
         );
     }
 

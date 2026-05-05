@@ -58,7 +58,8 @@ flowchart TD
 - synchronizes role assignments/unassignments;
 - uses `UserRolesDto` from `prepareLocalUserRolesForKeycloakUserUpdate(...)` for role synchronization;
 - matches old and new local user versions by `KeycloakUserInterface::getId()`;
-- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute fallback second;
+- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute DTO fallback second;
+- passes the mapper-provided attribute DTO into `KeycloakUserLookup` instead of letting the lookup helper read `KeycloakUserInterface` directly;
 - allows mapper-created `UpdateUserDto::getUserId()` to be null;
 - validates `UpdateUserDto::getLocalUserId()` against the local user id and keeps that value out of the Keycloak payload;
 - creates missing desired realm roles and synchronizes mappings when the mapper returns a non-empty role list;
@@ -70,7 +71,7 @@ The user-management step owns local/Keycloak identity validation and never reque
 ### `deleteUser`
 
 - delegates deletion coordinates to the mapper-created `DeleteUserDto`;
-- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute fallback second;
+- resolves the target Keycloak user id in the service layer, using `getKeycloakId()` first and the mapper-provided local-id attribute DTO fallback second;
 - validates `DeleteUserDto::getLocalUserId()` against `KeycloakUserInterface::getId()`;
 - allows mapper-created `DeleteUserDto::getUserId()` to be null;
 - deletes the user through the dedicated user-by-id endpoint.
@@ -80,7 +81,7 @@ The user-management step owns local/Keycloak identity validation and never reque
 - resolves realm from mapper;
 - resolves the target Keycloak id via `KeycloakUserLookup`;
 - uses `KeycloakUserInterface::getKeycloakId()` first;
-- otherwise searches by the mapper-provided local-id attribute and `KeycloakUserInterface::getId()` to resolve the Keycloak id;
+- otherwise searches by the mapper-provided local-id attribute DTO to resolve the Keycloak id;
 - loads the final representation through `findUserById`;
 - throws when the local-id lookup does not return exactly one Keycloak user.
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Mapper;
 
 use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
+use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\CreateUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\DeleteUserDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\OidcTokenRequestDto;
@@ -19,9 +20,11 @@ interface LocalKeycloakUserBridgeMapperInterface
     public function getRealm(KeycloakUserInterface $localUser): string;
 
     /**
-     * Returns the Keycloak user attribute that stores KeycloakUserInterface::getId().
+     * Returns the Keycloak lookup attribute/value pair used when getKeycloakId() is unavailable.
      */
-    public function getLocalUserIdAttributeName(KeycloakUserInterface $localUser): string;
+    public function getLocalUserIdAttribute(
+        KeycloakUserInterface $localUser
+    ): AttributeValueDto;
 
     /**
      * Builds the Keycloak user creation profile from a local user.
