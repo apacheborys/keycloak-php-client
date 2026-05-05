@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\Tests\DTO;
 
 use Apacheborys\KeycloakPhpClient\DTO\Request\AttributeValueDto;
-use Apacheborys\KeycloakPhpClient\DTO\Request\UserIdentifierAttributeValueDto;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
@@ -37,14 +36,13 @@ final class AttributeValueDtoTest extends TestCase
         self::assertSame(['en', 'de'], $dto->getNormalizedValues());
     }
 
-    public function testDeprecatedAliasExtendsGenericAttributeDto(): void
+    public function testNormalizedValuesForStringScalar(): void
     {
-        $dto = new UserIdentifierAttributeValueDto(
+        $dto = new AttributeValueDto(
             attributeName: 'external-user-id',
             attributeValue: 'external-id-1',
         );
 
-        self::assertInstanceOf(AttributeValueDto::class, $dto);
         self::assertSame(['external-id-1'], $dto->getNormalizedValues());
     }
 
