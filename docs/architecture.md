@@ -152,6 +152,17 @@ The HTTP layer should answer questions like:
 - which DTO is sent or returned;
 - how errors are surfaced.
 
+The HTTP layer is also responsible for converting failures into typed exceptions:
+
+- `KeycloakAuthenticationException`
+- `KeycloakAuthorizationException`
+- `KeycloakNotFoundException`
+- `KeycloakConflictException`
+- `KeycloakRateLimitException`
+- `KeycloakServerException`
+- `KeycloakTransportException`
+- `KeycloakInvalidResponseException`
+
 The HTTP layer should not decide business workflows such as:
 
 - whether a missing attribute should be auto-created;
@@ -166,6 +177,12 @@ The service layer owns orchestration and application-facing intent:
 - combine multiple HTTP calls into one higher-level operation;
 - enforce workflow decisions and defaults;
 - keep the calling application away from Keycloak-specific multi-step coordination.
+
+This includes decisions such as:
+
+- whether a `409` should trigger a retry or a create-vs-update fallback;
+- whether a `429` should be retried with backoff;
+- whether a `404` is a business error, an idempotent no-op, or a signal to continue a larger workflow.
 
 ## Design Principles
 
