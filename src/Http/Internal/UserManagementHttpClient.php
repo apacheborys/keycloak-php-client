@@ -11,11 +11,9 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\User\ResetUserPasswordDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\User\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
-use Apacheborys\KeycloakPhpClient\Exception\CreateUserException;
 use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
 use Assert\Assert;
 use LogicException;
-use RuntimeException;
 use Ramsey\Uuid\UuidInterface;
 
 final readonly class UserManagementHttpClient implements UserManagementHttpClientInterface
@@ -43,16 +41,10 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak users request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, array<string, mixed>> $data */
         $users = [];
@@ -78,16 +70,10 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get user by id failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
         Assert::that($data)->isArray();
 
         /** @var array<string, mixed> $data */
@@ -114,13 +100,10 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode === 201) {
-            return;
-        }
-
-        throw new CreateUserException(message: (string) $response->getBody());
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
+        );
     }
 
     #[\Override]
@@ -146,15 +129,9 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf('Keycloak update user failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -174,15 +151,9 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf('Keycloak delete user failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -229,13 +200,10 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode === 204) {
-            return;
-        }
-
-        throw new LogicException("Can't set password, response: " . $response->getBody()->getContents());
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
+        );
     }
 
     private function buildUsersQuery(SearchUsersDto $dto): string

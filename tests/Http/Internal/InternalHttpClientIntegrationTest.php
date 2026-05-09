@@ -30,6 +30,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
+use Apacheborys\KeycloakPhpClient\Exception\KeycloakServerException;
 use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
@@ -1046,7 +1047,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
             accessTokenProvider: $this->accessTokenProvider,
         );
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(KeycloakServerException::class);
         $this->expectExceptionMessage('status 500');
         $client->getRoles(new GetRolesDto(realm: 'master'));
     }

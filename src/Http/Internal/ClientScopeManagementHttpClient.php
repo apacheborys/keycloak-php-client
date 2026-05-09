@@ -46,16 +46,10 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get client scopes failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, mixed> $data */
         $clientScopes = [];
@@ -83,18 +77,10 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get client scope by id failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        return ClientScopeDto::fromArray(
-            data: $this->httpCore->decodeJson(body: $body),
-        );
+        return ClientScopeDto::fromArray(data: $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        ));
     }
 
     /**
@@ -119,20 +105,10 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf(
-                    'Keycloak get client scope protocol mappers failed with status %d: %s',
-                    $statusCode,
-                    $body,
-                )
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, mixed> $data */
         $protocolMappers = [];
@@ -165,14 +141,10 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak create client scope failed with status %d: %s', $statusCode, $body)
-            );
-        }
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
+        );
 
         $assignmentType = $dto->getRealmAssignmentType();
         if ($assignmentType === null) {
@@ -214,14 +186,10 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak update client scope failed with status %d: %s', $statusCode, $body)
-            );
-        }
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
+        );
 
         $assignmentType = $dto->getRealmAssignmentType();
         if ($assignmentType === null) {
@@ -261,15 +229,9 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        throw new RuntimeException(
-            message: sprintf('Keycloak delete client scope failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -299,19 +261,9 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf(
-                'Keycloak create client scope protocol mapper failed with status %d: %s',
-                $statusCode,
-                $body
-            )
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -342,19 +294,9 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf(
-                'Keycloak update client scope protocol mapper failed with status %d: %s',
-                $statusCode,
-                $body
-            )
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -378,19 +320,9 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf(
-                'Keycloak delete client scope protocol mapper failed with status %d: %s',
-                $statusCode,
-                $body
-            )
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -493,29 +425,20 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
+        $allowedStatusCodes = [];
 
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
+        if ($ignoreNotFound) {
+            $allowedStatusCodes[] = 404;
         }
 
-        if ($ignoreNotFound && $statusCode === 404) {
-            return;
+        if ($method === 'PUT') {
+            $allowedStatusCodes[] = 409;
         }
 
-        if ($method === 'PUT' && $statusCode === 409) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf(
-                'Keycloak %s failed in realm "%s" with status %d: %s',
-                $action,
-                $realm,
-                $statusCode,
-                $body
-            )
+        $this->httpCore->assertSuccessfulResponseOrAllowedStatus(
+            request: $request,
+            response: $response,
+            allowedStatusCodes: $allowedStatusCodes,
         );
     }
 

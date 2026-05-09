@@ -12,7 +12,6 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Http\OidcInteractionHttpClientInterface;
 use Assert\Assert;
-use RuntimeException;
 
 final readonly class OidcInteractionHttpClient implements OidcInteractionHttpClientInterface
 {
@@ -29,16 +28,10 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         $request = $this->httpCore->createRequest(method: 'GET', endpoint: $endpoint);
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak OpenID configuration request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         return OpenIdConfigurationDto::fromArray(data: $data);
     }
@@ -64,16 +57,11 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak JWKS request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
         return JwksDto::fromArray(data: $data);
     }
 
@@ -104,16 +92,10 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak available realms request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, array<string, mixed>> $data */
         $realms = [];
@@ -158,21 +140,10 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf(
-                    'Keycloak %s request failed with status %d: %s',
-                    $dto->getGrantType()->value,
-                    $statusCode,
-                    $body
-                )
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         return OidcTokenResponseDto::fromArray(data: $data);
     }
