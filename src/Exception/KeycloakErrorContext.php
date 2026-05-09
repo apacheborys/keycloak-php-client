@@ -19,30 +19,19 @@ final readonly class KeycloakErrorContext
 
     private string $method;
     private string $uri;
-    private ?int $statusCode;
-    private ?string $responseBody;
-    private ?string $keycloakError;
-    private ?string $keycloakErrorDescription;
-    private ?string $correlationId;
-
     public function __construct(
         string $method,
         string $uri,
-        ?int $statusCode = null,
-        ?string $responseBody = null,
-        ?string $keycloakError = null,
-        ?string $keycloakErrorDescription = null,
-        ?string $correlationId = null,
+        private ?int $statusCode = null,
+        private ?string $responseBody = null,
+        private ?string $keycloakError = null,
+        private ?string $keycloakErrorDescription = null,
+        private ?string $correlationId = null,
     ) {
         $normalizedMethod = strtoupper(trim($method));
 
         $this->method = $normalizedMethod !== '' ? $normalizedMethod : 'UNKNOWN';
         $this->uri = self::sanitizeUri($uri);
-        $this->statusCode = $statusCode;
-        $this->responseBody = $responseBody;
-        $this->keycloakError = $keycloakError;
-        $this->keycloakErrorDescription = $keycloakErrorDescription;
-        $this->correlationId = $correlationId;
     }
 
     public function getMethod(): string

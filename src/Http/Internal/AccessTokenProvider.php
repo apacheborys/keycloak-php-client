@@ -7,7 +7,6 @@ namespace Apacheborys\KeycloakPhpClient\Http\Internal;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Psr\Cache\CacheItemPoolInterface;
-use RuntimeException;
 
 final readonly class AccessTokenProvider
 {
@@ -61,16 +60,10 @@ final readonly class AccessTokenProvider
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak token request failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
         $dto = OidcTokenResponseDto::fromArray(data: $data);
 
         if ($cache !== null) {

@@ -12,7 +12,6 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
 use Assert\Assert;
-use RuntimeException;
 
 final readonly class RoleManagementHttpClient implements RoleManagementHttpClientInterface
 {
@@ -38,16 +37,10 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get roles failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, mixed> $data */
         $roles = [];
@@ -80,16 +73,10 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get available user roles failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        $data = $this->httpCore->decodeJson(body: $body);
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
         /** @var array<int, mixed> $data */
         $roles = [];
@@ -122,19 +109,10 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        if ($statusCode === 409) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf('Keycloak create role failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponseOrAllowedStatus(
+            request: $request,
+            response: $response,
+            allowedStatusCodes: [409],
         );
     }
 
@@ -153,15 +131,9 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf('Keycloak delete role failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 
@@ -217,15 +189,9 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 200 && $statusCode < 300) {
-            return;
-        }
-
-        $body = (string) $response->getBody();
-        throw new RuntimeException(
-            message: sprintf('Keycloak user role mapping failed with status %d: %s', $statusCode, $body)
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
         );
     }
 }

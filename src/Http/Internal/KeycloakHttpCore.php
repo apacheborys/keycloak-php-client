@@ -114,6 +114,27 @@ final readonly class KeycloakHttpCore
     }
 
     /**
+     * @param list<int> $allowedStatusCodes
+     */
+    public function assertSuccessfulResponseOrAllowedStatus(
+        RequestInterface $request,
+        ResponseInterface $response,
+        array $allowedStatusCodes,
+    ): void {
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        if (in_array($statusCode, $allowedStatusCodes, true)) {
+            return;
+        }
+
+        $this->assertSuccessfulResponse($request, $response);
+    }
+
+    /**
      * @return array<mixed>
      */
     public function decodeJsonResponse(

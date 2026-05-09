@@ -94,16 +94,12 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
+        $data = $this->httpCore->decodeJsonResponse(
+            request: $request,
+            response: $response,
+        );
 
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak get user profile failed with status %d: %s', $statusCode, $body)
-            );
-        }
-
-        return UserProfileDto::fromArray(data: $this->httpCore->decodeJson(body: $body));
+        return UserProfileDto::fromArray(data: $data);
     }
 
     private function saveUserProfile(string $realm, UserProfileDto $profile): UserProfileDto
@@ -126,14 +122,12 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
+        $this->httpCore->assertSuccessfulResponse(
+            request: $request,
+            response: $response,
+        );
 
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(
-                message: sprintf('Keycloak update user profile failed with status %d: %s', $statusCode, $body)
-            );
-        }
+        $body = (string) $response->getBody();
 
         if ($body === '') {
             return $profile;
