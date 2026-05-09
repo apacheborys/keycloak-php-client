@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 
+use Assert\Assert;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakAuthenticationException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakAuthorizationException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakConflictException;
@@ -81,6 +82,55 @@ final class KeycloakHttpCoreTest extends TestCase
         }
     }
 
+    public function testMapJsonResponseWrapsResponseShapeFailuresWithoutLeakingSensitiveData(): void
+    {
+        $core = $this->createCore(
+            $this->createStub(ClientInterface::class),
+        );
+        $request = $core->createRequest(
+            method: 'GET',
+            endpoint: 'https://keycloak.example/admin/realms/master/users'
+                . '?client_secret=top-secret&search=user@example.com',
+            headers: ['Authorization' => 'Bearer super-secret-token'],
+        );
+        $body = json_encode(
+            [
+                'unexpected' => [
+                    'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                ],
+            ],
+            JSON_THROW_ON_ERROR,
+        );
+        $response = $this->createResponse(
+            statusCode: 200,
+            body: $body,
+        );
+
+        try {
+            $core->mapJsonResponse(
+                request: $request,
+                response: $response,
+                mapper: static function (array $data): array {
+                    Assert::that(array_is_list($data))->true();
+
+                    return $data;
+                },
+            );
+            self::fail('Expected exception was not thrown.');
+        } catch (KeycloakInvalidResponseException $exception) {
+            self::assertSame(200, $exception->getContext()->getStatusCode());
+            self::assertSame($body, $exception->getContext()->getResponseBody());
+            self::assertStringContainsString('/admin/realms/master/users', $exception->getContext()->getUri());
+            self::assertStringContainsString('search=user@example.com', $exception->getContext()->getUri());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getContext()->getUri());
+            self::assertStringNotContainsString('top-secret', $exception->getContext()->getUri());
+            self::assertStringNotContainsString('Authorization', $exception->getMessage());
+            self::assertStringNotContainsString('Bearer', $exception->getMessage());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getMessage());
+            self::assertStringNotContainsString('top-secret', $exception->getMessage());
+        }
+    }
+
     public function testSendRequestWrapsPsr18TransportExceptionsWithoutLeakingSensitiveData(): void
     {
         $httpClient = $this->createMock(ClientInterface::class);
@@ -105,13 +155,13 @@ final class KeycloakHttpCoreTest extends TestCase
             self::assertNull($exception->getContext()->getStatusCode());
             self::assertStringNotContainsString('Authorization', $exception->getMessage());
             self::assertStringNotContainsString('Bearer', $exception->getMessage());
-            self::assertStringNotContainsString('client_secret', $exception->getMessage());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getMessage());
             self::assertStringNotContainsString(
                 'top-secret',
                 $exception->getMessage(),
             );
-            self::assertStringNotContainsString(
-                'client_secret',
+            self::assertStringContainsString(
+                'client_secret=[redacted]',
                 $exception->getContext()->getUri(),
             );
             self::assertStringContainsString(

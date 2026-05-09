@@ -46,20 +46,22 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $clientScopes = [];
+                foreach ($data as $item) {
+                    Assert::that($item)->isArray();
+                    /** @var array<string, mixed> $item */
+                    $clientScopes[] = ClientScopeDto::fromArray(data: $item);
+                }
+
+                return $clientScopes;
+            },
         );
-
-        /** @var array<int, mixed> $data */
-        $clientScopes = [];
-        foreach ($data as $item) {
-            Assert::that($item)->isArray();
-            /** @var array<string, mixed> $item */
-            $clientScopes[] = ClientScopeDto::fromArray(data: $item);
-        }
-
-        return $clientScopes;
     }
 
     #[\Override]
@@ -77,10 +79,11 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        return ClientScopeDto::fromArray(data: $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
-        ));
+            mapper: static fn (array $data): ClientScopeDto => ClientScopeDto::fromArray(data: $data),
+        );
     }
 
     /**
@@ -105,20 +108,22 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $protocolMappers = [];
+                foreach ($data as $item) {
+                    Assert::that($item)->isArray();
+                    /** @var array<string, mixed> $item */
+                    $protocolMappers[] = ClientScopesProtocolMapperDto::fromArray(data: $item);
+                }
+
+                return $protocolMappers;
+            },
         );
-
-        /** @var array<int, mixed> $data */
-        $protocolMappers = [];
-        foreach ($data as $item) {
-            Assert::that($item)->isArray();
-            /** @var array<string, mixed> $item */
-            $protocolMappers[] = ClientScopesProtocolMapperDto::fromArray(data: $item);
-        }
-
-        return $protocolMappers;
     }
 
     #[\Override]

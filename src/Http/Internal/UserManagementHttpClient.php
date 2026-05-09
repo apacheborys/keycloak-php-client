@@ -41,19 +41,22 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $users = [];
+                foreach ($data as $userData) {
+                    Assert::that($userData)->isArray();
+                    /** @var array<string, mixed> $userData */
+                    $users[] = KeycloakUser::fromArray(data: $userData);
+                }
+
+                return $users;
+            },
         );
-
-        /** @var array<int, array<string, mixed>> $data */
-        $users = [];
-        foreach ($data as $userData) {
-            Assert::that($userData)->isArray();
-            $users[] = KeycloakUser::fromArray(data: $userData);
-        }
-
-        return $users;
     }
 
     #[\Override]
@@ -70,14 +73,11 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): KeycloakUser => KeycloakUser::fromArray(data: $data),
         );
-        Assert::that($data)->isArray();
-
-        /** @var array<string, mixed> $data */
-        return KeycloakUser::fromArray(data: $data);
     }
 
     #[\Override]

@@ -78,6 +78,21 @@ Applied patterns:
 - Query Object: `SearchUsersDto`
 - Lossless document model: `UserProfileDto`, `AttributeDto`, `UserProfileGroupDto`
 
+## Error Handling
+
+The HTTP layer maps Keycloak failures to typed exceptions:
+
+- `401` -> `KeycloakAuthenticationException`
+- `403` -> `KeycloakAuthorizationException`
+- `404` -> `KeycloakNotFoundException`
+- `409` -> `KeycloakConflictException`
+- `429` -> `KeycloakRateLimitException`
+- `5xx` -> `KeycloakServerException`
+- invalid or malformed response payload -> `KeycloakInvalidResponseException`
+- transport/client failure -> `KeycloakTransportException`
+
+Each exception carries `KeycloakErrorContext` with method, sanitized URI, status, response body, parsed `error` / `error_description`, and correlation id when available. Exception messages are safe for logs: they do not include `Authorization`, bearer tokens, `client_secret`, `refresh_token`, `access_token`, `password`, or raw sensitive query-param values, and request bodies are not stored in diagnostics by default.
+
 ## Quick Start
 
 ```php

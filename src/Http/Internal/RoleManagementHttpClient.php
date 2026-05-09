@@ -37,20 +37,22 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $roles = [];
+                foreach ($data as $item) {
+                    Assert::that($item)->isArray();
+                    /** @var array<string, mixed> $item */
+                    $roles[] = RoleDto::fromArray(data: $item);
+                }
+
+                return $roles;
+            },
         );
-
-        /** @var array<int, mixed> $data */
-        $roles = [];
-        foreach ($data as $item) {
-            Assert::that($item)->isArray();
-            /** @var array<string, mixed> $item */
-            $roles[] = RoleDto::fromArray(data: $item);
-        }
-
-        return $roles;
     }
 
     /**
@@ -73,20 +75,22 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $roles = [];
+                foreach ($data as $item) {
+                    Assert::that($item)->isArray();
+                    /** @var array<string, mixed> $item */
+                    $roles[] = RoleDto::fromArray(data: $item);
+                }
+
+                return $roles;
+            },
         );
-
-        /** @var array<int, mixed> $data */
-        $roles = [];
-        foreach ($data as $item) {
-            Assert::that($item)->isArray();
-            /** @var array<string, mixed> $item */
-            $roles[] = RoleDto::fromArray(data: $item);
-        }
-
-        return $roles;
     }
 
     #[\Override]

@@ -46,6 +46,10 @@ final class KeycloakExceptionTest extends TestCase
             $message,
         );
         self::assertStringContainsString('client_id=backend', $message);
+        self::assertStringContainsString('client_secret=[redacted]', $message);
+        self::assertStringContainsString('refresh_token=[redacted]', $message);
+        self::assertStringContainsString('access_token=[redacted]', $message);
+        self::assertStringContainsString('password=[redacted]', $message);
         self::assertStringContainsString('scope=openid%20email', $message);
         self::assertStringContainsString('status', $message);
         self::assertStringContainsString(
@@ -65,10 +69,6 @@ final class KeycloakExceptionTest extends TestCase
 
         self::assertStringNotContainsString('Authorization', $message);
         self::assertStringNotContainsString('Bearer', $message);
-        self::assertStringNotContainsString('client_secret', $message);
-        self::assertStringNotContainsString('refresh_token', $message);
-        self::assertStringNotContainsString('access_token', $message);
-        self::assertStringNotContainsString('password', $message);
         self::assertStringNotContainsString('top-secret', $message);
         self::assertStringNotContainsString('refresh-secret', $message);
         self::assertStringNotContainsString('access-secret', $message);
@@ -100,7 +100,7 @@ final class KeycloakExceptionTest extends TestCase
         self::assertSame('POST', $context->getMethod());
         self::assertSame(
             'https://keycloak.example/admin/realms/master/users'
-            . '?client_id=backend&exact=true',
+            . '?client_id=backend&client_secret=[redacted]&exact=true',
             $context->getUri(),
         );
         self::assertSame(409, $context->getStatusCode());
