@@ -13,6 +13,7 @@ use Apacheborys\KeycloakPhpClient\Exception\KeycloakNotFoundException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakRateLimitException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakServerException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakTransportException;
+use Assert\InvalidArgumentException;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -20,6 +21,8 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use RuntimeException;
+use TypeError;
 
 final readonly class KeycloakHttpCore
 {
@@ -95,6 +98,26 @@ final readonly class KeycloakHttpCore
             return;
         }
 
+        $this->throwForUnsuccessfulStatusCode(
+            statusCode: $statusCode,
+            context: $this->createResponseContext(
+                request: $request,
+                response: $response,
+                responseBody: $this->readResponseBody($response),
+            ),
+        );
+    }
+
+    /**
+     * @template T
+     * @param callable(array<mixed>): T $mapper
+     * @return T
+     */
+    public function mapJsonResponse(
+        RequestInterface $request,
+        ResponseInterface $response,
+        callable $mapper,
+    ): mixed {
         $body = $this->readResponseBody($response);
         $context = $this->createResponseContext(
             request: $request,
@@ -102,15 +125,24 @@ final readonly class KeycloakHttpCore
             responseBody: $body,
         );
 
-        throw match (true) {
-            $statusCode === 401 => new KeycloakAuthenticationException($context),
-            $statusCode === 403 => new KeycloakAuthorizationException($context),
-            $statusCode === 404 => new KeycloakNotFoundException($context),
-            $statusCode === 409 => new KeycloakConflictException($context),
-            $statusCode === 429 => new KeycloakRateLimitException($context),
-            $statusCode >= 500 && $statusCode <= 599 => new KeycloakServerException($context),
-            default => new KeycloakTransportException($context),
-        };
+        $this->throwForUnsuccessfulStatusCode(
+            statusCode: $response->getStatusCode(),
+            context: $context,
+        );
+
+        $data = $this->decodeJsonBody(
+            body: $body,
+            context: $context,
+        );
+
+        try {
+            return $mapper($data);
+        } catch (InvalidArgumentException | RuntimeException | TypeError $exception) {
+            throw new KeycloakInvalidResponseException(
+                context: $context,
+                previous: $exception,
+            );
+        }
     }
 
     /**
@@ -141,16 +173,10 @@ final readonly class KeycloakHttpCore
         RequestInterface $request,
         ResponseInterface $response,
     ): array {
-        $body = $this->readResponseBody($response);
-        $this->assertSuccessfulResponse($request, $response);
-
-        return $this->decodeJsonBody(
-            body: $body,
-            context: $this->createResponseContext(
-                request: $request,
-                response: $response,
-                responseBody: $body,
-            ),
+        return $this->mapJsonResponse(
+            request: $request,
+            response: $response,
+            mapper: static fn (array $data): array => $data,
         );
     }
 
@@ -240,6 +266,25 @@ final readonly class KeycloakHttpCore
         }
 
         return null;
+    }
+
+    private function throwForUnsuccessfulStatusCode(
+        int $statusCode,
+        KeycloakErrorContext $context,
+    ): void {
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return;
+        }
+
+        throw match (true) {
+            $statusCode === 401 => new KeycloakAuthenticationException($context),
+            $statusCode === 403 => new KeycloakAuthorizationException($context),
+            $statusCode === 404 => new KeycloakNotFoundException($context),
+            $statusCode === 409 => new KeycloakConflictException($context),
+            $statusCode === 429 => new KeycloakRateLimitException($context),
+            $statusCode >= 500 && $statusCode <= 599 => new KeycloakServerException($context),
+            default => new KeycloakTransportException($context),
+        };
     }
 
     private function readResponseBody(ResponseInterface $response): string

@@ -28,12 +28,11 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         $request = $this->httpCore->createRequest(method: 'GET', endpoint: $endpoint);
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): OpenIdConfigurationDto => OpenIdConfigurationDto::fromArray(data: $data),
         );
-
-        return OpenIdConfigurationDto::fromArray(data: $data);
     }
 
     #[\Override]
@@ -57,12 +56,11 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): JwksDto => JwksDto::fromArray(data: $data),
         );
-
-        return JwksDto::fromArray(data: $data);
     }
 
     /**
@@ -92,19 +90,22 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static function (array $data): array {
+                Assert::that(array_is_list($data))->true();
+
+                $realms = [];
+                foreach ($data as $realmData) {
+                    Assert::that($realmData)->isArray();
+                    /** @var array<string, mixed> $realmData */
+                    $realms[] = KeycloakRealm::fromArray(data: $realmData);
+                }
+
+                return $realms;
+            },
         );
-
-        /** @var array<int, array<string, mixed>> $data */
-        $realms = [];
-        foreach ($data as $realmData) {
-            Assert::that($realmData)->isArray();
-            $realms[] = KeycloakRealm::fromArray(data: $realmData);
-        }
-
-        return $realms;
     }
 
     #[\Override]
@@ -140,11 +141,10 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): OidcTokenResponseDto => OidcTokenResponseDto::fromArray(data: $data),
         );
-
-        return OidcTokenResponseDto::fromArray(data: $data);
     }
 }

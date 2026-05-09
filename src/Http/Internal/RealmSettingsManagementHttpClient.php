@@ -94,12 +94,11 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        return $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): UserProfileDto => UserProfileDto::fromArray(data: $data),
         );
-
-        return UserProfileDto::fromArray(data: $data);
     }
 
     private function saveUserProfile(string $realm, UserProfileDto $profile): UserProfileDto
@@ -122,17 +121,21 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $this->httpCore->assertSuccessfulResponse(
-            request: $request,
-            response: $response,
-        );
-
         $body = (string) $response->getBody();
 
         if ($body === '') {
+            $this->httpCore->assertSuccessfulResponse(
+                request: $request,
+                response: $response,
+            );
+
             return $profile;
         }
 
-        return UserProfileDto::fromArray(data: $this->httpCore->decodeJson(body: $body));
+        return $this->httpCore->mapJsonResponse(
+            request: $request,
+            response: $response,
+            mapper: static fn (array $data): UserProfileDto => UserProfileDto::fromArray(data: $data),
+        );
     }
 }

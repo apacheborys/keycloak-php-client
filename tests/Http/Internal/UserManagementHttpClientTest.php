@@ -141,8 +141,76 @@ final class UserManagementHttpClientTest extends TestCase
             ),
         );
 
-        $this->expectException(KeycloakInvalidResponseException::class);
-        $client->getUsers(new SearchUsersDto(realm: 'master', email: 'user@example.com'));
+        try {
+            $client->getUsers(new SearchUsersDto(realm: 'master', email: 'user@example.com'));
+            self::fail('Expected exception was not thrown.');
+        } catch (KeycloakInvalidResponseException $exception) {
+            self::assertSame(200, $exception->getContext()->getStatusCode());
+            self::assertSame('{"broken":', $exception->getContext()->getResponseBody());
+            self::assertStringContainsString('email=user%40example.com', $exception->getContext()->getUri());
+            self::assertStringNotContainsString('Authorization', $exception->getMessage());
+            self::assertStringNotContainsString('Bearer', $exception->getMessage());
+        }
+    }
+
+    public function testGetUsersThrowsKeycloakInvalidResponseExceptionForUnexpectedJsonObjectShape(): void
+    {
+        $body = json_encode(
+            [
+                'unexpected' => [
+                    'id' => '92a372d5-c338-4e77-a1b3-08771241036e',
+                ],
+            ],
+            JSON_THROW_ON_ERROR,
+        );
+        $client = $this->createClientWithResponse(
+            $this->createResponse(
+                statusCode: 200,
+                body: $body,
+            ),
+        );
+
+        try {
+            $client->getUsers(new SearchUsersDto(realm: 'master', email: 'user@example.com'));
+            self::fail('Expected exception was not thrown.');
+        } catch (KeycloakInvalidResponseException $exception) {
+            self::assertSame($body, $exception->getContext()->getResponseBody());
+            self::assertStringContainsString('/admin/realms/master/users', $exception->getContext()->getUri());
+            self::assertStringContainsString('status 200', $exception->getMessage());
+        }
+    }
+
+    public function testGetUserByIdThrowsKeycloakInvalidResponseExceptionForMissingRequiredField(): void
+    {
+        $userId = '92a372d5-c338-4e77-a1b3-08771241036e';
+        $body = json_encode(
+            [
+                'id' => $userId,
+                'createdTimestamp' => 1_700_000_000_000,
+            ],
+            JSON_THROW_ON_ERROR,
+        );
+        $client = $this->createClientWithResponse(
+            $this->createResponse(
+                statusCode: 200,
+                body: $body,
+            ),
+        );
+
+        try {
+            $client->getUserById(
+                new GetUserByIdDto(
+                    realm: 'master',
+                    userId: Uuid::fromString($userId),
+                ),
+            );
+            self::fail('Expected exception was not thrown.');
+        } catch (KeycloakInvalidResponseException $exception) {
+            self::assertSame($body, $exception->getContext()->getResponseBody());
+            self::assertStringContainsString('/users/' . $userId, $exception->getContext()->getUri());
+            self::assertStringNotContainsString('Authorization', $exception->getMessage());
+            self::assertStringNotContainsString('Bearer', $exception->getMessage());
+        }
     }
 
     private function createClientWithResponse(SimpleResponse $response): UserManagementHttpClient

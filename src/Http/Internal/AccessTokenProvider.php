@@ -60,11 +60,11 @@ final readonly class AccessTokenProvider
         );
 
         $response = $this->httpCore->sendRequest(request: $request);
-        $data = $this->httpCore->decodeJsonResponse(
+        $dto = $this->httpCore->mapJsonResponse(
             request: $request,
             response: $response,
+            mapper: static fn (array $data): OidcTokenResponseDto => OidcTokenResponseDto::fromArray(data: $data),
         );
-        $dto = OidcTokenResponseDto::fromArray(data: $data);
 
         if ($cache !== null) {
             $cacheItem = $cache->getItem(key: $cacheKey);
