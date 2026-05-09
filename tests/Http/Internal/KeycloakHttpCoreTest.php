@@ -121,12 +121,12 @@ final class KeycloakHttpCoreTest extends TestCase
             self::assertSame(200, $exception->getContext()->getStatusCode());
             self::assertSame($body, $exception->getContext()->getResponseBody());
             self::assertStringContainsString('/admin/realms/master/users', $exception->getContext()->getUri());
-            self::assertStringContainsString('search=user%40example.com', $exception->getContext()->getUri());
-            self::assertStringNotContainsString('client_secret', $exception->getContext()->getUri());
+            self::assertStringContainsString('search=user@example.com', $exception->getContext()->getUri());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getContext()->getUri());
             self::assertStringNotContainsString('top-secret', $exception->getContext()->getUri());
             self::assertStringNotContainsString('Authorization', $exception->getMessage());
             self::assertStringNotContainsString('Bearer', $exception->getMessage());
-            self::assertStringNotContainsString('client_secret', $exception->getMessage());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getMessage());
             self::assertStringNotContainsString('top-secret', $exception->getMessage());
         }
     }
@@ -155,13 +155,13 @@ final class KeycloakHttpCoreTest extends TestCase
             self::assertNull($exception->getContext()->getStatusCode());
             self::assertStringNotContainsString('Authorization', $exception->getMessage());
             self::assertStringNotContainsString('Bearer', $exception->getMessage());
-            self::assertStringNotContainsString('client_secret', $exception->getMessage());
+            self::assertStringContainsString('client_secret=[redacted]', $exception->getMessage());
             self::assertStringNotContainsString(
                 'top-secret',
                 $exception->getMessage(),
             );
-            self::assertStringNotContainsString(
-                'client_secret',
+            self::assertStringContainsString(
+                'client_secret=[redacted]',
                 $exception->getContext()->getUri(),
             );
             self::assertStringContainsString(
