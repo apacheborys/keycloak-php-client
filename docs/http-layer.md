@@ -114,6 +114,10 @@ Transport/client failures map to:
 
 - PSR-18 client failures -> `KeycloakTransportException`
 
+Request payload serialization stays separate from remote failure handling:
+
+- `json_encode(..., JSON_THROW_ON_ERROR)` for request DTOs is treated as a local programming/configuration failure, not as a Keycloak HTTP failure
+
 Short example:
 
 ```php
