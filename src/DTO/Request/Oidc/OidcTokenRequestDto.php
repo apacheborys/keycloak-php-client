@@ -6,9 +6,12 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Request\Oidc;
 
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use Assert\Assert;
+use Assert\InvalidArgumentException;
 
 readonly final class OidcTokenRequestDto
 {
+    private const string REDACTED = '[redacted]';
+
     public function __construct(
         private string $realm,
         private string $clientId,
@@ -28,6 +31,57 @@ readonly final class OidcTokenRequestDto
         $this->validateByGrantType();
     }
 
+    public static function forClientCredentials(
+        string $realm,
+        string $clientId,
+        string $clientSecret,
+        ?string $scope = null,
+    ): self {
+        return new self(
+            realm: $realm,
+            clientId: $clientId,
+            clientSecret: $clientSecret,
+            scope: $scope,
+            grantType: OidcGrantType::CLIENT_CREDENTIALS,
+        );
+    }
+
+    public static function forPasswordGrant(
+        string $realm,
+        string $clientId,
+        string $clientSecret,
+        string $username,
+        string $password,
+        ?string $scope = null,
+    ): self {
+        return new self(
+            realm: $realm,
+            clientId: $clientId,
+            clientSecret: $clientSecret,
+            username: $username,
+            password: $password,
+            scope: $scope,
+            grantType: OidcGrantType::PASSWORD,
+        );
+    }
+
+    public static function forRefreshToken(
+        string $realm,
+        string $clientId,
+        string $clientSecret,
+        string $refreshToken,
+        ?string $scope = null,
+    ): self {
+        return new self(
+            realm: $realm,
+            clientId: $clientId,
+            clientSecret: $clientSecret,
+            refreshToken: $refreshToken,
+            scope: $scope,
+            grantType: OidcGrantType::REFRESH_TOKEN,
+        );
+    }
+
     public function getRealm(): string
     {
         return $this->realm;
@@ -41,6 +95,23 @@ readonly final class OidcTokenRequestDto
     public function getScope(): ?string
     {
         return $this->scope;
+    }
+
+    /**
+     * @return array<string, OidcGrantType|string|null>
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'realm' => $this->realm,
+            'clientId' => $this->clientId,
+            'clientSecret' => self::REDACTED,
+            'username' => $this->username,
+            'password' => $this->password !== null ? self::REDACTED : null,
+            'refreshToken' => $this->refreshToken !== null ? self::REDACTED : null,
+            'scope' => $this->scope,
+            'grantType' => $this->grantType,
+        ];
     }
 
     /**
@@ -58,26 +129,62 @@ readonly final class OidcTokenRequestDto
             $result['scope'] = $this->scope;
         }
 
-        if ($this->grantType === OidcGrantType::PASSWORD) {
-            $result['username'] = (string) $this->username;
-            $result['password'] = (string) $this->password;
-        }
-
-        if ($this->grantType === OidcGrantType::REFRESH_TOKEN) {
-            $result['refresh_token'] = (string) $this->refreshToken;
-        }
-
-        return $result;
+        return match ($this->grantType) {
+            OidcGrantType::CLIENT_CREDENTIALS => $result,
+            OidcGrantType::PASSWORD => $result + [
+                'username' => (string) $this->username,
+                'password' => (string) $this->password,
+            ],
+            OidcGrantType::REFRESH_TOKEN => $result + [
+                'refresh_token' => (string) $this->refreshToken,
+            ],
+        };
     }
 
     private function validateByGrantType(): void
     {
-        if ($this->grantType === OidcGrantType::PASSWORD) {
-            Assert::that($this->username)->notEmpty();
-            Assert::that($this->password)->notEmpty();
-            return;
-        }
+        match ($this->grantType) {
+            OidcGrantType::CLIENT_CREDENTIALS => $this->validateClientCredentialsGrant(),
+            OidcGrantType::PASSWORD => $this->validatePasswordGrant(),
+            OidcGrantType::REFRESH_TOKEN => $this->validateRefreshTokenGrant(),
+        };
+    }
 
-        Assert::that($this->refreshToken)->notEmpty();
+    private function validateClientCredentialsGrant(): void
+    {
+        if ($this->username !== null || $this->password !== null || $this->refreshToken !== null) {
+            throw new InvalidArgumentException(
+                'OIDC client credentials grant must not include username, password, or refresh token.',
+                0,
+            );
+        }
+    }
+
+    private function validatePasswordGrant(): void
+    {
+        Assert::that($this->username, 'OIDC password grant requires a username.')->notEmpty();
+        Assert::that($this->password, 'OIDC password grant requires a password.')->notEmpty();
+
+        if ($this->refreshToken !== null) {
+            throw new InvalidArgumentException(
+                'OIDC password grant must not include a refresh token.',
+                0,
+            );
+        }
+    }
+
+    private function validateRefreshTokenGrant(): void
+    {
+        Assert::that(
+            $this->refreshToken,
+            'OIDC refresh token grant requires a refresh token.',
+        )->notEmpty();
+
+        if ($this->username !== null || $this->password !== null) {
+            throw new InvalidArgumentException(
+                'OIDC refresh token grant must not include username or password.',
+                0,
+            );
+        }
     }
 }

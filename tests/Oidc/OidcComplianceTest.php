@@ -8,21 +8,39 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\Oidc\OidcTokenRequestDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
-use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
 
 final class OidcComplianceTest extends TestCase
 {
+    public function testClientCredentialsGrantRequestShape(): void
+    {
+        $dto = OidcTokenRequestDto::forClientCredentials(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            scope: 'openid profile',
+        );
+
+        self::assertSame(
+            [
+                'grant_type' => 'client_credentials',
+                'client_id' => 'backend',
+                'client_secret' => 'secret',
+                'scope' => 'openid profile',
+            ],
+            $dto->toFormParams(),
+        );
+    }
+
     public function testPasswordGrantRequestShape(): void
     {
-        $dto = new OidcTokenRequestDto(
+        $dto = OidcTokenRequestDto::forPasswordGrant(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
             username: 'oleg@example.com',
             password: 'Roadsurfer!2026',
             scope: 'openid profile',
-            grantType: OidcGrantType::PASSWORD,
         );
 
         self::assertSame(
@@ -40,12 +58,11 @@ final class OidcComplianceTest extends TestCase
 
     public function testRefreshTokenGrantRequestShape(): void
     {
-        $dto = new OidcTokenRequestDto(
+        $dto = OidcTokenRequestDto::forRefreshToken(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
             refreshToken: 'refresh-token',
-            grantType: OidcGrantType::REFRESH_TOKEN,
         );
 
         self::assertSame(
