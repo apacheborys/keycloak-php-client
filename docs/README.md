@@ -8,6 +8,8 @@
   Application-facing workflows and the recommended integration boundary.
 - [HTTP Layer](http-layer.md)
   Transport contracts, specialized clients, and the internal Keycloak endpoint mapping used by services.
+- [Client Credentials Token Flow](client-credentials-token-flow.md)
+  Internal design note for promoting configured-client Client Credentials token acquisition to a first-class public API.
 - [DTO Layout](dto-layout.md)
   Request/response namespace grouping, placement rules, and migration notes for DTO imports.
 - [User Profile Attributes](user-profile-attributes.md)

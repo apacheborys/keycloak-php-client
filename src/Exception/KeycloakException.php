@@ -73,6 +73,12 @@ class KeycloakException extends RuntimeException
         $patterns = [
             '/Authorization\s*:\s*Bearer\s+\S+/i' => '[redacted credentials]',
             '/\bBearer\s+\S+/i' => '[redacted credentials]',
+            '/("?(?:access_token|refresh_token|id_token|client_secret|password|code)"?\s*:\s*)"'
+                . '([^"]*)"/i' => '$1"[redacted]"',
+            '/\b(access_token|refresh_token|id_token|client_secret|password|code)'
+                . '\s*=\s*[^&\s;,]+/i' => '$1=[redacted]',
+            '/\b(access_token|refresh_token|id_token|client_secret|password|code)'
+                . '\s*:\s*[^&\s;,]+/i' => '$1: [redacted]',
             '/\bAuthorization\b/i' => 'redacted',
             '/\bBearer\b/i' => 'redacted',
             '/\bclient_secret\b/i' => 'redacted',

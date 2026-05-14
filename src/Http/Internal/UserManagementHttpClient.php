@@ -12,6 +12,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\User\SearchUsersDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\User\UpdateUserDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
 use Assert\Assert;
 use LogicException;
 use Ramsey\Uuid\UuidInterface;
@@ -20,7 +21,7 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
 {
     public function __construct(
         private KeycloakHttpCore $httpCore,
-        private AccessTokenProvider $accessTokenProvider,
+        private AccessTokenProviderInterface $accessTokenProvider,
     ) {
     }
 

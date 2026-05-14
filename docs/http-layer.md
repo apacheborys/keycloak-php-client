@@ -105,6 +105,10 @@ Non-2xx Keycloak responses map to:
 - `5xx` -> `KeycloakServerException`
 - other non-2xx responses -> `KeycloakTransportException`
 
+Token-endpoint-specific exceptions add one focused rule on top:
+
+- `400 invalid_grant`, `400 invalid_client`, or `400 unauthorized_client` from `/protocol/openid-connect/token` -> `KeycloakAuthenticationException`
+
 Malformed or unexpected successful responses map to:
 
 - invalid JSON -> `KeycloakInvalidResponseException`
@@ -160,6 +164,7 @@ Exception diagnostics are intentionally safe for logs:
 - exception messages do not include `client_secret`, `refresh_token`, `access_token`, `password`, or raw sensitive query-param values
 - sensitive query parameters are redacted in diagnostic URIs
 - request body is not stored in `KeycloakErrorContext` by default
+- token-endpoint response bodies are sanitized before they are attached to diagnostics
 - response body may be stored because it is the server response being diagnosed
 
 For example, a token endpoint URI may be logged as:

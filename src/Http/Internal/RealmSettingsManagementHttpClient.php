@@ -10,13 +10,14 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\DeleteUserProfil
 use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\GetUserProfileDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\Realm\UserProfile\UpdateUserProfileAttributeDto;
 use Apacheborys\KeycloakPhpClient\Http\RealmSettingsManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
 use RuntimeException;
 
 final readonly class RealmSettingsManagementHttpClient implements RealmSettingsManagementHttpClientInterface
 {
     public function __construct(
         private KeycloakHttpCore $httpCore,
-        private AccessTokenProvider $accessTokenProvider,
+        private AccessTokenProviderInterface $accessTokenProvider,
     ) {
     }
 

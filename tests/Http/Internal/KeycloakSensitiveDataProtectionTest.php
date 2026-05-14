@@ -7,13 +7,15 @@ namespace Apacheborys\KeycloakPhpClient\Tests\Http\Internal;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakAuthenticationException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakErrorContext;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakTransportException;
-use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
+use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\NativePsr18ClientException;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleResponse;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStream;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
+use Apacheborys\KeycloakPhpClient\Token\ClientCredentialsTokenProvider;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
 
@@ -121,11 +123,17 @@ final class KeycloakSensitiveDataProtectionTest extends TestCase
             ->method('sendRequest')
             ->willReturn($this->createResponse(statusCode: 401, body: $responseBody));
 
-        $provider = new AccessTokenProvider(
-            httpCore: $this->createCore($httpClient),
-            clientRealm: 'master',
-            clientId: 'backend',
-            clientSecret: 'very-secret-client-secret',
+        $core = $this->createCore($httpClient);
+        $provider = new ClientCredentialsTokenProvider(
+            oidcInteractionHttpClient: new OidcInteractionHttpClient(
+                httpCore: $core,
+            ),
+            config: new KeycloakClientConfig(
+                baseUrl: 'https://keycloak.example',
+                clientRealm: 'master',
+                clientId: 'backend',
+                clientSecret: 'very-secret-client-secret',
+            ),
         );
 
         try {

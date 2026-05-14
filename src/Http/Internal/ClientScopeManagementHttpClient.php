@@ -16,6 +16,7 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\ClientScope\UpdateClientScopeProto
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
 use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
 use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
 use Assert\Assert;
 use Ramsey\Uuid\Uuid;
@@ -26,7 +27,7 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
 {
     public function __construct(
         private KeycloakHttpCore $httpCore,
-        private AccessTokenProvider $accessTokenProvider,
+        private AccessTokenProviderInterface $accessTokenProvider,
     ) {
     }
 

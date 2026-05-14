@@ -25,12 +25,12 @@ final readonly class KeycloakOidcAuthenticationService implements KeycloakOidcAu
         $mapper = $this->mapperResolver->resolveForUser(localUser: $user);
         $loginDto = $mapper->prepareLocalUserForKeycloakLoginUser(localUser: $user, plainPassword: $plainPassword);
 
-        return $this->httpClient->requestTokenByPassword(dto: $loginDto);
+        return $this->httpClient->requestOidcToken(dto: $loginDto);
     }
 
     #[Override]
     public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
-        return $this->httpClient->refreshToken($dto);
+        return $this->httpClient->requestOidcToken(dto: $dto);
     }
 }

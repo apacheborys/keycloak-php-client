@@ -88,10 +88,11 @@ The HTTP layer maps Keycloak failures to typed exceptions:
 - `409` -> `KeycloakConflictException`
 - `429` -> `KeycloakRateLimitException`
 - `5xx` -> `KeycloakServerException`
+- token endpoint `400 invalid_grant` / `400 invalid_client` / `400 unauthorized_client` -> `KeycloakAuthenticationException`
 - invalid or malformed response payload -> `KeycloakInvalidResponseException`
 - transport/client failure -> `KeycloakTransportException`
 
-Each exception carries `KeycloakErrorContext` with method, sanitized URI, status, response body, parsed `error` / `error_description`, and correlation id when available. Exception messages are safe for logs: they do not include `Authorization`, bearer tokens, `client_secret`, `refresh_token`, `access_token`, `password`, or raw sensitive query-param values, and request bodies are not stored in diagnostics by default.
+Each exception carries `KeycloakErrorContext` with method, sanitized URI, status, response body, parsed `error` / `error_description`, and correlation id when available. Exception messages are safe for logs: they do not include `Authorization`, bearer tokens, `client_secret`, `refresh_token`, `access_token`, `password`, or raw sensitive query-param values, and request bodies are not stored in diagnostics by default. For token-endpoint failures, diagnostic response bodies are sanitized as well.
 
 ## Quick Start
 

@@ -32,7 +32,6 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\AttributeRequiredDto;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakServerException;
 use Apacheborys\KeycloakPhpClient\Http\Internal\ClientScopeManagementHttpClient;
-use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\RealmSettingsManagementHttpClient;
@@ -44,7 +43,10 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
+use Apacheborys\KeycloakPhpClient\Token\ClientCredentialsTokenProvider;
 use Apacheborys\KeycloakPhpClient\ValueObject\ClientScopeRealmAssignmentType;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -55,7 +57,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
     private ?PhpMockServer $server = null;
     private InMemoryCachePool $cache;
     private KeycloakHttpCore $httpCore;
-    private AccessTokenProvider $accessTokenProvider;
+    private AccessTokenProviderInterface $accessTokenProvider;
 
     protected function setUp(): void
     {
@@ -74,11 +76,16 @@ final class InternalHttpClientIntegrationTest extends TestCase
             requestFactory: new SimpleRequestFactory(),
             streamFactory: new SimpleStreamFactory(),
         );
-        $this->accessTokenProvider = new AccessTokenProvider(
-            httpCore: $this->httpCore,
-            clientRealm: 'master',
-            clientId: 'backend',
-            clientSecret: 'secret',
+        $this->accessTokenProvider = new ClientCredentialsTokenProvider(
+            oidcInteractionHttpClient: new OidcInteractionHttpClient(
+                httpCore: $this->httpCore,
+            ),
+            config: new KeycloakClientConfig(
+                baseUrl: $this->server->getBaseUrl(),
+                clientRealm: 'master',
+                clientId: 'backend',
+                clientSecret: 'secret',
+            ),
             cache: $this->cache,
         );
     }
@@ -809,7 +816,7 @@ final class InternalHttpClientIntegrationTest extends TestCase
             accessTokenProvider: $this->accessTokenProvider,
         );
 
-        $response = $client->requestTokenByPassword(
+        $response = $client->requestToken(
             new OidcTokenRequestDto(
                 realm: 'master',
                 clientId: 'backend',

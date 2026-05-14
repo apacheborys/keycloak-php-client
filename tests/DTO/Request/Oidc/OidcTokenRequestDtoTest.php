@@ -11,9 +11,9 @@ use PHPUnit\Framework\TestCase;
 
 final class OidcTokenRequestDtoTest extends TestCase
 {
-    public function testToFormParams(): void
+    public function testForPasswordGrantBuildsExpectedFormParams(): void
     {
-        $dto = new OidcTokenRequestDto(
+        $dto = OidcTokenRequestDto::forPasswordGrant(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -34,6 +34,47 @@ final class OidcTokenRequestDtoTest extends TestCase
         self::assertSame('master', $dto->getRealm());
     }
 
+    public function testForClientCredentialsBuildsExpectedFormParams(): void
+    {
+        $dto = OidcTokenRequestDto::forClientCredentials(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            scope: 'openid profile',
+        );
+
+        self::assertSame(
+            [
+                'grant_type' => 'client_credentials',
+                'client_id' => 'backend',
+                'client_secret' => 'secret',
+                'scope' => 'openid profile',
+            ],
+            $dto->toFormParams(),
+        );
+        self::assertSame(OidcGrantType::CLIENT_CREDENTIALS, $dto->getGrantType());
+        self::assertSame('openid profile', $dto->getScope());
+    }
+
+    public function testClientCredentialsDoesNotRequireUsernamePasswordOrRefreshToken(): void
+    {
+        $dto = new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            grantType: OidcGrantType::CLIENT_CREDENTIALS,
+        );
+
+        self::assertSame(
+            [
+                'grant_type' => 'client_credentials',
+                'client_id' => 'backend',
+                'client_secret' => 'secret',
+            ],
+            $dto->toFormParams(),
+        );
+    }
+
     public function testPasswordGrantRequiresCredentials(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -46,14 +87,29 @@ final class OidcTokenRequestDtoTest extends TestCase
         );
     }
 
-    public function testRefreshTokenFormParams(): void
+    public function testPasswordGrantRejectsRefreshToken(): void
     {
-        $dto = new OidcTokenRequestDto(
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('OIDC password grant must not include a refresh token.');
+
+        new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            username: 'oleg@example.com',
+            password: 'Roadsurfer!2026',
+            refreshToken: 'refresh-token',
+            grantType: OidcGrantType::PASSWORD,
+        );
+    }
+
+    public function testForRefreshTokenBuildsExpectedFormParams(): void
+    {
+        $dto = OidcTokenRequestDto::forRefreshToken(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
             refreshToken: 'refresh-token',
-            grantType: OidcGrantType::REFRESH_TOKEN,
         );
 
         self::assertSame(
@@ -65,6 +121,7 @@ final class OidcTokenRequestDtoTest extends TestCase
             ],
             $dto->toFormParams(),
         );
+        self::assertSame(OidcGrantType::REFRESH_TOKEN, $dto->getGrantType());
     }
 
     public function testRefreshTokenRequiresToken(): void
@@ -79,9 +136,43 @@ final class OidcTokenRequestDtoTest extends TestCase
         );
     }
 
-    public function testScopeIsIncludedWhenProvided(): void
+    public function testRefreshTokenRejectsUsernameAndPassword(): void
     {
-        $dto = new OidcTokenRequestDto(
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('OIDC refresh token grant must not include username or password.');
+
+        new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            username: 'oleg@example.com',
+            password: 'Roadsurfer!2026',
+            refreshToken: 'refresh-token',
+            grantType: OidcGrantType::REFRESH_TOKEN,
+        );
+    }
+
+    public function testClientCredentialsRejectsUserCredentialsAndRefreshToken(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            'OIDC client credentials grant must not include username, password, or refresh token.',
+        );
+
+        new OidcTokenRequestDto(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            username: 'oleg@example.com',
+            password: 'Roadsurfer!2026',
+            refreshToken: 'refresh-token',
+            grantType: OidcGrantType::CLIENT_CREDENTIALS,
+        );
+    }
+
+    public function testScopeIsIncludedWhenProvidedForPasswordGrant(): void
+    {
+        $dto = OidcTokenRequestDto::forPasswordGrant(
             realm: 'master',
             clientId: 'backend',
             clientSecret: 'secret',
@@ -101,5 +192,42 @@ final class OidcTokenRequestDtoTest extends TestCase
             ],
             $dto->toFormParams(),
         );
+    }
+
+    public function testDebugInfoRedactsClientSecretAndRefreshToken(): void
+    {
+        $dto = OidcTokenRequestDto::forRefreshToken(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'top-secret-client-secret',
+            refreshToken: 'top-secret-refresh-token',
+        );
+
+        ob_start();
+        var_dump($dto);
+        $debugOutput = (string) ob_get_clean();
+
+        self::assertStringContainsString('[redacted]', $debugOutput);
+        self::assertStringNotContainsString('top-secret-client-secret', $debugOutput);
+        self::assertStringNotContainsString('top-secret-refresh-token', $debugOutput);
+    }
+
+    public function testDebugInfoRedactsPassword(): void
+    {
+        $dto = OidcTokenRequestDto::forPasswordGrant(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'top-secret-client-secret',
+            username: 'oleg@example.com',
+            password: 'SuperSecretPassword!2026',
+        );
+
+        ob_start();
+        var_dump($dto);
+        $debugOutput = (string) ob_get_clean();
+
+        self::assertStringContainsString('[redacted]', $debugOutput);
+        self::assertStringNotContainsString('top-secret-client-secret', $debugOutput);
+        self::assertStringNotContainsString('SuperSecretPassword!2026', $debugOutput);
     }
 }

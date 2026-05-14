@@ -11,13 +11,14 @@ use Apacheborys\KeycloakPhpClient\DTO\Request\Role\DeleteRoleDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetRolesDto;
 use Apacheborys\KeycloakPhpClient\DTO\Request\Role\GetUserAvailableRolesDto;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
 use Assert\Assert;
 
 final readonly class RoleManagementHttpClient implements RoleManagementHttpClientInterface
 {
     public function __construct(
         private KeycloakHttpCore $httpCore,
-        private AccessTokenProvider $accessTokenProvider,
+        private AccessTokenProviderInterface $accessTokenProvider,
     ) {
     }
 

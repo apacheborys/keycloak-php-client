@@ -306,16 +306,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
-    {
-        /** @var OidcTokenResponseDto $result */
-        $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
-
-        return $result;
-    }
-
-    #[\Override]
-    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    public function requestOidcToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         /** @var OidcTokenResponseDto $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);

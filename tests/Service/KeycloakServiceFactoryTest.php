@@ -44,7 +44,7 @@ final class KeycloakServiceFactoryTest extends TestCase
             mappers: [$mapper],
         );
 
-        $httpClient->queueResult('requestTokenByPassword', $this->buildTokenResponseDto());
+        $httpClient->queueResult('requestOidcToken', $this->buildTokenResponseDto());
 
         $result = $service->loginUser(
             user: new ServiceTestUser('92a372d5-c338-4e77-a1b3-08771241036e'),
@@ -52,7 +52,7 @@ final class KeycloakServiceFactoryTest extends TestCase
         );
 
         self::assertInstanceOf(OidcTokenResponseDto::class, $result);
-        self::assertSame('requestTokenByPassword', $httpClient->getCalls()[0]['method']);
+        self::assertSame('requestOidcToken', $httpClient->getCalls()[0]['method']);
         self::assertSame('SecretPassword!2026', $mapper->getCapturedPlainPassword());
     }
 
