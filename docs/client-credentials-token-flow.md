@@ -19,9 +19,9 @@ Make Client Credentials a first-class token acquisition path for the configured 
 - The service layer exposes:
   - `loginUser(KeycloakUserInterface $user, string $plainPassword)`
   - `refreshToken(OidcTokenRequestDto $dto)`
-- Token endpoint failure classification is incomplete today:
-  - `401` becomes `KeycloakAuthenticationException`
-  - `400 invalid_grant` and `400 invalid_client` currently fall through to `KeycloakTransportException`
+- Token endpoint failure classification now distinguishes invalid credential/token failures from infrastructure failures:
+  - `400 invalid_grant`, `400 invalid_client`, and `400 unauthorized_client` map to `KeycloakAuthenticationException`
+  - transport/client failures remain `KeycloakTransportException`
 
 ## Target State
 
@@ -115,7 +115,7 @@ The library should clearly distinguish invalid credentials from transport failur
 
 ### Invalid credentials
 
-Token endpoint credential problems should surface as `KeycloakAuthenticationException`, including cases where Keycloak responds with HTTP `400`.
+Token endpoint credential problems should surface as authentication-oriented exceptions, including cases where Keycloak responds with HTTP `400`.
 
 Minimum classification rule set:
 
@@ -143,7 +143,7 @@ These should remain `KeycloakTransportException`:
 
 This reclassification should live in the token flow, not as a broad change to every `400` response in `KeycloakHttpCore`. The current HTTP-core mapping is acceptable for non-token endpoints.
 
-No new public exception hierarchy is required for `0.1.x`. `KeycloakAuthenticationException` plus `KeycloakErrorContext` is enough.
+No additional public exception hierarchy is required as long as token-endpoint `400` credential failures are mapped into the existing authentication branch with sanitized diagnostics.
 
 ## Concrete Next-Step Implementation Plan
 
