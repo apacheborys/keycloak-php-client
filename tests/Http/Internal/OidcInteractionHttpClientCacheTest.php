@@ -9,7 +9,6 @@ use Apacheborys\KeycloakPhpClient\Http\ClientScopeManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RoleManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\RealmSettingsManagementHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Http\UserManagementHttpClientInterface;
-use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
 use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Cache\InMemoryCachePool;
@@ -18,6 +17,8 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\MockServer\PhpMockServer;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
+use Apacheborys\KeycloakPhpClient\Token\ClientCredentialsTokenProvider;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -45,16 +46,22 @@ final class OidcInteractionHttpClientCacheTest extends TestCase
             requestFactory: new SimpleRequestFactory(),
             streamFactory: new SimpleStreamFactory(),
         );
-
-        $oidcInteraction = new OidcInteractionHttpClient(
-            httpCore: $core,
-            accessTokenProvider: new AccessTokenProvider(
+        $accessTokenProvider = new ClientCredentialsTokenProvider(
+            oidcInteractionHttpClient: new OidcInteractionHttpClient(
                 httpCore: $core,
+            ),
+            config: new KeycloakClientConfig(
+                baseUrl: $this->server->getBaseUrl(),
                 clientRealm: 'master',
                 clientId: 'backend',
                 clientSecret: 'secret',
-                cache: $cache,
             ),
+            cache: $cache,
+        );
+
+        $oidcInteraction = new OidcInteractionHttpClient(
+            httpCore: $core,
+            accessTokenProvider: $accessTokenProvider,
         );
 
         $this->client = new KeycloakHttpClient(

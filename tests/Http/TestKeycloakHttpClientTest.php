@@ -208,13 +208,13 @@ final class TestKeycloakHttpClientTest extends TestCase
             scope: 'email profile',
         );
 
-        $client->queueResult('requestTokenByPassword', $expected);
+        $client->queueResult('requestOidcToken', $expected);
 
-        self::assertSame($expected, $client->requestTokenByPassword($dto));
+        self::assertSame($expected, $client->requestOidcToken($dto));
         self::assertSame(
             [
                 [
-                    'method' => 'requestTokenByPassword',
+                    'method' => 'requestOidcToken',
                     'args' => [$dto],
                 ],
             ],
@@ -631,13 +631,13 @@ final class TestKeycloakHttpClientTest extends TestCase
             refreshToken: 'refresh-token',
         );
 
-        $client->queueResult('refreshToken', $expected);
+        $client->queueResult('requestOidcToken', $expected);
 
-        self::assertSame($expected, $client->refreshToken($dto));
+        self::assertSame($expected, $client->requestOidcToken($dto));
         self::assertSame(
             [
                 [
-                    'method' => 'refreshToken',
+                    'method' => 'requestOidcToken',
                     'args' => [$dto],
                 ],
             ],

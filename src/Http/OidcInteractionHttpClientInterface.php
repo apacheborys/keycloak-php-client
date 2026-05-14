@@ -27,7 +27,5 @@ interface OidcInteractionHttpClientInterface
      */
     public function getAvailableRealms(): array;
 
-    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto;
-
-    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
+    public function requestToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }

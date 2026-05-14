@@ -11,13 +11,15 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Http\OidcInteractionHttpClientInterface;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
 use Assert\Assert;
+use LogicException;
 
 final readonly class OidcInteractionHttpClient implements OidcInteractionHttpClientInterface
 {
     public function __construct(
         private KeycloakHttpCore $httpCore,
-        private AccessTokenProvider $accessTokenProvider,
+        private ?AccessTokenProviderInterface $accessTokenProvider = null,
     ) {
     }
 
@@ -69,6 +71,10 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
     #[\Override]
     public function getAvailableRealms(): array
     {
+        if ($this->accessTokenProvider === null) {
+            throw new LogicException('Access token provider is required for admin realm listing.');
+        }
+
         $token = $this->accessTokenProvider->getAccessToken();
         $parameters = [
             'briefRepresentation' => 'true',
@@ -109,18 +115,7 @@ final readonly class OidcInteractionHttpClient implements OidcInteractionHttpCli
     }
 
     #[\Override]
-    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
-    {
-        return $this->requestToken(dto: $dto);
-    }
-
-    #[\Override]
-    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
-    {
-        return $this->requestToken(dto: $dto);
-    }
-
-    private function requestToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    public function requestToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
         $endpoint = $this->httpCore->buildEndpoint(
             path: '/realms/' . $dto->getRealm() . '/protocol/openid-connect/token'

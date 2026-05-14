@@ -304,15 +304,9 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
     }
 
     #[Override]
-    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto
+    public function requestOidcToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
     {
-        return $this->oidcInteraction->requestTokenByPassword(dto: $dto);
-    }
-
-    #[Override]
-    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto
-    {
-        return $this->oidcInteraction->refreshToken(dto: $dto);
+        return $this->oidcInteraction->requestToken(dto: $dto);
     }
 
     private function readOpenIdConfigurationFromCache(string $realm): ?OpenIdConfigurationDto

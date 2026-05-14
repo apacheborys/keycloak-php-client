@@ -14,8 +14,8 @@ use Apacheborys\KeycloakPhpClient\Exception\KeycloakConflictException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakInvalidResponseException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakNotFoundException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakTransportException;
-use Apacheborys\KeycloakPhpClient\Http\Internal\AccessTokenProvider;
 use Apacheborys\KeycloakPhpClient\Http\Internal\KeycloakHttpCore;
+use Apacheborys\KeycloakPhpClient\Http\Internal\OidcInteractionHttpClient;
 use Apacheborys\KeycloakPhpClient\Http\Internal\UserManagementHttpClient;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Cache\InMemoryCachePool;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
@@ -24,7 +24,10 @@ use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStream;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleStreamFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\JwtTestFactory;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
+use Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface;
+use Apacheborys\KeycloakPhpClient\Token\ClientCredentialsTokenProvider;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakCredentialType;
+use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
 use Ramsey\Uuid\Uuid;
@@ -234,7 +237,7 @@ final class UserManagementHttpClientTest extends TestCase
         );
     }
 
-    private function createAccessTokenProvider(KeycloakHttpCore $httpCore): AccessTokenProvider
+    private function createAccessTokenProvider(KeycloakHttpCore $httpCore): AccessTokenProviderInterface
     {
         $cache = new InMemoryCachePool();
         $cacheKey = 'keycloak.access_token.' . sha1($httpCore->getBaseUrl() . '|master|backend');
@@ -243,11 +246,16 @@ final class UserManagementHttpClientTest extends TestCase
         $cacheItem->expiresAfter(3600);
         $cache->save($cacheItem);
 
-        return new AccessTokenProvider(
-            httpCore: $httpCore,
-            clientRealm: 'master',
-            clientId: 'backend',
-            clientSecret: 'secret',
+        return new ClientCredentialsTokenProvider(
+            oidcInteractionHttpClient: new OidcInteractionHttpClient(
+                httpCore: $httpCore,
+            ),
+            config: new KeycloakClientConfig(
+                baseUrl: $httpCore->getBaseUrl(),
+                clientRealm: 'master',
+                clientId: 'backend',
+                clientSecret: 'secret',
+            ),
             cache: $cache,
         );
     }

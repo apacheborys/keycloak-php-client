@@ -290,7 +290,7 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         self::assertSame($expected, $client->getUserProfile($dto));
     }
 
-    public function testRequestTokenByPasswordDelegatesToOidcInteraction(): void
+    public function testRequestOidcTokenDelegatesToOidcInteractionRequestToken(): void
     {
         $dto = new OidcTokenRequestDto(
             realm: 'master',
@@ -312,7 +312,7 @@ final class KeycloakHttpClientFacadeTest extends TestCase
         $oidcInteraction = $this->createMock(OidcInteractionHttpClientInterface::class);
         $oidcInteraction
             ->expects(self::once())
-            ->method('requestTokenByPassword')
+            ->method('requestToken')
             ->with($dto)
             ->willReturn($expected);
 
@@ -320,7 +320,38 @@ final class KeycloakHttpClientFacadeTest extends TestCase
             oidcInteraction: $oidcInteraction,
         );
 
-        self::assertSame($expected, $client->requestTokenByPassword($dto));
+        self::assertSame($expected, $client->requestOidcToken($dto));
+    }
+
+    public function testRequestOidcTokenAcceptsRefreshTokenRequest(): void
+    {
+        $dto = OidcTokenRequestDto::forRefreshToken(
+            realm: 'master',
+            clientId: 'backend',
+            clientSecret: 'secret',
+            refreshToken: 'refresh-token',
+        );
+        $expected = new OidcTokenResponseDto(
+            accessToken: JsonWebToken::fromRawToken(JwtTestFactory::buildJwtToken()),
+            expiresIn: 3600,
+            refreshExpiresIn: 0,
+            tokenType: 'Bearer',
+            nonBeforePolicy: 0,
+            scope: 'email profile',
+        );
+
+        $oidcInteraction = $this->createMock(OidcInteractionHttpClientInterface::class);
+        $oidcInteraction
+            ->expects(self::once())
+            ->method('requestToken')
+            ->with($dto)
+            ->willReturn($expected);
+
+        $client = $this->createClient(
+            oidcInteraction: $oidcInteraction,
+        );
+
+        self::assertSame($expected, $client->requestOidcToken($dto));
     }
 
     private function createClient(

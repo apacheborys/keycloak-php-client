@@ -33,7 +33,5 @@ interface KeycloakHttpClientInterface extends
      */
     public function getAvailableRealms(): array;
 
-    public function requestTokenByPassword(OidcTokenRequestDto $dto): OidcTokenResponseDto;
-
-    public function refreshToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
+    public function requestOidcToken(OidcTokenRequestDto $dto): OidcTokenResponseDto;
 }
