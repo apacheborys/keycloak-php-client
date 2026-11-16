@@ -235,6 +235,11 @@ composer phpstan
 composer rector
 ```
 
+End-to-end tests against a real Keycloak are opt-in and run with `composer test:e2e` once the
+`KEYCLOAK_E2E_*` variables are set. See [docs/testing-and-quality.md](docs/testing-and-quality.md)
+for provisioning and configuration, and [docs/keycloak-api-client-setup.md](docs/keycloak-api-client-setup.md)
+for how to create the Keycloak API client the library authenticates with.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -8,7 +8,9 @@ keep changes easy to review.
 1. Fork the repository and create a feature branch.
 2. Make small, focused commits.
 3. Add or update tests/docs when behavior changes.
-4. Open a pull request describing the change and rationale.
+4. Run `composer check`. If your change touches Keycloak-facing behavior, also run the opt-in
+   end-to-end suite against a local Keycloak (`composer test:e2e`, see `docs/testing-and-quality.md`).
+5. Open a pull request describing the change and rationale.
 
 ## Development Notes
 

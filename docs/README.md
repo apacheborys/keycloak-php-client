@@ -16,8 +16,10 @@
   Bootstrap flow for application-specific identifier attributes and JWT exposure.
 - [Client Scopes and Mappers](client-scopes-and-mappers.md)
   Scope and mapper DTOs, dedicated mapper lookup, and protocol-mapper upsert behavior.
+- [Keycloak API Client Setup](keycloak-api-client-setup.md)
+  Step-by-step tutorial for creating the confidential client and service account the library authenticates with, including the required `realm-management` roles.
 - [Testing and Quality](testing-and-quality.md)
-  Test layers and local quality-check commands.
+  Test layers, local quality-check commands, and the opt-in end-to-end suite against a real Keycloak.
 
 Recommended reading order:
 
@@ -29,7 +31,7 @@ Recommended reading order:
 
 Audience guide:
 
-- application developers should usually read `README.md`, then [Service Layer](service-layer.md);
+- application developers should usually read `README.md`, [Keycloak API Client Setup](keycloak-api-client-setup.md) to provision credentials, then [Service Layer](service-layer.md);
 - application developers implementing `LocalKeycloakUserBridgeMapperInterface` should also read [Local User Mapping](local-user-mapping.md);
 - library contributors should start with [Architecture](architecture.md), then [HTTP Layer](http-layer.md);
 - contributors touching request/response models should also read [DTO Layout](dto-layout.md);
