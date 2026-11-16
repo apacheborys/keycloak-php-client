@@ -1,5 +1,7 @@
 # Documentation Index
 
+- [Keycloak API Client Setup](keycloak-api-client-setup.md)
+  Tutorial: create the confidential client and service-account permissions that `KeycloakClientConfig` needs.
 - [Architecture](architecture.md)
   High-level mental model, layer boundaries, and design principles.
 - [Local User Mapping](local-user-mapping.md)
@@ -18,14 +20,17 @@
   Scope and mapper DTOs, dedicated mapper lookup, and protocol-mapper upsert behavior.
 - [Testing and Quality](testing-and-quality.md)
   Test layers and local quality-check commands.
+- [E2E Testing](e2e-testing.md)
+  Optional end-to-end suite against a real Keycloak: setup, configuration, coverage and cleanup.
 
 Recommended reading order:
 
-1. Start with [Architecture](architecture.md).
-2. Continue with [Local User Mapping](local-user-mapping.md) if your application passes local users into the service layer.
-3. Continue with [Service Layer](service-layer.md).
-4. Use [User Profile Attributes](user-profile-attributes.md) and [Client Scopes and Mappers](client-scopes-and-mappers.md) for the identifier-attribute feature set.
-5. Read [DTO Layout](dto-layout.md) and [HTTP Layer](http-layer.md) if you are extending or contributing to the transport foundation.
+1. If you do not have Keycloak credentials yet, start with [Keycloak API Client Setup](keycloak-api-client-setup.md).
+2. Read [Architecture](architecture.md).
+3. Continue with [Local User Mapping](local-user-mapping.md) if your application passes local users into the service layer.
+4. Continue with [Service Layer](service-layer.md).
+5. Use [User Profile Attributes](user-profile-attributes.md) and [Client Scopes and Mappers](client-scopes-and-mappers.md) for the identifier-attribute feature set.
+6. Read [DTO Layout](dto-layout.md) and [HTTP Layer](http-layer.md) if you are extending or contributing to the transport foundation.
 
 Audience guide:
 

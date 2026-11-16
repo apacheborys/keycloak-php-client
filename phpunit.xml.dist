@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true" defaultTestSuite="unit">
   <testsuites>
     <testsuite name="unit">
       <directory>tests</directory>
+      <exclude>tests/E2E</exclude>
+    </testsuite>
+    <!-- Optional: runs against a real Keycloak. Invoke explicitly with `composer test:e2e`. See docs/e2e-testing.md. -->
+    <testsuite name="e2e">
+      <directory>tests/E2E</directory>
     </testsuite>
   </testsuites>
+  <php>
+    <!--
+      Real Keycloak E2E settings. Leave empty to skip the e2e suite.
+      Prefer exporting them in your shell, or copy this file to phpunit.xml (git-ignored) and fill them in.
+      Existing environment variables always take precedence over these values.
+    -->
+    <env name="KEYCLOAK_E2E_BASE_URL" value=""/>
+    <env name="KEYCLOAK_E2E_REALM" value=""/>
+    <env name="KEYCLOAK_E2E_CLIENT_ID" value=""/>
+    <env name="KEYCLOAK_E2E_CLIENT_SECRET" value=""/>
+  </php>
 </phpunit>
