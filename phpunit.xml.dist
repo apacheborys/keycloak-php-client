@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true" defaultTestSuite="unit">
   <testsuites>
+    <!-- Default suite: hermetic tests, no external services required. -->
     <testsuite name="unit">
       <directory>tests</directory>
+      <exclude>tests/E2E</exclude>
+    </testsuite>
+    <!--
+      Opt-in suite that talks to a real Keycloak instance.
+      Run with: vendor/bin/phpunit (dash)(dash)testsuite e2e
+      Configure with KEYCLOAK_E2E_* environment variables; see docs/testing-and-quality.md.
+    -->
+    <testsuite name="e2e">
+      <directory>tests/E2E</directory>
     </testsuite>
   </testsuites>
 </phpunit>
