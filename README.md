@@ -4,7 +4,7 @@ Framework-agnostic Keycloak client with a service layer and a thin orchestration
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 
 ## Installation
 

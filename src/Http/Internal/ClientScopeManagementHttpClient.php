@@ -133,7 +133,6 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(path: '/admin/realms/' . $dto->getRealm() . '/client-scopes');
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->getClientScope()->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -178,7 +177,6 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
             path: '/admin/realms/' . $dto->getRealm() . '/client-scopes/' . $dto->getClientScopeId()->toString()
         );
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->getClientScope()->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -253,7 +251,6 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
                 . '/protocol-mappers/models'
         );
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->getProtocolMapper()->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -286,7 +283,6 @@ final readonly class ClientScopeManagementHttpClient implements ClientScopeManag
                 . $dto->getProtocolMapperId()->toString()
         );
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->getProtocolMapper()->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(

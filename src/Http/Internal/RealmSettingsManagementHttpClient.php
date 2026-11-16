@@ -107,7 +107,6 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(path: '/admin/realms/' . $realm . '/users/profile');
 
-        /** @var string $payload */
         $payload = json_encode(value: $profile->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(

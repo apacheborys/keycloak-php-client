@@ -336,6 +336,6 @@ final readonly class JwtPayload
             $values[] = $value;
         }
 
-        return array_values($values);
+        return $values;
     }
 }

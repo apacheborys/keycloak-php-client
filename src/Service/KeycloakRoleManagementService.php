@@ -325,7 +325,7 @@ final readonly class KeycloakRoleManagementService implements KeycloakRoleManage
     }
 
     /**
-     * @param list<string> $roleNames
+     * @param array<string> $roleNames
      * @return list<string>
      */
     private function normalizeRoleNames(array $roleNames): array

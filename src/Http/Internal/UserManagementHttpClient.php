@@ -87,7 +87,6 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(path: '/admin/realms/' . $dto->getProfile()->getRealm() . '/users');
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -116,7 +115,6 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
             path: '/admin/realms/' . $dto->getRealm() . '/users/' . $userId->toString()
         );
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -180,7 +178,6 @@ final readonly class UserManagementHttpClient implements UserManagementHttpClien
                 . '/reset-password'
         );
 
-        /** @var string $payload */
         $payload = json_encode(
             value: [
                 'type' => $dto->getType()->value(),

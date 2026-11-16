@@ -58,13 +58,7 @@ final readonly class UserProfileDto
 
     public function hasAttribute(string $attributeName): bool
     {
-        foreach ($this->attributes as $attribute) {
-            if ($attribute->getName() === $attributeName) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->attributes, fn($attribute) => $attribute->getName() === $attributeName);
     }
 
     public function withAppendedAttribute(AttributeDto $attribute): self
