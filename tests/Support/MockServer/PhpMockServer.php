@@ -36,13 +36,15 @@ final class PhpMockServer
         file_put_contents($this->logFile, '');
 
         $routerScript = __DIR__ . '/router.php';
-        $command = sprintf(
-            '%s -S %s:%d %s',
-            escapeshellarg(PHP_BINARY),
-            $this->host,
-            $this->port,
-            escapeshellarg($routerScript),
-        );
+        // Array form executes PHP directly (no /bin/sh wrapper), so proc_terminate()
+        // signals the server itself instead of an intermediate shell that would
+        // otherwise leave an orphaned `php -S` process behind on Linux.
+        $command = [
+            PHP_BINARY,
+            '-S',
+            sprintf('%s:%d', $this->host, $this->port),
+            $routerScript,
+        ];
 
         $environment = array_merge(
             $_ENV,
