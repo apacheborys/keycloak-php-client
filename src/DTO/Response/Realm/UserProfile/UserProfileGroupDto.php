@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 
 use Assert\Assert;
+use JsonSerializable;
+use Override;
+use stdClass;
 
-final readonly class UserProfileGroupDto
+final readonly class UserProfileGroupDto implements JsonSerializable
 {
     public function __construct(
         private string $name,
@@ -72,6 +75,20 @@ final readonly class UserProfileGroupDto
         }
 
         $data['annotations'] = $this->annotations;
+
+        return $data;
+    }
+
+    /**
+     * Same as toArray(), but empty `annotations` encode as a JSON object (`{}`) as Keycloak requires.
+     *
+     * @return array<string, mixed>
+     */
+    #[Override]
+    public function jsonSerialize(): array
+    {
+        $data = $this->toArray();
+        $data['annotations'] = $this->annotations === [] ? new stdClass() : $this->annotations;
 
         return $data;
     }

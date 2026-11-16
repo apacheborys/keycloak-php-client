@@ -166,6 +166,35 @@ final class UserProfileDtoTest extends TestCase
         );
     }
 
+    public function testJsonSerializeEncodesEmptyMapsAsJsonObjects(): void
+    {
+        // Shape as returned by Keycloak 26: validator configs and annotations are JSON objects, often empty.
+        $keycloakJson = '{"unmanagedAttributePolicy":"ENABLED","attributes":[{"name":"email",'
+            . '"validations":{"email":{},"length":{"max":255}},"required":{},'
+            . '"permissions":{"view":["admin","user"],"edit":["admin","user"]},"multivalued":false,"annotations":{}}],'
+            . '"groups":[{"name":"user-metadata","annotations":{}}]}';
+
+        $dto = UserProfileDto::fromArray(json_decode($keycloakJson, true, flags: JSON_THROW_ON_ERROR));
+        $encoded = json_encode($dto, JSON_THROW_ON_ERROR);
+
+        // toArray() keeps plain PHP arrays, which json_encode() would turn into `[]` and Keycloak would reject.
+        self::assertSame([], $dto->getAttributes()[0]->toArray()['annotations']);
+        self::assertSame([], $dto->getAttributes()[0]->toArray()['validations']['email']);
+
+        self::assertStringContainsString('"email":{}', $encoded);
+        self::assertStringContainsString('"length":{"max":255}', $encoded);
+        self::assertStringContainsString('"required":{}', $encoded);
+        self::assertStringContainsString('"annotations":{}', $encoded);
+        self::assertStringNotContainsString('[]', $encoded);
+
+        // An attribute without validators or required rule still encodes every map member as an object.
+        $minimal = json_encode(new UserProfileDto(attributes: [new AttributeDto(name: 'plain')]), JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('"validations":{}', $minimal);
+        self::assertStringContainsString('"annotations":{}', $minimal);
+        self::assertStringContainsString('"permissions":{"view":[],"edit":[]}', $minimal);
+        self::assertStringContainsString('"groups":[]', $minimal);
+    }
+
     public function testConstructorAcceptsTypedCollections(): void
     {
         $dto = new UserProfileDto(

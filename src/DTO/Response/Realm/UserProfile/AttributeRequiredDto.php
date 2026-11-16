@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 
 use Assert\Assert;
+use JsonSerializable;
+use Override;
+use stdClass;
 
-final readonly class AttributeRequiredDto
+final readonly class AttributeRequiredDto implements JsonSerializable
 {
     /**
      * @param list<string> $roles
@@ -81,6 +84,19 @@ final readonly class AttributeRequiredDto
         }
 
         return $data;
+    }
+
+    /**
+     * Keycloak models `required` as a JSON object; an "always required" rule must be encoded as `{}`, not `[]`.
+     *
+     * @return array<string, mixed>|stdClass
+     */
+    #[Override]
+    public function jsonSerialize(): array|stdClass
+    {
+        $data = $this->toArray();
+
+        return $data === [] ? new stdClass() : $data;
     }
 
     public function withPreservedUnknownFieldsFrom(self $required): self

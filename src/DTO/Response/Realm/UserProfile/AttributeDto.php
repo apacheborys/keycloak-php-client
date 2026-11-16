@@ -7,8 +7,11 @@ namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorType;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile\Validators\AttributeValidatorsDto;
 use Assert\Assert;
+use JsonSerializable;
+use Override;
+use stdClass;
 
-final readonly class AttributeDto
+final readonly class AttributeDto implements JsonSerializable
 {
     /**
      * @param array{view: list<string>, edit: list<string>} $permissions
@@ -154,6 +157,46 @@ final readonly class AttributeDto
         }
 
         return $data;
+    }
+
+    /**
+     * JSON view of the attribute for the Admin REST API.
+     *
+     * Differs from toArray() only in that map-typed members (`validations` and each validator config,
+     * `permissions`, `annotations`, `selector`, `required`) are encoded as JSON objects even when empty.
+     * Keycloak's parser rejects `[]` for those members ("Cannot parse the JSON").
+     *
+     * @return array<string, mixed>
+     */
+    #[Override]
+    public function jsonSerialize(): array
+    {
+        $data = $this->toArray();
+
+        $data['validations'] = self::emptyMapAsObject(
+            array_map(self::emptyMapAsObject(...), $this->getValidations()),
+        );
+        $data['permissions'] = self::emptyMapAsObject($this->permissions);
+        $data['annotations'] = self::emptyMapAsObject($this->annotations);
+
+        if ($this->required !== null) {
+            $data['required'] = $this->required->jsonSerialize();
+        }
+
+        if (isset($data['selector']) && is_array($data['selector'])) {
+            $data['selector'] = self::emptyMapAsObject($data['selector']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param array<array-key, mixed> $map
+     * @return array<array-key, mixed>|stdClass
+     */
+    private static function emptyMapAsObject(array $map): array|stdClass
+    {
+        return $map === [] ? new stdClass() : $map;
     }
 
     public function withPreservedUnknownFieldsFrom(self $attribute): self

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Apacheborys\KeycloakPhpClient\DTO\Response\Realm\UserProfile;
 
 use Assert\Assert;
+use JsonSerializable;
+use Override;
 
-final readonly class UserProfileDto
+final readonly class UserProfileDto implements JsonSerializable
 {
     /**
      * @param list<AttributeDto> $attributes
@@ -136,6 +138,30 @@ final readonly class UserProfileDto
         );
         $data['groups'] = array_map(
             static fn (UserProfileGroupDto $group): array => $group->toArray(),
+            $this->groups,
+        );
+
+        return $data;
+    }
+
+    /**
+     * JSON view for `PUT /admin/realms/{realm}/users/profile`.
+     *
+     * Use this (via json_encode($profile)) rather than toArray() when talking to Keycloak:
+     * nested empty maps must be sent as `{}`, which PHP arrays cannot express.
+     *
+     * @return array<string, mixed>
+     */
+    #[Override]
+    public function jsonSerialize(): array
+    {
+        $data = $this->extra;
+        $data['attributes'] = array_map(
+            static fn (AttributeDto $attribute): array => $attribute->jsonSerialize(),
+            $this->attributes,
+        );
+        $data['groups'] = array_map(
+            static fn (UserProfileGroupDto $group): array => $group->jsonSerialize(),
             $this->groups,
         );
 

@@ -107,7 +107,8 @@ final readonly class RealmSettingsManagementHttpClient implements RealmSettingsM
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(path: '/admin/realms/' . $realm . '/users/profile');
 
-        $payload = json_encode(value: $profile->toArray(), flags: JSON_THROW_ON_ERROR);
+        // Encode the DTO itself (JsonSerializable): empty maps must reach Keycloak as `{}`, not `[]`.
+        $payload = json_encode(value: $profile, flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
             method: 'PUT',
