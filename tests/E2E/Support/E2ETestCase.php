@@ -19,6 +19,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * Base class for tests that run against a real Keycloak instance.
  *
+ * Each run gets its own disposable realm and API client (see E2EStand). Tests only ever use
+ * that client's credentials; administrator credentials are used solely to create/remove the stand.
+ *
  * Tests are skipped (not failed) when the KEYCLOAK_E2E_* variables are not configured,
  * so the suite is always safe to invoke. Run it with: composer test:e2e
  */
@@ -27,14 +30,14 @@ abstract class E2ETestCase extends TestCase
     protected static E2EConfig $config;
 
     /**
-     * Short random marker shared by everything one test class creates in Keycloak,
-     * so leftovers from an interrupted run are easy to identify and remove.
+     * Short random marker shared by everything one test class creates, keeping
+     * test classes independent from each other inside the shared run realm.
      */
     protected static string $runId;
 
     public static function setUpBeforeClass(): void
     {
-        $missing = E2EConfig::missingVariables();
+        $missing = E2EAdminSettings::missingVariables();
         if ($missing !== []) {
             self::markTestSkipped(
                 'Real Keycloak E2E tests are not configured. Missing: ' . implode(', ', $missing)
@@ -42,7 +45,7 @@ abstract class E2ETestCase extends TestCase
             );
         }
 
-        static::$config = E2EConfig::fromEnvironment();
+        static::$config = E2EStand::config();
         static::$runId = bin2hex(random_bytes(4));
     }
 

@@ -46,6 +46,9 @@ Not needed for: OIDC discovery, JWKS and JWT verification (`verifyJwt`). Those u
 
 Shortcut for local or test environments only: the composite `realm-admin` role includes everything above.
 
+This exact list is what the optional [E2E suite](e2e-testing.md) grants its API client on every run, so the list is
+verified against a real Keycloak whenever the suite passes.
+
 If a call is missing a permission, the library throws `KeycloakAuthorizationException` (HTTP 403) with the endpoint in its error context.
 
 ## Option A: Admin Console
@@ -69,7 +72,15 @@ If a call is missing a permission, the library throws `KeycloakAuthorizationExce
 
 ## Option B: Command Line (`kcadm.sh`)
 
-`kcadm.sh` ships with every Keycloak distribution. The commands below use the same names as Option A. Set `KC` to the server URL and replace the admin credentials.
+`kcadm.sh` is Keycloak's admin CLI. It is **not part of this repository**: it ships inside every Keycloak
+distribution at `bin/kcadm.sh` (`/opt/keycloak/bin/kcadm.sh` in the official container image). Run it from the Keycloak
+installation, or inside the container:
+
+```bash
+docker exec -it <keycloak-container> /opt/keycloak/bin/kcadm.sh <command> ...
+```
+
+The commands below use the same names as Option A. Set `KC` to the server URL and replace the admin credentials.
 
 ```bash
 KC=http://localhost:8080
@@ -98,7 +109,8 @@ CID=$(kcadm.sh get clients -r "$REALM" -q clientId="$CLIENT_ID" --fields id --fo
 kcadm.sh get "clients/$CID/client-secret" -r "$REALM"
 ```
 
-When Keycloak runs in Docker, prefix the commands with `docker exec <container> /opt/keycloak/bin/` and use `--server http://localhost:8080` (the address inside the container).
+When running inside the container, `--server http://localhost:8080` refers to Keycloak itself (the address inside the
+container), regardless of how the port is published on the host.
 
 ## Verify the Client
 

@@ -24,6 +24,7 @@ use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceInterface;
 use Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2ETestCase;
 use Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2EUserMapper;
 use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestUser;
+use Apacheborys\KeycloakPhpClient\ValueObject\HashAlgorithm;
 use Apacheborys\KeycloakPhpClient\ValueObject\OidcGrantType;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\Attributes\Group;
@@ -31,7 +32,8 @@ use Ramsey\Uuid\UuidInterface;
 
 /**
  * Drives one user through the full lifecycle via the service facade, exactly as an application would:
- * identifier-attribute bootstrap -> create (with role sync) -> lookup -> login/JWT -> update -> delete.
+ * identifier-attribute bootstrap -> create (with role sync) -> lookup -> login/JWT -> update -> delete,
+ * plus importing a user with an already-hashed (bcrypt) password, as done when migrating users into Keycloak.
  *
  * Every Keycloak object is created with a per-run name and removed in tearDownAfterClass(),
  * including the user-profile attribute and the protocol mapper added to the realm "profile" scope.
@@ -47,6 +49,7 @@ final class UserLifecycleE2ETest extends E2ETestCase
     private static string $claimName;
     private static string $password;
     private static ?UuidInterface $createdUserId = null;
+    private static ?UuidInterface $importedUserId = null;
 
     public static function setUpBeforeClass(): void
     {
@@ -70,8 +73,11 @@ final class UserLifecycleE2ETest extends E2ETestCase
 
         $realm = self::$config->realm;
 
-        if (self::$createdUserId !== null) {
-            $userId = self::$createdUserId;
+        foreach ([self::$createdUserId, self::$importedUserId] as $userId) {
+            if ($userId === null) {
+                continue;
+            }
+
             self::cleanup(static function () use ($realm, $userId): void {
                 try {
                     self::$httpClient->deleteUser(new DeleteUserDto(realm: $realm, userId: $userId));
@@ -229,6 +235,59 @@ final class UserLifecycleE2ETest extends E2ETestCase
 
         $this->expectException(KeycloakNotFoundException::class);
         self::$service->findUserById(self::$config->realm, self::requireUserId());
+    }
+
+    #[Depends('testIdentifierAttributeIsDeclaredAndExposedInJwt')]
+    public function testImportedUserWithBcryptHashCanLogInWithOriginalPassword(): void
+    {
+        if (!self::$config->supportsPasswordHashing(HashAlgorithm::BCRYPT->value)) {
+            self::markTestSkipped(
+                'Keycloak has no "bcrypt" password-hashing provider (not part of stock Keycloak; '
+                . 'needs a custom provider). Available: ' . implode(', ', self::$config->passwordHashingProviders),
+            );
+        }
+
+        $plainPassword = 'Imported-' . self::$runId . '-Secret!';
+        $importedUser = new ServiceTestUser(
+            keycloakId: null,
+            username: self::resourceName('imported'),
+            email: self::resourceName('imported') . '@example.test',
+            firstName: 'Imported',
+            lastName: 'E2E',
+            roles: [], // no role sync for this user
+            id: 'imported-' . self::$runId,
+        );
+
+        // Same shape as a migration payload: the application only knows the hash, never the password.
+        $created = self::$service->createUser(
+            $importedUser,
+            new PasswordDto(
+                hashedPassword: password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 12]),
+                hashAlgorithm: HashAlgorithm::BCRYPT,
+                hashIterations: 12,
+                hashSalt: '',
+            ),
+        );
+        self::$importedUserId = $created->getId();
+
+        $tokens = self::$service->loginUser($importedUser, $plainPassword);
+        self::assertTrue($tokens->getAccessToken()->getPayload()->getSub()->equals($created->getId()));
+
+        try {
+            self::$service->loginUser($importedUser, 'wrong-' . $plainPassword);
+            self::fail('Login with a wrong password must be rejected for an imported user.');
+        } catch (KeycloakAuthenticationException) {
+            // expected
+        }
+
+        self::$service->deleteUser(
+            new ServiceTestUser(
+                keycloakId: $created->getKeycloakId(),
+                username: $importedUser->getUsername(),
+                email: $importedUser->getEmail(),
+                id: $importedUser->getId(),
+            ),
+        );
     }
 
     /**

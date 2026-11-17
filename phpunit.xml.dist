@@ -10,15 +10,22 @@
       <directory>tests/E2E</directory>
     </testsuite>
   </testsuites>
+  <extensions>
+    <!-- Removes the disposable E2E realm and client after the run; no-op when no E2E test ran. -->
+    <bootstrap class="Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2EStandExtension"/>
+  </extensions>
   <php>
     <!--
       Real Keycloak E2E settings. Leave empty to skip the e2e suite.
+      Administrator credentials are used ONLY to create and delete a disposable realm + API client per run.
       Prefer exporting them in your shell, or copy this file to phpunit.xml (git-ignored) and fill them in.
       Existing environment variables always take precedence over these values.
     -->
     <env name="KEYCLOAK_E2E_BASE_URL" value=""/>
-    <env name="KEYCLOAK_E2E_REALM" value=""/>
-    <env name="KEYCLOAK_E2E_CLIENT_ID" value=""/>
-    <env name="KEYCLOAK_E2E_CLIENT_SECRET" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_USERNAME" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_PASSWORD" value=""/>
+    <!-- Optional, defaults: master / admin-cli -->
+    <env name="KEYCLOAK_E2E_ADMIN_REALM" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_CLIENT_ID" value=""/>
   </php>
 </phpunit>
