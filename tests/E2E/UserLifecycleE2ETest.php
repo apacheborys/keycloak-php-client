@@ -21,6 +21,7 @@ use Apacheborys\KeycloakPhpClient\Exception\KeycloakAuthenticationException;
 use Apacheborys\KeycloakPhpClient\Exception\KeycloakNotFoundException;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceInterface;
+use Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2ESettings;
 use Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2ETestCase;
 use Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2EUserMapper;
 use Apacheborys\KeycloakPhpClient\Tests\Service\Fixtures\ServiceTestUser;
@@ -241,10 +242,12 @@ final class UserLifecycleE2ETest extends E2ETestCase
     public function testImportedUserWithBcryptHashCanLogInWithOriginalPassword(): void
     {
         if (!self::$config->supportsPasswordHashing(HashAlgorithm::BCRYPT->value)) {
-            self::markTestSkipped(
-                'Keycloak has no "bcrypt" password-hashing provider (not part of stock Keycloak; '
-                . 'needs a custom provider). Available: ' . implode(', ', self::$config->passwordHashingProviders),
-            );
+            self::markTestSkipped(sprintf(
+                'No "bcrypt" password-hashing provider known for this Keycloak (not part of stock Keycloak; '
+                . 'needs a custom provider). Known providers: [%s]. If the server has it, set %s=bcrypt.',
+                implode(', ', self::$config->passwordHashingProviders),
+                E2ESettings::ENV_PASSWORD_HASHING_PROVIDERS,
+            ));
         }
 
         $plainPassword = 'Imported-' . self::$runId . '-Secret!';

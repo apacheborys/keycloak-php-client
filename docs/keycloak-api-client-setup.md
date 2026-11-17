@@ -70,47 +70,59 @@ If a call is missing a permission, the library throws `KeycloakAuthorizationExce
    - Switch the filter from **Filter by realm roles** to **Filter by clients**.
    - Search for `realm-management`, tick the roles from the table above, then **Assign**.
 
-## Option B: Command Line (`kcadm.sh`)
+## Option B: Admin REST API (`curl` + `jq`)
 
-`kcadm.sh` is Keycloak's admin CLI. It is **not part of this repository**: it ships inside every Keycloak
-distribution at `bin/kcadm.sh` (`/opt/keycloak/bin/kcadm.sh` in the official container image). Run it from the Keycloak
-installation, or inside the container:
-
-```bash
-docker exec -it <keycloak-container> /opt/keycloak/bin/kcadm.sh <command> ...
-```
-
-The commands below use the same names as Option A. Set `KC` to the server URL and replace the admin credentials.
+Uses only HTTP calls to the Keycloak URL, so it works the same for a local, staging or sandbox server; no access to the
+Keycloak host or container is needed. Requires `curl` and `jq`, and an administrator account that may manage the
+target realm (and create realms, for step 0).
 
 ```bash
-KC=http://localhost:8080
+KC=https://keycloak.example.com   # same value as KeycloakClientConfig::baseUrl
+ADMIN_REALM=master                # realm of the administrator account
+ADMIN_USER=admin
+read -rsp 'Admin password: ' ADMIN_PASSWORD; echo   # keeps the password out of shell history
 REALM=my-realm
 CLIENT_ID=php-client-api
+DIRECT_ACCESS_GRANTS=false        # true only if you use loginUser(...)
 
-kcadm.sh config credentials --server "$KC" --realm master --user admin --password admin
+admin_token() {
+  curl -fsS -X POST "$KC/realms/$ADMIN_REALM/protocol/openid-connect/token" \
+    -d grant_type=password -d client_id=admin-cli \
+    --data-urlencode username="$ADMIN_USER" --data-urlencode password="$ADMIN_PASSWORD" | jq -r .access_token
+}
+api() { curl -fsS -H "Authorization: Bearer $(admin_token)" -H 'Content-Type: application/json' "$@"; }
 
-kcadm.sh create clients -r "$REALM" \
-  -s clientId="$CLIENT_ID" \
-  -s protocol=openid-connect \
-  -s publicClient=false \
-  -s serviceAccountsEnabled=true \
-  -s standardFlowEnabled=false \
-  -s directAccessGrantsEnabled=false   # set to true only if you use loginUser(...)
+# 0. Optional: create the realm (skip when using an existing realm)
+api -X POST "$KC/admin/realms" -d "{\"realm\":\"$REALM\",\"enabled\":true}"
 
-kcadm.sh add-roles -r "$REALM" \
-  --uusername "service-account-$CLIENT_ID" \
-  --cclientid realm-management \
-  --rolename view-users --rolename manage-users \
-  --rolename view-realm --rolename manage-realm \
-  --rolename view-clients --rolename manage-clients
+# 1. Create the confidential client with a service account
+api -X POST "$KC/admin/realms/$REALM/clients" -d "{
+  \"clientId\": \"$CLIENT_ID\", \"protocol\": \"openid-connect\", \"publicClient\": false,
+  \"serviceAccountsEnabled\": true, \"standardFlowEnabled\": false,
+  \"directAccessGrantsEnabled\": $DIRECT_ACCESS_GRANTS }"
+CID=$(api "$KC/admin/realms/$REALM/clients?clientId=$CLIENT_ID" | jq -r '.[0].id')
 
-# Print the generated client secret:
-CID=$(kcadm.sh get clients -r "$REALM" -q clientId="$CLIENT_ID" --fields id --format csv --noquotes)
-kcadm.sh get "clients/$CID/client-secret" -r "$REALM"
+# 2. Grant the realm-management roles from the permissions table to the service account
+SA=$(api "$KC/admin/realms/$REALM/clients/$CID/service-account-user" | jq -r .id)
+RM=$(api "$KC/admin/realms/$REALM/clients?clientId=realm-management" | jq -r '.[0].id')
+ROLES=$(api "$KC/admin/realms/$REALM/clients/$RM/roles" | jq -c '[.[]
+  | select(.name | IN("view-users","manage-users","view-realm","manage-realm","view-clients","manage-clients"))
+  | {id, name}]')
+echo "$ROLES" | jq length   # must print 6
+api -X POST "$KC/admin/realms/$REALM/users/$SA/role-mappings/clients/$RM" -d "$ROLES"
+
+# 3. Print the client secret (this is clientSecret)
+api "$KC/admin/realms/$REALM/clients/$CID/client-secret" | jq -r .value
 ```
 
-When running inside the container, `--server http://localhost:8080` refers to Keycloak itself (the address inside the
-container), regardless of how the port is published on the host.
+`curl -f` stops with a non-zero exit code on any HTTP error, for example `409` when the client already exists.
+
+To remove the client later (and the realm, if you created it only for this purpose):
+
+```bash
+api -X DELETE "$KC/admin/realms/$REALM/clients/$CID"
+api -X DELETE "$KC/admin/realms/$REALM"
+```
 
 ## Verify the Client
 

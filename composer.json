@@ -35,7 +35,7 @@
         "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=512M",
         "rector": "rector process --dry-run",
         "test": "phpunit",
-        "test:e2e": "phpunit --testsuite e2e",
+        "test:e2e": "phpunit --testsuite e2e --log-junit build/e2e/junit.xml",
         "check": [
             "@phpcs",
             "@phpstan",

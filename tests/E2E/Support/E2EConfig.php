@@ -7,20 +7,22 @@ namespace Apacheborys\KeycloakPhpClient\Tests\E2E\Support;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 
 /**
- * What functional E2E tests are allowed to use: the disposable realm and the API client
- * that KeycloakTestStand provisioned for this run. No administrator credentials here.
+ * What functional E2E tests are allowed to use: the realm and the API client of this run
+ * (preconfigured manually, or provisioned by KeycloakTestStand). No administrator credentials here.
  */
 final readonly class E2EConfig
 {
     /**
-     * @param list<string> $passwordHashingProviders provider ids reported by the server, e.g. "pbkdf2-sha512", "bcrypt"
+     * @param list<string> $passwordHashingProviders provider ids, e.g. "pbkdf2-sha512", "bcrypt"; empty = unknown
      */
     public function __construct(
+        public string $mode,
         public string $baseUrl,
         public string $realm,
         public string $clientId,
         public string $clientSecret,
         public array $passwordHashingProviders,
+        public ?string $keycloakVersion = null,
     ) {
     }
 

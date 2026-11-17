@@ -19,11 +19,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * Base class for tests that run against a real Keycloak instance.
  *
- * Each run gets its own disposable realm and API client (see E2EStand). Tests only ever use
- * that client's credentials; administrator credentials are used solely to create/remove the stand.
+ * Tests only ever use the API client's credentials (see E2EStand for the preconfigured and
+ * provisioned modes); administrator credentials, if given, are used solely to create/remove the stand.
  *
- * Tests are skipped (not failed) when the KEYCLOAK_E2E_* variables are not configured,
- * so the suite is always safe to invoke. Run it with: composer test:e2e
+ * Tests are skipped (not failed) when no KEYCLOAK_E2E_* variable is set, so the suite is always
+ * safe to invoke; an incomplete configuration fails. Run it with: composer test:e2e
  */
 abstract class E2ETestCase extends TestCase
 {
@@ -37,12 +37,14 @@ abstract class E2ETestCase extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        $missing = E2EAdminSettings::missingVariables();
-        if ($missing !== []) {
-            self::markTestSkipped(
-                'Real Keycloak E2E tests are not configured. Missing: ' . implode(', ', $missing)
-                . '. See docs/e2e-testing.md.',
-            );
+        $problem = E2ESettings::configurationProblem();
+        if ($problem !== null && E2ESettings::isUnconfigured()) {
+            E2EReport::notConfigured($problem);
+            self::markTestSkipped($problem);
+        }
+        if ($problem !== null) {
+            // Some variables are set, so a run was intended: a typo must fail loudly, not skip silently.
+            throw new \LogicException($problem);
         }
 
         static::$config = E2EStand::config();

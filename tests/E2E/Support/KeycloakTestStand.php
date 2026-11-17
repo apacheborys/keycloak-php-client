@@ -41,7 +41,7 @@ final class KeycloakTestStand
     private ?string $realm = null;
     private ?string $clientUuid = null;
 
-    public function __construct(private readonly E2EAdminSettings $admin)
+    public function __construct(private readonly E2ESettings $settings)
     {
         $this->http = new NativePsr18Client();
         $this->requests = new SimpleRequestFactory();
@@ -95,11 +95,7 @@ final class KeycloakTestStand
                 expect: 204,
             );
 
-            $serverInfo = $this->json('GET', '/admin/serverinfo');
-            $providers = $serverInfo['providers'] ?? null;
-            $hashing = is_array($providers) && is_array($providers['password-hashing'] ?? null)
-                ? ($providers['password-hashing']['providers'] ?? [])
-                : [];
+            $serverInfo = self::parseServerInfo($this->json('GET', '/admin/serverinfo'));
         } catch (\Throwable $exception) {
             $this->destroy();
 
@@ -107,11 +103,13 @@ final class KeycloakTestStand
         }
 
         return new E2EConfig(
-            baseUrl: $this->admin->baseUrl,
+            mode: E2ESettings::MODE_PROVISIONED,
+            baseUrl: $this->settings->baseUrl,
             realm: $realm,
             clientId: self::CLIENT_ID,
             clientSecret: $secret,
-            passwordHashingProviders: is_array($hashing) ? array_map('strval', array_keys($hashing)) : [],
+            passwordHashingProviders: $this->settings->passwordHashingProviders ?? $serverInfo['hashing'],
+            keycloakVersion: $serverInfo['version'],
         );
     }
 
@@ -135,6 +133,28 @@ final class KeycloakTestStand
 
         $this->request('DELETE', "/admin/realms/{$this->realm}", expect: [204, 404]);
         $this->realm = null;
+    }
+
+    /**
+     * Extracts what the suite needs from a GET /admin/serverinfo document.
+     *
+     * @param array<mixed> $serverInfo
+     * @return array{version: ?string, hashing: list<string>}
+     */
+    public static function parseServerInfo(array $serverInfo): array
+    {
+        $systemInfo = $serverInfo['systemInfo'] ?? null;
+        $version = is_array($systemInfo) && is_string($systemInfo['version'] ?? null) ? $systemInfo['version'] : null;
+
+        $providers = $serverInfo['providers'] ?? null;
+        $hashing = is_array($providers) && is_array($providers['password-hashing'] ?? null)
+            ? ($providers['password-hashing']['providers'] ?? [])
+            : [];
+
+        return [
+            'version' => $version,
+            'hashing' => is_array($hashing) ? array_map('strval', array_keys($hashing)) : [],
+        ];
     }
 
     public function realm(): ?string
@@ -161,7 +181,7 @@ final class KeycloakTestStand
         mixed $body = null,
         int|array $expect = 200,
     ): ResponseInterface {
-        $request = $this->requests->createRequest($method, $this->admin->baseUrl . $path)
+        $request = $this->requests->createRequest($method, $this->settings->baseUrl . $path)
             ->withHeader('Authorization', 'Bearer ' . $this->adminToken())
             ->withHeader('Accept', 'application/json');
 
@@ -191,15 +211,15 @@ final class KeycloakTestStand
      */
     private function adminToken(): string
     {
-        $tokenUrl = "{$this->admin->baseUrl}/realms/{$this->admin->realm}/protocol/openid-connect/token";
+        $tokenUrl = "{$this->settings->baseUrl}/realms/{$this->settings->adminRealm}/protocol/openid-connect/token";
         $request = $this->requests
             ->createRequest('POST', $tokenUrl)
             ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
             ->withBody($this->streams->createStream(http_build_query([
                 'grant_type' => 'password',
-                'client_id' => $this->admin->clientId,
-                'username' => $this->admin->username,
-                'password' => $this->admin->password,
+                'client_id' => $this->settings->adminClientId,
+                'username' => $this->settings->adminUsername,
+                'password' => $this->settings->adminPassword,
             ])));
 
         $response = $this->http->sendRequest($request);
@@ -209,8 +229,8 @@ final class KeycloakTestStand
             throw new RuntimeException(sprintf(
                 'E2E stand: administrator login failed (HTTP %d). Check %s/%s.',
                 $response->getStatusCode(),
-                E2EAdminSettings::ENV_ADMIN_USERNAME,
-                E2EAdminSettings::ENV_ADMIN_PASSWORD,
+                E2ESettings::ENV_ADMIN_USERNAME,
+                E2ESettings::ENV_ADMIN_PASSWORD,
             ));
         }
 
