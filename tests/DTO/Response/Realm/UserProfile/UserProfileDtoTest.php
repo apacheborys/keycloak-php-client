@@ -176,4 +176,49 @@ final class UserProfileDtoTest extends TestCase
         self::assertCount(1, $dto->getAttributes());
         self::assertCount(1, $dto->getGroups());
     }
+
+    public function testToKeycloakJsonKeepsEmptyMapsAsJsonObjects(): void
+    {
+        // Shape taken from a stock Keycloak 26 realm: built-in validators carry an empty config.
+        $json = <<<'JSON'
+            {
+              "attributes": [
+                {
+                  "name": "email",
+                  "displayName": "${email}",
+                  "validations": {"email": {}, "length": {"max": 255}},
+                  "required": {"roles": ["user"]},
+                  "permissions": {"view": ["admin", "user"], "edit": ["admin", "user"]},
+                  "multivalued": false
+                },
+                {
+                  "name": "external-user-id",
+                  "validations": {},
+                  "annotations": {},
+                  "permissions": {"view": ["admin"], "edit": ["admin"]},
+                  "multivalued": false
+                }
+              ],
+              "groups": [{"name": "user-metadata", "displayHeader": "User metadata", "annotations": {}}]
+            }
+            JSON;
+        $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        /** @var array<string, mixed> $data */
+
+        $encoded = UserProfileDto::fromArray($data)->toKeycloakJson();
+        $decoded = json_decode($encoded, flags: JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(\stdClass::class, $decoded);
+
+        $email = $decoded->attributes[0];
+        self::assertEquals(new \stdClass(), $email->validations->email);
+        self::assertSame(255, $email->validations->length->max);
+        self::assertEquals(new \stdClass(), $email->annotations);
+
+        $identifier = $decoded->attributes[1];
+        self::assertEquals(new \stdClass(), $identifier->validations);
+        self::assertEquals(new \stdClass(), $identifier->annotations);
+
+        self::assertEquals(new \stdClass(), $decoded->groups[0]->annotations);
+    }
 }
