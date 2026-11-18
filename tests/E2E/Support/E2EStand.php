@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apacheborys\KeycloakPhpClient\Tests\E2E\Support;
 
+use Apacheborys\KeycloakPhpClient\Entity\JsonWebToken;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientFactory;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\NativePsr18Client;
 use Apacheborys\KeycloakPhpClient\Tests\Support\Http\SimpleRequestFactory;
@@ -34,7 +35,7 @@ final class E2EStand
         // Do not retry a failed provisioning for every test class; report the original error.
         if (self::$provisioningError !== null) {
             throw new \RuntimeException(
-                'E2E stand provisioning failed earlier in this run.',
+                'E2E setup failed earlier in this run; see the first error (or "problems" in the JSON report).',
                 0,
                 self::$provisioningError,
             );
@@ -114,22 +115,18 @@ final class E2EStand
             passwordHashingProviders: [],
         );
 
+        // Preflight: one clear error instead of a cascade of 401/403s in individual tests.
+        $token = self::preflight($config);
+
         if ($settings->passwordHashingProviders !== null) {
             return self::withServerInfo($config, $settings->passwordHashingProviders, null);
         }
 
         // Best effort with the API client's own token; never with administrator credentials.
         try {
-            $token = new KeycloakHttpClientFactory()->createClientCredentialsTokenProvider(
-                config: $config->toClientConfig(),
-                httpClient: new NativePsr18Client(),
-                requestFactory: new SimpleRequestFactory(),
-                streamFactory: new SimpleStreamFactory(),
-            )->getAccessToken()->getRawToken();
-
             $response = new NativePsr18Client()->sendRequest(
                 new SimpleRequestFactory()->createRequest('GET', $config->baseUrl . '/admin/serverinfo')
-                    ->withHeader('Authorization', 'Bearer ' . $token)
+                    ->withHeader('Authorization', 'Bearer ' . $token->getRawToken())
                     ->withHeader('Accept', 'application/json'),
             );
             $decoded = json_decode((string) $response->getBody(), true);
@@ -145,11 +142,74 @@ final class E2EStand
                 E2ESettings::ENV_PASSWORD_HASHING_PROVIDERS,
             ));
         } catch (\Throwable $exception) {
-            // Connectivity problems surface in ConnectivityE2ETest with a precise error; do not fail here.
             E2EReport::note('Server info lookup failed: ' . $exception->getMessage());
         }
 
         return $config;
+    }
+
+    /**
+     * Verifies that the configured API client can authenticate and holds every admin role the suite needs.
+     * The check reads the client's own access token, so it needs no extra permissions.
+     */
+    private static function preflight(E2EConfig $config): JsonWebToken
+    {
+        try {
+            $token = new KeycloakHttpClientFactory()->createClientCredentialsTokenProvider(
+                config: $config->toClientConfig(),
+                httpClient: new NativePsr18Client(),
+                requestFactory: new SimpleRequestFactory(),
+                streamFactory: new SimpleStreamFactory(),
+            )->getAccessToken();
+        } catch (\Throwable $exception) {
+            throw new \RuntimeException(sprintf(
+                'E2E preflight: API client "%s" cannot obtain a token in realm "%s" (%s). '
+                . 'Check %s, %s, %s and that "Service accounts roles" is enabled on the client.',
+                $config->clientId,
+                $config->realm,
+                $exception->getMessage(),
+                E2ESettings::ENV_REALM,
+                E2ESettings::ENV_CLIENT_ID,
+                E2ESettings::ENV_CLIENT_SECRET,
+            ), 0, $exception);
+        }
+
+        $managementClient = self::managementClientId($config->realm);
+        $resourceAccess = $token->getPayload()->getClaim('resource_access');
+        if (!is_array($resourceAccess)) {
+            E2EReport::note('Access token has no resource_access claim; role preflight skipped.');
+
+            return $token;
+        }
+
+        $clientAccess = $resourceAccess[$managementClient] ?? null;
+        $granted = is_array($clientAccess) && is_array($clientAccess['roles'] ?? null)
+            ? array_filter($clientAccess['roles'], 'is_string')
+            : [];
+        $missing = array_values(array_diff(KeycloakTestStand::SERVICE_ACCOUNT_ROLES, $granted));
+        if ($missing !== []) {
+            throw new \RuntimeException(sprintf(
+                'E2E preflight: the service account of client "%s" in realm "%s" is missing client roles of "%s": %s. '
+                . 'Assign them on the client\'s "Service accounts roles" tab (filter by clients -> %s); '
+                . 'see docs/keycloak-api-client-setup.md#required-permissions.',
+                $config->clientId,
+                $config->realm,
+                $managementClient,
+                implode(', ', $missing),
+                $managementClient,
+            ));
+        }
+
+        return $token;
+    }
+
+    /**
+     * Keycloak keeps a realm's admin roles on "realm-management", except for the master realm,
+     * where the same roles live on the "master-realm" client.
+     */
+    public static function managementClientId(string $realm): string
+    {
+        return $realm === 'master' ? 'master-realm' : 'realm-management';
     }
 
     /**

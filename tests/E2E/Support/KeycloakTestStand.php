@@ -226,11 +226,18 @@ final class KeycloakTestStand
         $decoded = json_decode((string) $response->getBody(), true);
         $token = is_array($decoded) ? ($decoded['access_token'] ?? null) : null;
         if ($response->getStatusCode() !== 200 || !is_string($token)) {
+            $error = is_array($decoded) && is_string($decoded['error'] ?? null) ? $decoded['error'] : 'no error code';
             throw new RuntimeException(sprintf(
-                'E2E stand: administrator login failed (HTTP %d). Check %s/%s.',
+                'E2E stand: administrator login failed (HTTP %d, %s) for user "%s" via client "%s" in realm "%s". '
+                . 'Check %s/%s; %s must be a public client with Direct access grants (default: admin-cli).',
                 $response->getStatusCode(),
+                $error,
+                $this->settings->adminUsername,
+                $this->settings->adminClientId,
+                $this->settings->adminRealm,
                 E2ESettings::ENV_ADMIN_USERNAME,
                 E2ESettings::ENV_ADMIN_PASSWORD,
+                E2ESettings::ENV_ADMIN_CLIENT_ID,
             ));
         }
 

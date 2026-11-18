@@ -31,7 +31,10 @@ Placing the client in `master` is only needed when one client must manage severa
 
 ## Required Permissions
 
-Assign only what the features you use need. All roles below are client roles of the `realm-management` client in your realm.
+Assign only what the features you use need. All roles below are client roles of the realm's **management client**:
+
+- `realm-management` in every regular realm;
+- `master-realm` in the `master` realm (Keycloak has no `realm-management` client there; the role names are the same).
 
 | Role | Needed for |
 |---|---|
@@ -68,7 +71,8 @@ If a call is missing a permission, the library throws `KeycloakAuthorizationExce
 5. Open the **Credentials** tab and copy the **Client secret**. This is `clientSecret`.
 6. Open the **Service accounts roles** tab -> **Assign role**.
    - Switch the filter from **Filter by realm roles** to **Filter by clients**.
-   - Search for `realm-management`, tick the roles from the table above, then **Assign**.
+   - Search for `realm-management` (`master-realm` in the `master` realm), tick the roles from the table above,
+     then **Assign**.
 
 ## Option B: Admin REST API (`curl` + `jq`)
 
@@ -83,6 +87,7 @@ ADMIN_USER=admin
 read -rsp 'Admin password: ' ADMIN_PASSWORD; echo   # keeps the password out of shell history
 REALM=my-realm
 CLIENT_ID=php-client-api
+MGMT_CLIENT=realm-management      # use master-realm when REALM=master
 DIRECT_ACCESS_GRANTS=false        # true only if you use loginUser(...)
 
 admin_token() {
@@ -104,7 +109,7 @@ CID=$(api "$KC/admin/realms/$REALM/clients?clientId=$CLIENT_ID" | jq -r '.[0].id
 
 # 2. Grant the realm-management roles from the permissions table to the service account
 SA=$(api "$KC/admin/realms/$REALM/clients/$CID/service-account-user" | jq -r .id)
-RM=$(api "$KC/admin/realms/$REALM/clients?clientId=realm-management" | jq -r '.[0].id')
+RM=$(api "$KC/admin/realms/$REALM/clients?clientId=$MGMT_CLIENT" | jq -r '.[0].id')
 ROLES=$(api "$KC/admin/realms/$REALM/clients/$RM/roles" | jq -c '[.[]
   | select(.name | IN("view-users","manage-users","view-realm","manage-realm","view-clients","manage-clients"))
   | {id, name}]')

@@ -126,7 +126,7 @@ final class E2EReport
 
         $problems = [];
         if (self::$stand['provisioningError'] !== null) {
-            $problems[] = 'Stand provisioning failed: ' . self::$stand['provisioningError'];
+            $problems[] = 'E2E setup failed: ' . self::$stand['provisioningError'];
         }
         if ($summary['failed'] + $summary['errored'] > 0) {
             $problems[] = sprintf('%d failed, %d errored test(s).', $summary['failed'], $summary['errored']);

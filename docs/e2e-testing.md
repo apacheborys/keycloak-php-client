@@ -24,6 +24,10 @@ sandbox environments.
 | Credentials given to the suite | the API client only | administrator (used only to create/delete the stand) |
 | Realm used | your prepared realm, reused across runs | a new realm per run, deleted afterwards |
 
+In mode 1 a **preflight check** runs first: it obtains the API client's token and verifies, from the token's own
+`resource_access` claim, that all required roles are granted. A misconfigured client therefore produces one clear
+error naming the missing roles instead of many individual `401`/`403` failures.
+
 In both modes the functional tests authenticate **only as the API client**. Administrator credentials are never
 passed to the library under test, so a green run also proves that the documented least-privilege role list is enough.
 
@@ -39,8 +43,8 @@ passed to the library under test, so a green run also proves that the documented
 2. **Create the API client** in that realm by following
    [Keycloak API Client Setup](keycloak-api-client-setup.md) (Admin Console or Admin REST API), with:
    - **Direct access grants** enabled: the suite covers `loginUser(...)` and `refreshToken(...)`;
-   - all six `realm-management` roles from the
-     [permissions table](keycloak-api-client-setup.md#required-permissions).
+   - all six roles from the [permissions table](keycloak-api-client-setup.md#required-permissions), taken from the
+     `realm-management` client (from `master-realm` if you use the `master` realm).
 3. Note the **realm name**, **client ID** and **client secret**.
 
 ### Run
@@ -197,9 +201,12 @@ Cleanup cannot run if the PHP process is killed (for example `kill -9`, or closi
 | Symptom (`problems` / test message) | Likely cause |
 |---|---|
 | `Incomplete E2E configuration for ... mode. Missing: ...` | a variable of the chosen mode is not set |
-| `E2E stand: administrator login failed` | wrong `KEYCLOAK_E2E_ADMIN_*` values, or the admin realm/client differs from `master`/`admin-cli` |
+| `E2E stand: administrator login failed (HTTP 401, unauthorized_client ...)` | `KEYCLOAK_E2E_ADMIN_CLIENT_ID` is a confidential client (e.g. `backend`); leave it empty to use `admin-cli` |
+| `E2E stand: administrator login failed (HTTP 401, invalid_grant ...)` | wrong `KEYCLOAK_E2E_ADMIN_USERNAME`/`PASSWORD`, or wrong `KEYCLOAK_E2E_ADMIN_REALM` |
 | `E2E stand: POST /admin/realms returned HTTP 403` | the administrator may not create realms; use mode 1 |
 | `KeycloakAuthenticationException` in `ConnectivityE2ETest` | wrong client ID/secret, or the client lives in another realm than `KEYCLOAK_E2E_REALM` |
-| `KeycloakAuthorizationException` (403) in a functional test | a role from the permissions table is missing on the service account |
+| `E2E preflight: ... cannot obtain a token` | wrong realm/client ID/secret, or **Service accounts roles** disabled on the client |
+| `E2E preflight: ... is missing client roles of "realm-management"` (or `"master-realm"`) | assign the listed roles to the client's service account; in `master` they are on the `master-realm` client |
+| `KeycloakAuthorizationException` (403) in a functional test | the token passed preflight but Keycloak still denies a call; please report it, the documented role list may be incomplete |
 | login tests fail with `unauthorized_client` | **Direct access grants** is not enabled on the client |
 | issuer assertions fail | `KEYCLOAK_E2E_BASE_URL` differs from the issuer Keycloak advertises (for example `localhost` vs `127.0.0.1`, or a proxy host) |
