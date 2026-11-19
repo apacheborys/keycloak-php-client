@@ -142,10 +142,6 @@ final class SafeUriSanitizer
         }
 
         foreach ($matches[1] as $segment) {
-            if (!is_string($segment)) {
-                continue;
-            }
-
             $candidates[] = self::normalizeKeySegment($segment);
         }
 

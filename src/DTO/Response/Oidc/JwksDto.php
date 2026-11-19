@@ -77,6 +77,6 @@ final readonly class JwksDto
             $keys[] = JwkDto::fromArray($item);
         }
 
-        return new self(keys: array_values($keys));
+        return new self(keys: $keys);
     }
 }

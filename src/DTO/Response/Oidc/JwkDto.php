@@ -143,7 +143,7 @@ final readonly class JwkDto
             alg: $data['alg'],
             n: $data['n'],
             e: $data['e'],
-            x5c: array_values($x5c),
+            x5c: $x5c,
         );
     }
 }

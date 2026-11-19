@@ -36,6 +36,8 @@ use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OpenIdConfigurationDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Oidc\OidcTokenResponseDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopeDto;
 use Apacheborys\KeycloakPhpClient\DTO\Response\Realm\ClientScopesProtocolMapperDto;
+use Apacheborys\KeycloakPhpClient\DTO\RoleDto;
+use Apacheborys\KeycloakPhpClient\Entity\KeycloakRealm;
 use Apacheborys\KeycloakPhpClient\Entity\KeycloakUser;
 use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientInterface;
 use LogicException;
@@ -70,7 +72,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getUsers(SearchUsersDto $dto): array
     {
-        /** @var array $result */
+        /** @var list<KeycloakUser> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
@@ -115,7 +117,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getRoles(GetRolesDto $dto): array
     {
-        /** @var array $result */
+        /** @var list<RoleDto> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
@@ -124,7 +126,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getAvailableUserRoles(GetUserAvailableRolesDto $dto): array
     {
-        /** @var array $result */
+        /** @var list<RoleDto> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
@@ -160,7 +162,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getClientScopes(GetClientScopesDto $dto): array
     {
-        /** @var array $result */
+        /** @var list<ClientScopeDto> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
@@ -181,7 +183,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getClientScopeProtocolMappers(GetClientScopeProtocolMappersDto $dto): array
     {
-        /** @var array $result */
+        /** @var list<ClientScopesProtocolMapperDto> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: [$dto]);
 
         return $result;
@@ -293,7 +295,7 @@ final class TestKeycloakHttpClient implements KeycloakHttpClientInterface
     #[Override]
     public function getAvailableRealms(): array
     {
-        /** @var array $result */
+        /** @var list<KeycloakRealm> $result */
         $result = $this->nextResult(method: __FUNCTION__, args: []);
 
         return $result;

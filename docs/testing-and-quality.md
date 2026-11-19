@@ -7,6 +7,7 @@
 - HTTP facade tests (`tests/Http/*`)
 - Internal HTTP integration-like tests with mock server (`tests/Http/Internal/*`)
 - OIDC behavior checks (`tests/Oidc/*`)
+- Optional E2E tests against a real Keycloak (`tests/E2E/*`, separate `e2e` suite; see [E2E Testing](e2e-testing.md))
 
 Why the test suite is layered this way:
 
@@ -28,6 +29,12 @@ Run all checks:
 
 ```bash
 composer check
+```
+
+`composer test` runs only the default `unit` suite. Run the optional real-Keycloak suite explicitly:
+
+```bash
+composer test:e2e
 ```
 
 Run separately:

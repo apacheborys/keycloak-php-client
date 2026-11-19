@@ -56,7 +56,7 @@ final readonly class KeycloakUserAccess implements JsonSerializable
     }
 
     /**
-     * @param array<string, bool> $data
+     * @param array<mixed> $data
      * @return self
      */
     public static function fromArray(array $data): self
@@ -75,6 +75,8 @@ final readonly class KeycloakUserAccess implements JsonSerializable
 
         Assert::that($data)->keyExists('manage');
         Assert::that($data['manage'])->boolean();
+
+        /** @var array{manageGroupMembership: bool, view: bool, mapRoles: bool, impersonate: bool, manage: bool} $data */
 
         return new self(
             manageGroupMembership: $data['manageGroupMembership'],

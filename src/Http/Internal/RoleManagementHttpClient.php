@@ -100,7 +100,6 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
         $token = $this->accessTokenProvider->getAccessToken();
         $endpoint = $this->httpCore->buildEndpoint(path: '/admin/realms/' . $dto->getRealm() . '/roles');
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(
@@ -180,7 +179,6 @@ final readonly class RoleManagementHttpClient implements RoleManagementHttpClien
                 . '/role-mappings/realm'
         );
 
-        /** @var string $payload */
         $payload = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
 
         $request = $this->httpCore->createRequest(

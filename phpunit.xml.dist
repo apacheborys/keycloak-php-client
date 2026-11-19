@@ -1,8 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.4/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnRisky="true" failOnWarning="true" beStrictAboutOutputDuringTests="true" defaultTestSuite="unit">
   <testsuites>
     <testsuite name="unit">
       <directory>tests</directory>
+      <exclude>tests/E2E</exclude>
+    </testsuite>
+    <!-- Optional: runs against a real Keycloak. Invoke explicitly with `composer test:e2e`. See docs/e2e-testing.md. -->
+    <testsuite name="e2e">
+      <directory>tests/E2E</directory>
     </testsuite>
   </testsuites>
+  <extensions>
+    <!-- Removes the disposable E2E realm and client after the run; no-op when no E2E test ran. -->
+    <bootstrap class="Apacheborys\KeycloakPhpClient\Tests\E2E\Support\E2EStandExtension"/>
+  </extensions>
+  <php>
+    <!--
+      Real Keycloak E2E settings (docs/e2e-testing.md). Leave empty to skip the e2e suite.
+      Prefer exporting them in your shell, or copy this file to phpunit.xml (git-ignored) and fill them in.
+      Existing environment variables always take precedence over these values.
+    -->
+    <env name="KEYCLOAK_E2E_BASE_URL" value=""/>
+    <!-- Mode 1, preconfigured: realm + API client prepared manually (staging/sandbox). -->
+    <env name="KEYCLOAK_E2E_REALM" value=""/>
+    <env name="KEYCLOAK_E2E_CLIENT_ID" value=""/>
+    <env name="KEYCLOAK_E2E_CLIENT_SECRET" value=""/>
+    <!-- Mode 2, provisioned: admin creates and deletes a disposable realm + API client per run. -->
+    <env name="KEYCLOAK_E2E_ADMIN_USERNAME" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_PASSWORD" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_REALM" value=""/>
+    <env name="KEYCLOAK_E2E_ADMIN_CLIENT_ID" value=""/>
+    <!-- Optional: e.g. "bcrypt" to enable the hash-import test when it cannot be detected. -->
+    <env name="KEYCLOAK_E2E_PASSWORD_HASHING_PROVIDERS" value=""/>
+    <!-- Optional: JSON report path (default build/e2e/report.json). -->
+    <env name="KEYCLOAK_E2E_REPORT" value=""/>
+  </php>
 </phpunit>

@@ -486,7 +486,6 @@ final readonly class KeycloakUserManagementService implements
     {
         $hashContext = $this->buildHashContext(passwordDto: $passwordDto);
 
-        /** @var string $credentialsData */
         $credentialsData = json_encode(
             value: [
                 'algorithm' => $hashContext['algorithm'],
@@ -502,7 +501,6 @@ final readonly class KeycloakUserManagementService implements
     {
         $hashContext = $this->buildHashContext(passwordDto: $passwordDto);
 
-        /** @var string $secretData */
         $secretData = json_encode(
             value: [
                 'value' => $this->requireHashedPassword(passwordDto: $passwordDto),

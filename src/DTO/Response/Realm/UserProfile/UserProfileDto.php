@@ -58,13 +58,7 @@ final readonly class UserProfileDto
 
     public function hasAttribute(string $attributeName): bool
     {
-        foreach ($this->attributes as $attribute) {
-            if ($attribute->getName() === $attributeName) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->attributes, fn($attribute) => $attribute->getName() === $attributeName);
     }
 
     public function withAppendedAttribute(AttributeDto $attribute): self
@@ -180,6 +174,56 @@ final readonly class UserProfileDto
             groups: $groups,
             extra: self::extractExtra(data: $data),
         );
+    }
+
+    /**
+     * Encodes the document for Keycloak's PUT /users/profile endpoint.
+     *
+     * Keycloak models several fields as JSON objects (maps). PHP encodes an empty array as `[]`,
+     * which Keycloak rejects with "Cannot parse the JSON" - and empty maps are common: built-in
+     * validators such as `email` have an empty config `{}`. Those positions are emitted as `{}`.
+     */
+    public function toKeycloakJson(): string
+    {
+        $data = $this->toArray();
+
+        $attributes = [];
+        foreach ($this->attributes as $attribute) {
+            $item = $attribute->toArray();
+
+            $validations = [];
+            foreach ($attribute->getValidations() as $validatorType => $config) {
+                $validations[$validatorType] = self::objectIfEmpty($config);
+            }
+            $item['validations'] = self::objectIfEmpty($validations);
+            $item['annotations'] = self::objectIfEmpty($attribute->getAnnotations());
+
+            if (isset($item['required']) && $item['required'] === []) {
+                $item['required'] = new \stdClass();
+            }
+
+            $attributes[] = $item;
+        }
+        $data['attributes'] = $attributes;
+
+        $groups = [];
+        foreach ($this->groups as $group) {
+            $item = $group->toArray();
+            $item['annotations'] = self::objectIfEmpty($group->getAnnotations());
+            $groups[] = $item;
+        }
+        $data['groups'] = $groups;
+
+        return json_encode(value: $data, flags: JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param array<mixed> $map
+     * @return array<mixed>|\stdClass
+     */
+    private static function objectIfEmpty(array $map): array|\stdClass
+    {
+        return $map === [] ? new \stdClass() : $map;
     }
 
     /**

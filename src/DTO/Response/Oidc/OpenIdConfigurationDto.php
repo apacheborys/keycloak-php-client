@@ -743,7 +743,7 @@ final readonly class OpenIdConfigurationDto
             $result[] = $value;
         }
 
-        return array_values($result);
+        return $result;
     }
 
     /**

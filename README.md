@@ -4,7 +4,7 @@ Framework-agnostic Keycloak client with a service layer and a thin orchestration
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 
 ## Installation
 
@@ -102,6 +102,7 @@ use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientFactory;
 use Apacheborys\KeycloakPhpClient\Service\KeycloakServiceFactory;
 use Apacheborys\KeycloakPhpClient\ValueObject\KeycloakClientConfig;
 
+// See docs/keycloak-api-client-setup.md for creating the client and its permissions.
 $config = new KeycloakClientConfig(
     baseUrl: 'http://localhost:8080',
     clientRealm: 'master',
@@ -217,6 +218,7 @@ This workflow is intended for bootstrap or migration-like initialization of appl
 
 Detailed docs are in [`docs/README.md`](docs/README.md):
 
+- creating the Keycloak API client and its permissions ([tutorial](docs/keycloak-api-client-setup.md));
 - architecture and layering;
 - local user and mapper contract;
 - service-layer orchestration and responsibilities;
@@ -224,7 +226,8 @@ Detailed docs are in [`docs/README.md`](docs/README.md):
 - DTO namespace layout and placement rules;
 - user profile attributes and JWT exposure flow;
 - client scopes and protocol mappers;
-- testing strategy and local checks.
+- testing strategy and local checks;
+- optional E2E tests against a real Keycloak ([guide](docs/e2e-testing.md)).
 
 ## Quality Checks
 
@@ -233,6 +236,12 @@ composer test
 composer phpcs
 composer phpstan
 composer rector
+```
+
+Optional, against a real Keycloak (skipped unless configured, see [docs/e2e-testing.md](docs/e2e-testing.md)):
+
+```bash
+composer test:e2e
 ```
 
 ## License

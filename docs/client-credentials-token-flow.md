@@ -1,184 +1,83 @@
 # Client Credentials Token Flow
 
-## Goal
+How the library obtains tokens for the configured technical client with the OAuth 2.0 Client Credentials grant,
+and how applications can reuse that capability.
 
-Make Client Credentials a first-class token acquisition path for the configured technical client without widening the public API more than necessary in `0.1.x`.
+To create the client and its service-account permissions in Keycloak, see
+[Keycloak API Client Setup](keycloak-api-client-setup.md).
 
-## Current State
+## Public API
 
-- `KeycloakHttpClientFactory` already receives one configured client tuple: `clientRealm`, `clientId`, `clientSecret`.
-- `src/Http/Internal/AccessTokenProvider.php` already calls the OIDC token endpoint with `grant_type=client_credentials`.
-- `AccessTokenProvider` is internal-only and currently returns a cached `JsonWebToken` for Admin REST authorization.
-- `src/Http/Internal/OidcInteractionHttpClient.php` already has a generic private `requestToken(...)` helper, but its public contract only exposes:
-  - `requestTokenByPassword(OidcTokenRequestDto $dto)`
-  - `refreshToken(OidcTokenRequestDto $dto)`
-- `OidcTokenRequestDto` plus `OidcGrantType` currently model only:
-  - `password`
-  - `refresh_token`
-- `OidcTokenResponseDto` is already generic enough for token endpoint responses because `refreshToken` and `idToken` are nullable.
-- The service layer exposes:
-  - `loginUser(KeycloakUserInterface $user, string $plainPassword)`
-  - `refreshToken(OidcTokenRequestDto $dto)`
-- Token endpoint failure classification now distinguishes invalid credential/token failures from infrastructure failures:
-  - `400 invalid_grant`, `400 invalid_client`, and `400 unauthorized_client` map to `KeycloakAuthenticationException`
-  - transport/client failures remain `KeycloakTransportException`
+Client Credentials is exposed as a first-class **token provider**:
 
-## Target State
+```php
+use Apacheborys\KeycloakPhpClient\Http\KeycloakHttpClientFactory;
 
-Client Credentials should become a public capability for the same configured client that already powers Admin REST authorization.
+$tokenProvider = (new KeycloakHttpClientFactory())->createClientCredentialsTokenProvider(
+    config: $config,                 // KeycloakClientConfig: baseUrl, clientRealm, clientId, clientSecret
+    httpClient: $psr18Client,
+    requestFactory: $psr17RequestFactory,
+    streamFactory: $psr17StreamFactory,
+    cache: $psr6Cache,               // optional
+    scope: 'my-api',                 // optional
+);
 
-For `0.1.x`, the smallest useful public surface is:
+$jwt = $tokenProvider->getAccessToken(); // JsonWebToken
+$bearer = $jwt->getRawToken();
+```
 
-- `KeycloakHttpClientInterface::requestTokenByClientCredentials(?string $scope = null): OidcTokenResponseDto`
-- `KeycloakOidcAuthenticationServiceInterface::requestTokenByClientCredentials(?string $scope = null): OidcTokenResponseDto`
-- `KeycloakServiceInterface` inherits that through `KeycloakOidcAuthenticationServiceInterface`
+- `Apacheborys\KeycloakPhpClient\Token\AccessTokenProviderInterface` - the contract: `getAccessToken(): JsonWebToken`.
+- `Apacheborys\KeycloakPhpClient\Token\ClientCredentialsTokenProvider` - the implementation for the configured client.
 
-Why this boundary is the right size:
+The provider reuses the client tuple from `KeycloakClientConfig`, so callers never resupply the client id or secret.
+Multi-client token acquisition is intentionally out of scope.
 
-- it makes Client Credentials first-class for normal consumers of the library;
-- it reuses the client configuration already supplied to `KeycloakHttpClientFactory`;
-- it avoids forcing callers to resupply `clientId` and `clientSecret` on every request;
-- it keeps arbitrary multi-client token acquisition out of scope for `0.1.x`.
+The same provider type powers Admin REST authorization internally: `KeycloakHttpClientFactory::create(...)` builds a
+`ClientCredentialsTokenProvider` (without `scope`) and injects it into every Admin REST HTTP client.
 
-## Public API vs Internal API
+For an arbitrary token-endpoint request, the low-level facade method
+`KeycloakHttpClientInterface::requestOidcToken(OidcTokenRequestDto $dto)` is also available, together with
+`OidcTokenRequestDto::forClientCredentials(...)`. Application code should normally prefer the token provider.
 
-### Should become public
+## DTOs
 
-- A configured-client Client Credentials method on the HTTP facade.
-- The same method on the service facade so application code can stay on the recommended service boundary.
+- Request: `OidcTokenRequestDto` with `OidcGrantType::CLIENT_CREDENTIALS`; `username`, `password` and
+  `refresh_token` are not required for that grant.
+- Response: `OidcTokenResponseDto`; `refreshToken` and `idToken` are nullable, which fits Client Credentials responses.
 
-### Should remain internal
+No separate `TokenRequest` / `TokenSet` types exist; they would duplicate these DTOs.
 
-- `AccessTokenProvider`
-- the token-endpoint request assembly details
-- cache-key generation and cache storage format
-- any token-endpoint-specific error reclassification logic
+## Caching
 
-`AccessTokenProvider` should not become public API. It is an internal infrastructure helper for library-owned token acquisition, caching, and admin authorization concerns.
+Caching lives inside `ClientCredentialsTokenProvider`, not in the application-facing API:
 
-## DTO Decision
-
-Reuse the existing OIDC DTOs.
-
-### Request side
-
-- Keep `OidcTokenRequestDto`.
-- Extend `OidcGrantType` with `CLIENT_CREDENTIALS`.
-- Extend `OidcTokenRequestDto` validation and `toFormParams()` so `client_credentials` does not require `username`, `password`, or `refresh_token`.
-
-### Response side
-
-- Keep `OidcTokenResponseDto`.
-- Do not introduce `TokenResponse` or `TokenSet` in `0.1.x`.
-
-Rationale:
-
-- `OidcTokenResponseDto` already models the relevant token endpoint shape.
-- Client Credentials responses fit the existing nullable `refreshToken` and `idToken` fields.
-- A parallel `TokenRequest` or `TokenSet` type would duplicate semantics without solving a current mismatch.
-
-The new public `requestTokenByClientCredentials(?string $scope = null)` method can still construct an `OidcTokenRequestDto` internally. That keeps the public boundary cleaner while avoiding DTO duplication.
-
-## Password Grant Position
-
-Password Grant should be treated as a legacy and migration-oriented flow.
-
-That means:
-
-- `loginUser(...)` stays available for compatibility and migrations.
-- `requestTokenByPassword(...)` stays available for compatibility and low-level usage.
-- both should be documented as not recommended for new end-user login flows.
-
-Recommended wording for docs and PHPDoc:
-
-> Legacy migration flow. Not recommended for new end-user login. Prefer Authorization Code + PKCE outside this library.
-
-For `0.1.x`, this should be documentation and API-positioning guidance, not removal. A hard deprecation annotation can wait until a later release if needed.
-
-## Token Cache Placement
-
-Token caching belongs inside the internal token acquisition path, not in the application-facing service API.
-
-Guidance:
-
-- reuse the existing optional PSR-6 cache already accepted by `KeycloakHttpClientFactory`;
-- keep cache ownership in internal token code;
-- let Admin REST authorization and public configured-client Client Credentials share the same cache behavior and TTL rules;
-- include `scope` in the cache key, together with base URL, realm, and client id;
-- do not introduce a large new cache abstraction in `0.1.x`.
-
-This keeps the cache pragmatic and consistent with the rest of the library.
+- uses the optional PSR-6 pool passed to the factory;
+- the cache key combines base URL, client realm, client id and, when set, `scope`;
+- a cached token expires `expires_in - 1` seconds after it was issued (small safety skew);
+- unreadable or malformed cache entries are ignored and a fresh token is requested.
 
 ## Exception Semantics
 
-The library should clearly distinguish invalid credentials from transport failures.
+Token-endpoint credential problems are authentication failures, even when Keycloak answers with HTTP `400`:
 
-### Invalid credentials
+| Token endpoint response | Exception |
+|---|---|
+| `401` | `KeycloakAuthenticationException` |
+| `400` with `invalid_grant`, `invalid_client` or `unauthorized_client` | `KeycloakAuthenticationException` |
+| other `400`, PSR-18 network/client failures | `KeycloakTransportException` |
 
-Token endpoint credential problems should surface as authentication-oriented exceptions, including cases where Keycloak responds with HTTP `400`.
+This reclassification is limited to the token flow; other endpoints keep the general HTTP-status mapping described
+in the main [README](../README.md#error-handling). Diagnostics are sanitized and never contain secrets or tokens.
 
-Minimum classification rule set:
+## Password Grant Position
 
-- `401` on the token endpoint -> `KeycloakAuthenticationException`
-- `400` with OAuth error `invalid_grant` -> `KeycloakAuthenticationException`
-- `400` with OAuth error `invalid_client` -> `KeycloakAuthenticationException`
-- `400` with OAuth error `unauthorized_client` -> `KeycloakAuthenticationException`
+`loginUser(...)` (service layer) and Password-grant requests through `requestOidcToken(...)` remain available for
+compatibility and user migrations, but they are a **legacy flow** and not recommended for new end-user login.
+Prefer Authorization Code + PKCE, handled outside this library. A client needs **Direct access grants** enabled in
+Keycloak to use the Password grant.
 
-Examples:
+## Verification
 
-- wrong username/password
-- invalid refresh token
-- wrong client secret
-- client not allowed to use the requested grant
-
-### Transport failures
-
-These should remain `KeycloakTransportException`:
-
-- PSR-18 client/network failures
-- non-authentication HTTP failures that are not credential rejection
-- generic `400` responses that do not represent an OAuth credential/authentication error
-
-### Scope of the change
-
-This reclassification should live in the token flow, not as a broad change to every `400` response in `KeycloakHttpCore`. The current HTTP-core mapping is acceptable for non-token endpoints.
-
-No additional public exception hierarchy is required as long as token-endpoint `400` credential failures are mapped into the existing authentication branch with sanitized diagnostics.
-
-## Concrete Next-Step Implementation Plan
-
-1. Add `OidcGrantType::CLIENT_CREDENTIALS`.
-2. Extend `OidcTokenRequestDto` so it can serialize and validate the new grant type.
-3. Add `requestTokenByClientCredentials(?string $scope = null): OidcTokenResponseDto` to:
-   - `KeycloakHttpClientInterface`
-   - `KeycloakHttpClient`
-   - `OidcInteractionHttpClientInterface`
-   - `OidcInteractionHttpClient`
-   - `KeycloakOidcAuthenticationServiceInterface`
-   - `KeycloakOidcAuthenticationService`
-   - `KeycloakServiceInterface`
-   - `KeycloakService`
-   - `TestKeycloakHttpClient`
-4. Implement that public method against the factory-configured client credentials instead of asking callers for another public request DTO.
-5. Keep `AccessTokenProvider` internal, but let it either:
-   - become the shared configured-client Client Credentials implementation, or
-   - delegate to a tiny new internal helper if that makes the code cleaner.
-6. Share cache behavior between admin-token acquisition and public configured-client Client Credentials token acquisition.
-7. Add token-endpoint-specific classification for `invalid_grant`, `invalid_client`, and `unauthorized_client`.
-8. Update docs and PHPDoc so Password Grant is explicitly labeled as a legacy/migration flow.
-9. Add focused tests when implementation starts:
-   - DTO tests for `CLIENT_CREDENTIALS`
-   - HTTP facade delegation tests
-   - service delegation tests
-   - internal cache tests for configured-client Client Credentials
-   - exception classification tests for `400 invalid_grant` and `400 invalid_client`
-
-## Summary
-
-For `0.1.x`, the minimal realistic boundary is:
-
-- public: a configured-client `requestTokenByClientCredentials(?string $scope = null)` on the HTTP and service facades;
-- internal: keep token providers, cache management, and token-endpoint error classification hidden;
-- DTOs: reuse `OidcTokenRequestDto` and `OidcTokenResponseDto`;
-- Password Grant: keep it, but document it as legacy and migration-only;
-- errors: classify token credential rejection as authentication, not transport.
+- Unit coverage: `tests/Token/ClientCredentialsTokenProviderTest.php` (caching, scope, error mapping).
+- Against a real Keycloak: `tests/E2E/ConnectivityE2ETest.php` checks token issuance, signature verification and the
+  wrong-secret error mapping. See [E2E Testing](e2e-testing.md).

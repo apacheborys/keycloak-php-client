@@ -41,13 +41,7 @@ final readonly class AttributeValidatorsDto
 
     public function has(AttributeValidatorType $type): bool
     {
-        foreach ($this->validators as $validator) {
-            if ($validator->getType() === $type->value) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->validators, fn($validator) => $validator->getType() === $type->value);
     }
 
     public function get(AttributeValidatorType $type): ?AttributeValidatorInterface
@@ -80,7 +74,7 @@ final readonly class AttributeValidatorsDto
         }
 
         return new self(
-            validators: array_values($validators),
+            validators: $validators,
         );
     }
 }

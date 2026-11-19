@@ -344,7 +344,6 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             return;
         }
 
-        /** @var string $serialized */
         $serialized = json_encode(value: $dto->toArray(), flags: JSON_THROW_ON_ERROR);
         $cacheItem = $this->cache->getItem(key: $this->openIdConfigurationCacheKey(realm: $realm));
         $cacheItem->set(value: $serialized);
@@ -387,7 +386,6 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             return;
         }
 
-        /** @var string $serialized */
         $serialized = json_encode(value: $jwk->toArray(), flags: JSON_THROW_ON_ERROR);
         $cacheItem = $this->cache->getItem(key: $this->jwkByKidCacheKey(realm: $realm, kid: $jwk->getKid()));
         $cacheItem->set(value: $serialized);
@@ -459,7 +457,6 @@ final readonly class KeycloakHttpClient implements KeycloakHttpClientInterface
             $realms,
         );
 
-        /** @var string $serialized */
         $serialized = json_encode(value: $payload, flags: JSON_THROW_ON_ERROR);
         $cacheItem = $this->cache->getItem(key: $this->realmListCacheKey());
         $cacheItem->set(value: $serialized);

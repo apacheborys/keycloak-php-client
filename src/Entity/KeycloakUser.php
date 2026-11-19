@@ -385,7 +385,7 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             $result[] = $attributeValue;
         }
 
-        return array_values($result);
+        return $result;
     }
 
     /**
@@ -408,6 +408,6 @@ final readonly class KeycloakUser implements KeycloakUserInterface, JsonSerializ
             $values[] = $value;
         }
 
-        return array_values(array: $values);
+        return $values;
     }
 }
